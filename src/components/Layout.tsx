@@ -19,9 +19,10 @@ const Layout = ({ children }: LayoutProps) => {
     { name: 'Home', path: '/' },
     { name: 'About', path: '/about' },
     { name: 'Services', path: '/services' },
+    { name: 'Events', path: '/events' },
+    { name: 'Contact', path: '/contact' },
     { name: 'Terms', path: '/terms' },
     { name: 'Privacy', path: '/privacy' },
-    { name: 'Contact', path: '/contact' },
   ];
 
   const isActive = (path: string) => {
