@@ -13,11 +13,16 @@ import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import { logAudit } from '@/lib/audit';
 
+// Define custom Event type that includes the image_url property
+type Event = Database['public']['Tables']['events']['Row'] & {
+  image_url?: string;
+};
+
 const AdminDashboard = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [events, setEvents] = useState<Database['public']['Tables']['events']['Row'][]>([]);
+  const [events, setEvents] = useState<Event[]>([]);
   const [eventLoading, setEventLoading] = useState(false);
   const [eventForm, setEventForm] = useState<any>({ title: '', event_date: '', location: '', description: '', category: '', image_url: '' });
   const [editingEvent, setEditingEvent] = useState<any>(null);
