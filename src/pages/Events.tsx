@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { CalendarDays, MapPin, User, Tag } from 'lucide-react';
@@ -13,6 +12,7 @@ const Events = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [showPastEvents, setShowPastEvents] = useState(false);
   const { toast } = useToast();
   
   // Get unique categories from events
@@ -49,9 +49,26 @@ const Events = () => {
     fetchEvents();
   }, [toast]);
 
+  // RSVP registration: now uses Supabase
+  const registerForEvent = async (eventId: string, user: { name: string; email: string }) => {
+    try {
+      const { error } = await (supabase as any).from('event_registrations').insert([
+        { event_id: eventId, name: user.name, email: user.email, registered_at: new Date().toISOString() }
+      ]);
+      if (error) throw error;
+      return true;
+    } catch (err) {
+      return false;
+    }
+  };
+
+  const now = new Date();
   const filteredEvents = selectedCategory === 'all' 
     ? events 
     : events.filter(event => event.category === selectedCategory);
+
+  const upcomingEventsList = filteredEvents.filter(event => new Date(event.event_date) >= now);
+  const pastEventsList = filteredEvents.filter(event => new Date(event.event_date) < now);
 
   return (
     <Layout>
@@ -82,18 +99,85 @@ const Events = () => {
             ))}
           </div>
 
-          {loading ? (
-            <div className="flex justify-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-iwc-blue"></div>
-            </div>
-          ) : filteredEvents.length > 0 ? (
+          {/* Toggle Past Events */}
+          <div className="mb-8 text-center">
+            <button
+              onClick={() => setShowPastEvents(!showPastEvents)}
+              className="text-iwc-blue underline hover:text-iwc-orange font-medium"
+            >
+              {showPastEvents ? 'Hide Past Events' : 'Show Past Events'}
+            </button>
+          </div>
+
+          {/* Upcoming Events */}
+          {!showPastEvents && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {filteredEvents.map((event) => (
-                <div 
-                  key={event.id} 
-                  className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all border border-gray-100"
-                >
-                  <div className="p-6">
+              {upcomingEventsList.length > 0 ? upcomingEventsList.map(event => (
+                <div key={event.id} className="bg-gray-50 rounded-xl shadow-md p-8 mb-8">
+                  <h3 className="text-xl font-semibold mb-2 text-gray-900">{event.title}</h3>
+                    
+                  <div className="flex items-center text-gray-600 mb-3">
+                    <CalendarDays className="h-4 w-4 mr-2 text-iwc-orange" />
+                    <span>
+                      {format(new Date(event.event_date), 'EEEE, MMMM d, yyyy - h:mm a')}
+                    </span>
+                  </div>
+                    
+                  <div className="flex items-center text-gray-600 mb-3">
+                    <MapPin className="h-4 w-4 mr-2 text-iwc-orange" />
+                    <span>{event.location}</span>
+                  </div>
+                    
+                  {event.organizer && (
+                    <div className="flex items-center text-gray-600 mb-3">
+                      <User className="h-4 w-4 mr-2 text-iwc-orange" />
+                      <span>{event.organizer}</span>
+                    </div>
+                  )}
+                    
+                  {event.category && (
+                    <div className="flex items-center text-gray-600 mb-4">
+                      <Tag className="h-4 w-4 mr-2 text-iwc-orange" />
+                      <span>{event.category}</span>
+                    </div>
+                  )}
+                    
+                  <p className="text-gray-600 mb-4">{event.description}</p>
+                    
+                  <button
+                    className="bg-iwc-blue hover:bg-iwc-orange text-white font-medium py-2 px-4 rounded-md transition-colors w-full mt-4"
+                    onClick={async () => {
+                      const name = prompt("Enter your name:");
+                      const email = prompt("Enter your email:");
+                      if (name && email) {
+                        const success = await registerForEvent(event.id, { name, email });
+                        toast({
+                          title: success ? "Registered!" : "Error",
+                          description: success ? "You have registered for this event." : "Registration failed. Please try again.",
+                        });
+                      }
+                    }}
+                  >
+                    Register
+                  </button>
+                </div>
+              )) : (
+                <div className="text-center py-12">
+                  <p className="text-gray-600 text-lg">
+                    No upcoming events found for this category. Please check back later.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Past Events */}
+          {showPastEvents && (
+            <div>
+              <h2 className="text-2xl font-bold mb-6 text-center text-gray-900">Past Events</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {pastEventsList.length > 0 ? pastEventsList.map(event => (
+                  <div key={event.id} className="bg-gray-50 rounded-xl shadow-md p-8 mb-8">
                     <h3 className="text-xl font-semibold mb-2 text-gray-900">{event.title}</h3>
                     
                     <div className="flex items-center text-gray-600 mb-3">
@@ -124,20 +208,31 @@ const Events = () => {
                     
                     <p className="text-gray-600 mb-4">{event.description}</p>
                     
-                    {event.registration_required && (
-                      <button className="bg-iwc-blue hover:bg-iwc-orange text-white font-medium py-2 px-4 rounded-md transition-colors w-full">
-                        Register
-                      </button>
-                    )}
+                    <button
+                      className="bg-iwc-blue hover:bg-iwc-orange text-white font-medium py-2 px-4 rounded-md transition-colors w-full mt-4"
+                      onClick={async () => {
+                        const name = prompt("Enter your name:");
+                        const email = prompt("Enter your email:");
+                        if (name && email) {
+                          const success = await registerForEvent(event.id, { name, email });
+                          toast({
+                            title: success ? "Registered!" : "Error",
+                            description: success ? "You have registered for this event." : "Registration failed. Please try again.",
+                          });
+                        }
+                      }}
+                    >
+                      Register
+                    </button>
                   </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <p className="text-gray-600 text-lg">
-                No events found for this category. Please check back later.
-              </p>
+                )) : (
+                  <div className="text-center py-12">
+                    <p className="text-gray-600 text-lg">
+                      No past events found for this category.
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>

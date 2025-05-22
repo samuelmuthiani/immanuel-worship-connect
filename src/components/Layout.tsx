@@ -1,9 +1,10 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
+import NewsletterSignup from '@/components/NewsletterSignup';
+import { supabase } from '@/integrations/supabase/client';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -14,20 +15,33 @@ const Layout = ({ children }: LayoutProps) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const [currentUser, setCurrentUser] = React.useState<any>(null);
 
   const navigationLinks = [
     { name: 'Home', path: '/' },
     { name: 'About', path: '/about' },
     { name: 'Services', path: '/services' },
     { name: 'Events', path: '/events' },
+    { name: 'Media', path: '/media' }, // Added Media Gallery link
+    { name: 'Blog', path: '/blog' }, // Added Blog/News link
+    { name: 'Donate', path: '/donate' }, // Added Donate page
     { name: 'Contact', path: '/contact' },
-    { name: 'Terms', path: '/terms' },
-    { name: 'Privacy', path: '/privacy' },
+    // Removed Terms and Privacy Policy from top navigation
   ];
 
   const isActive = (path: string) => {
     return location.pathname === path;
   };
+
+  React.useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user && data.user.email_confirmed_at) {
+        setCurrentUser(data.user);
+      } else {
+        setCurrentUser(null);
+      }
+    });
+  }, []);
 
   React.useEffect(() => {
     if (mobileMenuOpen) {
@@ -83,12 +97,21 @@ const Layout = ({ children }: LayoutProps) => {
                         {link.name}
                       </Link>
                     ))}
+                    {currentUser && (
+                      <Link
+                        to="/member"
+                        className={`block py-2 text-lg ${isActive('/member') ? 'font-bold text-iwc-orange' : 'text-gray-700 hover:text-iwc-orange'}`}
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        Member
+                      </Link>
+                    )}
                   </nav>
                 </div>
               )}
             </>
           ) : (
-            <nav className="flex space-x-6">
+            <nav className="flex space-x-6" aria-label="Main navigation">
               {navigationLinks.map((link) => (
                 <Link
                   key={link.path}
@@ -98,10 +121,20 @@ const Layout = ({ children }: LayoutProps) => {
                       ? "font-semibold text-iwc-orange"
                       : "text-gray-700 hover:text-iwc-orange"
                   }`}
+                  aria-current={isActive(link.path) ? "page" : undefined}
                 >
                   {link.name}
                 </Link>
               ))}
+              {currentUser && (
+                <Link
+                  to="/member"
+                  className={`py-2 transition-colors ${isActive('/member') ? 'font-semibold text-iwc-orange' : 'text-gray-700 hover:text-iwc-orange'}`}
+                  aria-current={isActive('/member') ? 'page' : undefined}
+                >
+                  Member
+                </Link>
+              )}
             </nav>
           )}
         </div>
@@ -111,7 +144,7 @@ const Layout = ({ children }: LayoutProps) => {
         {children}
       </main>
 
-      <footer className="bg-gray-900 text-white py-8">
+      <footer className="bg-gray-900 text-white py-8" role="contentinfo">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div>
@@ -146,17 +179,23 @@ const Layout = ({ children }: LayoutProps) => {
               
               <h3 className="text-xl font-semibold mb-4">Connect With Us</h3>
               <div className="flex space-x-4">
-                <a href="#" className="hover:text-iwc-gold transition-colors" aria-label="Facebook">FB</a>
-                <a href="#" className="hover:text-iwc-gold transition-colors" aria-label="Twitter">TW</a>
-                <a href="#" className="hover:text-iwc-gold transition-colors" aria-label="Instagram">IG</a>
-                <a href="#" className="hover:text-iwc-gold transition-colors" aria-label="YouTube">YT</a>
+                <a href="https://facebook.com/yourchurch" target="_blank" rel="noopener noreferrer" className="hover:text-iwc-gold transition-colors" aria-label="Facebook">FB</a>
+                <a href="https://twitter.com/yourchurch" target="_blank" rel="noopener noreferrer" className="hover:text-iwc-gold transition-colors" aria-label="Twitter">TW</a>
+                <a href="https://instagram.com/yourchurch" target="_blank" rel="noopener noreferrer" className="hover:text-iwc-gold transition-colors" aria-label="Instagram">IG</a>
+                <a href="https://youtube.com/yourchurch" target="_blank" rel="noopener noreferrer" className="hover:text-iwc-gold transition-colors" aria-label="YouTube">YT</a>
               </div>
             </div>
+          </div>
+
+          <div className="mt-8 flex flex-col items-center">
+            <h4 className="text-lg font-semibold mb-2">Subscribe to our Newsletter</h4>
+            <NewsletterSignup />
           </div>
           
           <div className="border-t border-gray-800 mt-8 pt-6 text-center">
             <p>&copy; {new Date().getFullYear()} Immanuel Worship Centre. All rights reserved.</p>
             <div className="mt-2">
+              {/* Terms and Privacy Policy only in footer, not in top navigation */}
               <Link to="/terms" className="hover:text-iwc-gold mr-4 transition-colors">Terms of Service</Link>
               <Link to="/privacy" className="hover:text-iwc-gold transition-colors">Privacy Policy</Link>
             </div>

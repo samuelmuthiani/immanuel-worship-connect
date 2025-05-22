@@ -39,6 +39,7 @@ export type Database = {
           registration_required: boolean | null
           title: string
           updated_at: string | null
+          image_url?: string | null // <-- Added for event image support
         }
         Insert: {
           category?: string | null
@@ -51,6 +52,7 @@ export type Database = {
           registration_required?: boolean | null
           title: string
           updated_at?: string | null
+          image_url?: string | null // <-- Added for event image support
         }
         Update: {
           category?: string | null
@@ -63,8 +65,135 @@ export type Database = {
           registration_required?: boolean | null
           title?: string
           updated_at?: string | null
+          image_url?: string | null // <-- Added for event image support
         }
         Relationships: []
+      }
+      contact_submissions: {
+        Row: {
+          id: string
+          name: string | null
+          email: string | null
+          message: string | null
+          submitted_at: string | null
+        }
+        Insert: {
+          id?: string
+          name?: string | null
+          email?: string | null
+          message?: string | null
+          submitted_at?: string | null
+        }
+        Update: {
+          id?: string
+          name?: string | null
+          email?: string | null
+          message?: string | null
+          submitted_at?: string | null
+        }
+        Relationships: []
+      }
+      donor_thank_yous: {
+        Row: {
+          id: string
+          name: string | null
+          org: string | null
+          message: string | null
+          submitted_at: string | null
+        }
+        Insert: {
+          id?: string
+          name?: string | null
+          org?: string | null
+          message?: string | null
+          submitted_at?: string | null
+        }
+        Update: {
+          id?: string
+          name?: string | null
+          org?: string | null
+          message?: string | null
+          submitted_at?: string | null
+        }
+        Relationships: []
+      }
+      event_registrations: {
+        Row: {
+          id: string
+          event_id: string
+          name: string
+          email: string
+          phone: string | null
+          guests: number | null
+          message: string | null
+          registered_at: string | null
+        }
+        Insert: {
+          id?: string
+          event_id: string
+          name: string
+          email: string
+          phone?: string | null
+          guests?: number | null
+          message?: string | null
+          registered_at?: string | null
+        }
+        Update: {
+          id?: string
+          event_id?: string
+          name?: string
+          email?: string
+          phone?: string | null
+          guests?: number | null
+          message?: string | null
+          registered_at?: string | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          user_id: string
+          role: string
+          assigned_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          role: string
+          assigned_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          role?: string
+          assigned_at?: string | null
+        }
+        Relationships: []
+      }
+      audit_logs: {
+        Row: {
+          id: string;
+          user_id: string;
+          action: string;
+          details: string | null;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          action: string;
+          details?: string | null;
+          created_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          action?: string;
+          details?: string | null;
+          created_at?: string | null;
+        };
+        Relationships: [];
       }
     }
     Views: {
@@ -93,7 +222,7 @@ export type Tables<
   }
     ? keyof (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never,
 > = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
   ? (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
       Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
