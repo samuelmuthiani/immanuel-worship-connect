@@ -1,9 +1,11 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { CalendarDays, ArrowRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
+import { getSectionContent } from '@/utils/siteContent';
 
 type Event = Database['public']['Tables']['events']['Row'];
 
@@ -62,16 +64,12 @@ const EventsPreviewSection = () => {
 
   useEffect(() => {
     // Fetch CMS override content if available
-    (async () => {
-      try {
-        const { data, error } = await (supabase as any)
-          .from('site_content')
-          .select('content')
-          .eq('section', 'events')
-          .single();
-        if (!error && data && data.content) setCmsContent(data.content);
-      } catch {}
-    })();
+    const fetchContent = async () => {
+      const content = await getSectionContent('events');
+      if (content) setCmsContent(content);
+    };
+    
+    fetchContent();
   }, []);
 
   return (
@@ -107,12 +105,11 @@ const EventsPreviewSection = () => {
                       aria-label={`Event: ${event.title}`}
                       tabIndex={0}
                     >
-                      {event.image_url && (
-                        <img
-                          src={event.image_url}
-                          alt={event.title + ' event image'}
-                          className="w-full h-48 object-cover"
-                        />
+                      {/* Optional image - only render if exists */}
+                      {event.category && (
+                        <div className="h-48 bg-gray-200 flex items-center justify-center">
+                          <span className="text-2xl">{getCategoryEmoji(event.category)}</span>
+                        </div>
                       )}
                       <div className="p-6">
                         <h3 className="text-xl font-semibold mb-2 text-gray-900">{event.title}</h3>
@@ -160,5 +157,21 @@ const EventsPreviewSection = () => {
     </div>
   );
 };
+
+// Helper function to get emoji for event category
+function getCategoryEmoji(category: string): string {
+  const categoryMap: Record<string, string> = {
+    'Worship': '🙏',
+    'Study': '📚',
+    'Youth': '👨‍👩‍👧‍👦',
+    'Service': '🤝',
+    'Prayer': '✝️',
+    'Fellowship': '❤️',
+    'Music': '🎵',
+    'Outreach': '🌍'
+  };
+  
+  return categoryMap[category] || '📅';
+}
 
 export default EventsPreviewSection;

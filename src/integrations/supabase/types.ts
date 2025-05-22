@@ -242,6 +242,27 @@ export type Database = {
         }
         Relationships: []
       }
+      site_content: {
+        Row: {
+          content: string
+          id: string
+          section: string
+          updated_at: string | null
+        }
+        Insert: {
+          content: string
+          id?: string
+          section: string
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string
+          id?: string
+          section?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           role: string

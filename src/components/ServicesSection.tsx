@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { getSectionContent } from '@/utils/siteContent';
 
 const services = [
   {
@@ -56,17 +56,13 @@ const ServicesSection = () => {
   }, []);
 
   useEffect(() => {
-    // Fetch CMS override content if available
-    (async () => {
-      try {
-        const { data, error } = await (supabase as any)
-          .from('site_content')
-          .select('content')
-          .eq('section', 'services')
-          .single();
-        if (!error && data && data.content) setCmsContent(data.content);
-      } catch {}
-    })();
+    // Fetch CMS content
+    const fetchContent = async () => {
+      const content = await getSectionContent('services');
+      if (content) setCmsContent(content);
+    };
+    
+    fetchContent();
   }, []);
 
   return (

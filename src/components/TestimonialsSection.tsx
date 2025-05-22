@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { getSectionContent } from "@/utils/siteContent";
 
 const testimonials = [
 	{
@@ -48,17 +48,13 @@ const TestimonialsSection = () => {
 	}, []);
 
 	useEffect(() => {
-		// Fetch CMS override content if available
-		(async () => {
-			try {
-				const { data, error } = await (supabase as any)
-					.from("site_content")
-					.select("content")
-					.eq("section", "testimonials")
-					.single();
-				if (!error && data && data.content) setCmsContent(data.content);
-			} catch {}
-		})();
+		// Fetch CMS content
+		const fetchContent = async () => {
+			const content = await getSectionContent('testimonials');
+			if (content) setCmsContent(content);
+		};
+		
+		fetchContent();
 	}, []);
 
 	return (

@@ -1,6 +1,7 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { getSectionContent } from '@/utils/siteContent';
 
 const HeroSection = () => {
   const heroRef = useRef<HTMLDivElement>(null);
@@ -30,16 +31,12 @@ const HeroSection = () => {
 
   useEffect(() => {
     // Fetch CMS override content if available
-    (async () => {
-      try {
-        const { data, error } = await (supabase as any)
-          .from('site_content')
-          .select('content')
-          .eq('section', 'home')
-          .single();
-        if (!error && data && data.content) setCmsContent(data.content);
-      } catch {}
-    })();
+    const fetchContent = async () => {
+      const content = await getSectionContent('home');
+      if (content) setCmsContent(content);
+    };
+    
+    fetchContent();
   }, []);
 
   return (

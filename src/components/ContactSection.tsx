@@ -1,6 +1,8 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { getSectionContent } from '@/utils/siteContent';
 
 const ContactSection = () => {
   const sectionRef = useRef<HTMLDivElement>(null);
@@ -32,17 +34,13 @@ const ContactSection = () => {
   }, []);
 
   useEffect(() => {
-    // Fetch CMS override content if available
-    (async () => {
-      try {
-        const { data, error } = await (supabase as any)
-          .from('site_content')
-          .select('content')
-          .eq('section', 'contact')
-          .single();
-        if (!error && data && data.content) setCmsContent(data.content);
-      } catch {}
-    })();
+    // Fetch CMS content
+    const fetchContent = async () => {
+      const content = await getSectionContent('contact');
+      if (content) setCmsContent(content);
+    };
+    
+    fetchContent();
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -53,9 +51,11 @@ const ContactSection = () => {
     e.preventDefault();
     setError(null);
     try {
-      const { error: dbError } = await (supabase as any).from('contact_submissions').insert([
-        { ...form, submitted_at: new Date().toISOString() }
-      ]);
+      const { error: dbError } = await supabase.from('contact_submissions').insert({
+        ...form, 
+        submitted_at: new Date().toISOString() 
+      });
+      
       if (dbError) throw dbError;
       setSubmitted(true);
       setForm({ name: '', email: '', message: '' });

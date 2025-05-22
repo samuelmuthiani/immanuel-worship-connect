@@ -16,15 +16,16 @@ export async function logAudit(
   target?: string
 ) {
   try {
-    const { error } = await supabase.from('audit_logs').insert([
-      {
-        user_id: userId,
-        action,
-        details: typeof details === 'string' ? details : details || null,
-        target: target || null,
-        timestamp: new Date().toISOString(),
-      },
-    ]);
+    // Convert details object to JSON string if it's not already a string
+    const detailsValue = typeof details === 'object' ? JSON.stringify(details) : details || null;
+    
+    const { error } = await supabase.from('audit_logs').insert({
+      user_id: userId,
+      action,
+      details: detailsValue,
+      target: target || null,
+      timestamp: new Date().toISOString(),
+    });
     
     if (error) {
       console.error('Error logging audit event:', error);
