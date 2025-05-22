@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { CalendarDays, MapPin, User, Tag } from 'lucide-react';
@@ -6,7 +7,9 @@ import Layout from '@/components/Layout';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 
-type Event = Database['public']['Tables']['events']['Row'];
+type Event = Database['public']['Tables']['events']['Row'] & {
+  image_url?: string;
+};
 
 const Events = () => {
   const [events, setEvents] = useState<Event[]>([]);
@@ -141,6 +144,12 @@ const Events = () => {
                       <span>{event.category}</span>
                     </div>
                   )}
+
+                  {event.image_url && (
+                    <div className="mb-4">
+                      <img src={event.image_url} alt={event.title} className="w-full h-48 object-cover rounded-md" />
+                    </div>
+                  )}
                     
                   <p className="text-gray-600 mb-4">{event.description}</p>
                     
@@ -203,6 +212,12 @@ const Events = () => {
                       <div className="flex items-center text-gray-600 mb-4">
                         <Tag className="h-4 w-4 mr-2 text-iwc-orange" />
                         <span>{event.category}</span>
+                      </div>
+                    )}
+
+                    {event.image_url && (
+                      <div className="mb-4">
+                        <img src={event.image_url} alt={event.title} className="w-full h-48 object-cover rounded-md" />
                       </div>
                     )}
                     
