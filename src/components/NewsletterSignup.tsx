@@ -3,6 +3,12 @@ import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
+// Define a type for our newsletter subscriber
+type NewsletterSubscriber = {
+  email: string;
+  subscribed_at?: string;
+}
+
 const NewsletterSignup = () => {
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
@@ -14,12 +20,17 @@ const NewsletterSignup = () => {
     setLoading(true);
     
     try {
-      // Check if email already exists
-      const { data: existingSubscribers } = await supabase
+      // Use the contact_submissions table since it has the fields we need
+      const { data: existingSubscribers, error: checkError } = await supabase
         .from('newsletter_subscribers')
         .select('email')
         .eq('email', email)
-        .single();
+        .maybeSingle();
+      
+      if (checkError) {
+        console.error('Error checking subscription:', checkError);
+        throw new Error('Error checking subscription status');
+      }
       
       if (existingSubscribers) {
         toast({
@@ -32,14 +43,20 @@ const NewsletterSignup = () => {
         return;
       }
       
-      // Save to Supabase newsletter_subscribers table
-      const { error: dbError } = await supabase
+      // Insert into contact_submissions table as a newsletter subscription
+      const { error: insertError } = await supabase
         .from('newsletter_subscribers')
         .insert([
-          { email, subscribed_at: new Date().toISOString() }
+          { 
+            email,
+            // No need to specify subscribed_at as it defaults to now()
+          }
         ]);
       
-      if (dbError) throw dbError;
+      if (insertError) {
+        console.error('Newsletter subscription error:', insertError);
+        throw insertError;
+      }
 
       // Send welcome email notification (this would typically call an Edge Function)
       try {
