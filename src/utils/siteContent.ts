@@ -1,12 +1,34 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
+export interface SiteContentSection {
+  content: string;
+  section: string;
+  id: string;
+  updated_at?: string;
+}
+
+// Cache for site content to reduce database queries
+let contentCache: Record<string, {
+  content: string;
+  timestamp: number;
+}> = {};
+
+// Cache TTL in milliseconds (5 minutes)
+const CACHE_TTL = 5 * 60 * 1000;
+
 /**
- * Gets content for a specific section from the site_content table
- * @param section The section identifier (e.g., 'home', 'about', 'services')
- * @returns Promise that resolves to the content HTML or null if not found
+ * Get content for a specific section from the database
  */
-export async function getSectionContent(section: string): Promise<string | null> {
+export async function getSectionContent(section: string): Promise<string> {
+  // Check cache first
+  const now = Date.now();
+  const cachedContent = contentCache[section];
+  
+  if (cachedContent && (now - cachedContent.timestamp < CACHE_TTL)) {
+    return cachedContent.content;
+  }
+
   try {
     const { data, error } = await supabase
       .from('site_content')
@@ -14,48 +36,39 @@ export async function getSectionContent(section: string): Promise<string | null>
       .eq('section', section)
       .single();
 
-    if (error || !data) {
-      console.error('Error fetching section content:', error);
-      return null;
-    }
-
-    return data.content;
-  } catch (err) {
-    console.error(`Error retrieving content for section ${section}:`, err);
-    return null;
-  }
-}
-
-/**
- * Updates content for a specific section in the site_content table
- * @param section The section identifier (e.g., 'home', 'about', 'services')
- * @param content The HTML content to save
- * @returns Promise that resolves to true if update was successful, false otherwise
- */
-export async function updateSectionContent(section: string, content: string): Promise<boolean> {
-  try {
-    const { error } = await supabase
-      .from('site_content')
-      .update({ content, updated_at: new Date().toISOString() })
-      .eq('section', section);
-
     if (error) {
-      console.error('Error updating section content:', error);
-      return false;
+      console.error(`Error fetching ${section} content:`, error);
+      return '';
     }
 
-    return true;
-  } catch (err) {
-    console.error(`Error updating content for section ${section}:`, err);
-    return false;
+    // Update cache
+    contentCache[section] = {
+      content: data?.content || '',
+      timestamp: now
+    };
+
+    return data?.content || '';
+  } catch (error) {
+    console.error(`Error in getSectionContent for ${section}:`, error);
+    return '';
   }
 }
 
 /**
- * Gets all site content sections and their content
- * @returns Promise that resolves to an array of site content objects
+ * Invalidate the cache for a specific section or all sections
  */
-export async function getAllSiteContent() {
+export function invalidateContentCache(section?: string) {
+  if (section) {
+    delete contentCache[section];
+  } else {
+    contentCache = {};
+  }
+}
+
+/**
+ * Get all site content sections
+ */
+export async function getAllSiteContent(): Promise<SiteContentSection[]> {
   try {
     const { data, error } = await supabase
       .from('site_content')
@@ -67,9 +80,40 @@ export async function getAllSiteContent() {
       return [];
     }
 
-    return data;
-  } catch (err) {
-    console.error('Error retrieving all site content:', err);
+    return data || [];
+  } catch (error) {
+    console.error('Error in getAllSiteContent:', error);
     return [];
   }
 }
+
+/**
+ * Update content for a specific section
+ */
+export async function updateSectionContent(section: string, content: string): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('site_content')
+      .upsert({ section, content, updated_at: new Date().toISOString() });
+
+    if (error) {
+      console.error(`Error updating ${section} content:`, error);
+      return false;
+    }
+
+    // Invalidate cache for this section
+    invalidateContentCache(section);
+    
+    return true;
+  } catch (error) {
+    console.error(`Error in updateSectionContent for ${section}:`, error);
+    return false;
+  }
+}
+
+export default {
+  getSectionContent,
+  getAllSiteContent,
+  updateSectionContent,
+  invalidateContentCache
+};

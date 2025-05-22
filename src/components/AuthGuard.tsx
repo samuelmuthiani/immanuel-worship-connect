@@ -7,9 +7,10 @@ import { Loader2 } from 'lucide-react';
 interface AuthGuardProps {
   children: React.ReactNode;
   requiredRole?: string;
+  adminOnly?: boolean;
 }
 
-const AuthGuard: React.FC<AuthGuardProps> = ({ children, requiredRole }) => {
+const AuthGuard: React.FC<AuthGuardProps> = ({ children, requiredRole, adminOnly = false }) => {
   const { user, loading, hasRole } = useAuth();
   const location = useLocation();
 
@@ -34,8 +35,19 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children, requiredRole }) => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
+  // Special case for admin emails
+  const adminEmails = ['admin@iwc.com', 'samuel.watho@gmail.com'];
+  if (adminEmails.includes(user.email || '') && adminOnly) {
+    return <>{children}</>;
+  }
+
+  // Admin only page check
+  if (adminOnly && !hasRole('admin')) {
+    return <Navigate to="/member" replace />;
+  }
+
   // Role-based access check
-  if (requiredRole && !hasRole(requiredRole)) {
+  if (requiredRole && !hasRole(requiredRole) && !hasRole('admin')) {
     return <Navigate to="/" replace />;
   }
 

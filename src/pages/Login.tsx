@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -8,22 +10,59 @@ const Login = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { toast } = useToast();
+
+  // Check existing session
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        // Check if admin
+        const adminEmails = ['admin@iwc.com', 'samuel.watho@gmail.com'];
+        if (data.session.user && adminEmails.includes(data.session.user.email || '')) {
+          navigate('/admin');
+        } else {
+          navigate('/member');
+        }
+      }
+    };
+    checkSession();
+  }, [navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
-    if (error) setError(error.message);
-    else {
+    
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      
+      if (error) throw error;
+      
       // Check if admin
       const adminEmails = ['admin@iwc.com', 'samuel.watho@gmail.com'];
-      if (data.user && adminEmails.includes(data.user.email)) {
+      if (data.user && adminEmails.includes(data.user.email || '')) {
         navigate('/admin');
+        toast({
+          title: "Welcome, Admin",
+          description: "You have been logged in as an administrator.",
+        });
       } else {
         navigate('/member');
+        toast({
+          title: "Login Successful",
+          description: "Welcome to the member area.",
+        });
       }
+    } catch (err: any) {
+      setError(err.message || "Failed to login.");
+      toast({
+        title: "Login Failed",
+        description: err.message || "Please check your credentials and try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 

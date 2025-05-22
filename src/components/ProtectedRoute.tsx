@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,9 +7,14 @@ import { useToast } from "@/hooks/use-toast";
 interface ProtectedRouteProps {
   children: React.ReactNode;
   requiredRole?: string;
+  adminOnly?: boolean;
 }
 
-export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole }) => {
+export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
+  children, 
+  requiredRole,
+  adminOnly = false 
+}) => {
   const [loading, setLoading] = useState(true);
   const [authorized, setAuthorized] = useState(false);
   const navigate = useNavigate();
@@ -34,9 +38,19 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requir
           }
           return;
         }
+
+        // Special handling for admin emails
+        const adminEmails = ['admin@iwc.com', 'samuel.watho@gmail.com'];
+        if (adminEmails.includes(user.email || '') && adminOnly) {
+          if (isMounted) {
+            setAuthorized(true);
+            setLoading(false);
+          }
+          return;
+        }
         
-        // If no specific role required, just being logged in is sufficient
-        if (!requiredRole) {
+        // If no specific role required and not admin-only page, just being logged in is sufficient
+        if (!requiredRole && !adminOnly) {
           if (isMounted) {
             setAuthorized(true);
             setLoading(false);
@@ -63,23 +77,48 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requir
             });
             navigate('/login', { replace: true });
           } else {
-            // Check if user has the required role
-            const hasRequiredRole = requiredRole ? 
-              roles.some(r => r.role === requiredRole || r.role === 'admin') : 
-              true;
+            // If this is admin-only page, check for admin role
+            if (adminOnly) {
+              const isAdmin = roles.some(r => r.role === 'admin');
               
-            if (hasRequiredRole) {
+              if (isAdmin) {
+                setAuthorized(true);
+                setLoading(false);
+              } else {
+                setAuthorized(false);
+                setLoading(false);
+                toast({
+                  title: "Access Denied",
+                  description: "Only administrators can access this area.",
+                  variant: "destructive",
+                });
+                navigate('/member', { replace: true });
+              }
+            } 
+            // Otherwise check for the required role
+            else if (requiredRole) {
+              // Check if user has the required role
+              const hasRequiredRole = roles.some(r => 
+                r.role === requiredRole || r.role === 'admin'
+              );
+              
+              if (hasRequiredRole) {
+                setAuthorized(true);
+                setLoading(false);
+              } else {
+                setAuthorized(false);
+                setLoading(false);
+                toast({
+                  title: "Access Denied",
+                  description: `You need ${requiredRole} access to view this page.`,
+                  variant: "destructive",
+                });
+                navigate('/', { replace: true });
+              }
+            } else {
+              // User has some role, and no specific role is required
               setAuthorized(true);
               setLoading(false);
-            } else {
-              setAuthorized(false);
-              setLoading(false);
-              toast({
-                title: "Access Denied",
-                description: `You need ${requiredRole} access to view this page.`,
-                variant: "destructive",
-              });
-              navigate('/', { replace: true });
             }
           }
         }
@@ -101,7 +140,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requir
     checkAuth();
     
     return () => { isMounted = false; };
-  }, [navigate, requiredRole, toast]);
+  }, [navigate, requiredRole, adminOnly, toast]);
 
   if (loading) {
     return (
