@@ -27,6 +27,140 @@ export type Database = {
         }
         Relationships: []
       }
+      audit_logs: {
+        Row: {
+          action: string
+          details: Json | null
+          id: string
+          target: string | null
+          timestamp: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          details?: Json | null
+          id?: string
+          target?: string | null
+          timestamp?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          details?: Json | null
+          id?: string
+          target?: string | null
+          timestamp?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      blog_posts: {
+        Row: {
+          author_id: string | null
+          content: string
+          id: string
+          published_at: string | null
+          title: string
+        }
+        Insert: {
+          author_id?: string | null
+          content: string
+          id?: string
+          published_at?: string | null
+          title: string
+        }
+        Update: {
+          author_id?: string | null
+          content?: string
+          id?: string
+          published_at?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
+      contact_submissions: {
+        Row: {
+          email: string
+          id: string
+          message: string
+          name: string
+          subject: string | null
+          submitted_at: string | null
+        }
+        Insert: {
+          email: string
+          id?: string
+          message: string
+          name: string
+          subject?: string | null
+          submitted_at?: string | null
+        }
+        Update: {
+          email?: string
+          id?: string
+          message?: string
+          name?: string
+          subject?: string | null
+          submitted_at?: string | null
+        }
+        Relationships: []
+      }
+      donor_thank_yous: {
+        Row: {
+          id: string
+          message: string
+          name: string
+          org: string | null
+          submitted_at: string | null
+        }
+        Insert: {
+          id?: string
+          message: string
+          name: string
+          org?: string | null
+          submitted_at?: string | null
+        }
+        Update: {
+          id?: string
+          message?: string
+          name?: string
+          org?: string | null
+          submitted_at?: string | null
+        }
+        Relationships: []
+      }
+      event_registrations: {
+        Row: {
+          email: string
+          event_id: string | null
+          id: string
+          name: string
+          registered_at: string | null
+        }
+        Insert: {
+          email: string
+          event_id?: string | null
+          id?: string
+          name: string
+          registered_at?: string | null
+        }
+        Update: {
+          email?: string
+          event_id?: string | null
+          id?: string
+          name?: string
+          registered_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_registrations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
           category: string | null
@@ -39,7 +173,6 @@ export type Database = {
           registration_required: boolean | null
           title: string
           updated_at: string | null
-          image_url?: string | null // <-- Added for event image support
         }
         Insert: {
           category?: string | null
@@ -52,7 +185,6 @@ export type Database = {
           registration_required?: boolean | null
           title: string
           updated_at?: string | null
-          image_url?: string | null // <-- Added for event image support
         }
         Update: {
           category?: string | null
@@ -65,135 +197,65 @@ export type Database = {
           registration_required?: boolean | null
           title?: string
           updated_at?: string | null
-          image_url?: string | null // <-- Added for event image support
         }
         Relationships: []
       }
-      contact_submissions: {
+      media_photos: {
         Row: {
+          caption: string | null
           id: string
-          name: string | null
-          email: string | null
-          message: string | null
-          submitted_at: string | null
+          uploaded_at: string | null
+          url: string
         }
         Insert: {
+          caption?: string | null
           id?: string
-          name?: string | null
-          email?: string | null
-          message?: string | null
-          submitted_at?: string | null
+          uploaded_at?: string | null
+          url: string
         }
         Update: {
+          caption?: string | null
           id?: string
-          name?: string | null
-          email?: string | null
-          message?: string | null
-          submitted_at?: string | null
+          uploaded_at?: string | null
+          url?: string
         }
         Relationships: []
       }
-      donor_thank_yous: {
+      media_videos: {
         Row: {
           id: string
-          name: string | null
-          org: string | null
-          message: string | null
-          submitted_at: string | null
+          title: string | null
+          uploaded_at: string | null
+          url: string
         }
         Insert: {
           id?: string
-          name?: string | null
-          org?: string | null
-          message?: string | null
-          submitted_at?: string | null
+          title?: string | null
+          uploaded_at?: string | null
+          url: string
         }
         Update: {
           id?: string
-          name?: string | null
-          org?: string | null
-          message?: string | null
-          submitted_at?: string | null
-        }
-        Relationships: []
-      }
-      event_registrations: {
-        Row: {
-          id: string
-          event_id: string
-          name: string
-          email: string
-          phone: string | null
-          guests: number | null
-          message: string | null
-          registered_at: string | null
-        }
-        Insert: {
-          id?: string
-          event_id: string
-          name: string
-          email: string
-          phone?: string | null
-          guests?: number | null
-          message?: string | null
-          registered_at?: string | null
-        }
-        Update: {
-          id?: string
-          event_id?: string
-          name?: string
-          email?: string
-          phone?: string | null
-          guests?: number | null
-          message?: string | null
-          registered_at?: string | null
+          title?: string | null
+          uploaded_at?: string | null
+          url?: string
         }
         Relationships: []
       }
       user_roles: {
         Row: {
-          id: string
-          user_id: string
           role: string
-          assigned_at: string | null
+          user_id: string
         }
         Insert: {
-          id?: string
-          user_id: string
           role: string
-          assigned_at?: string | null
+          user_id: string
         }
         Update: {
-          id?: string
-          user_id?: string
           role?: string
-          assigned_at?: string | null
+          user_id?: string
         }
         Relationships: []
-      }
-      audit_logs: {
-        Row: {
-          id: string;
-          user_id: string;
-          action: string;
-          details: string | null;
-          created_at: string | null;
-        };
-        Insert: {
-          id?: string;
-          user_id: string;
-          action: string;
-          details?: string | null;
-          created_at?: string | null;
-        };
-        Update: {
-          id?: string;
-          user_id?: string;
-          action?: string;
-          details?: string | null;
-          created_at?: string | null;
-        };
-        Relationships: [];
       }
     }
     Views: {
@@ -222,7 +284,7 @@ export type Tables<
   }
     ? keyof (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never,
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
   ? (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
       Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
