@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -10,6 +11,7 @@ import Services from "./pages/Services";
 import Events from "./pages/Events";
 import Media from "./pages/Media";
 import Blog from "./pages/Blog";
+import Sermons from "./pages/Sermons";  // New Sermons page
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import Contact from "./pages/Contact";
@@ -47,6 +49,7 @@ const App = () => {
             <Route path="/events" element={<Events />} />
             <Route path="/media" element={<Media />} />
             <Route path="/blog" element={<Blog />} />
+            <Route path="/sermons" element={<Sermons />} />  {/* New Sermons route */}
             <Route path="/donate" element={<Donate />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/privacy" element={<Privacy />} />
