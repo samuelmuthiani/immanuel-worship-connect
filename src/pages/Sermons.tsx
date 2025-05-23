@@ -5,7 +5,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { Search, Calendar, User, Tag, Play, Download, Share2, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
 
 interface Sermon {
   id: string;
@@ -105,14 +104,46 @@ const Sermons = () => {
     const fetchSermons = async () => {
       setLoading(true);
       try {
-        // Try to fetch sermons from database
+        // Try to fetch sermons from database - using site_content table instead of non-existent sermons table
         const { data, error } = await supabase
-          .from('sermons')
+          .from('site_content')
           .select('*')
-          .order('date', { ascending: false });
+          .eq('section', 'sermons');
           
         if (data && data.length > 0) {
-          setSermons(data);
+          // Parse the content field which should contain serialized sermon data
+          try {
+            const parsedData = data.map(item => {
+              try {
+                const content = JSON.parse(item.content);
+                return {
+                  id: item.id,
+                  title: content.title || 'Untitled Sermon',
+                  speaker: content.speaker || 'Unknown Speaker',
+                  date: content.date || new Date().toISOString(),
+                  thumbnail: content.thumbnail || 'https://images.unsplash.com/photo-1571275293295-43b3cb72e8a7?q=80&w=400',
+                  duration: content.duration || '00:00',
+                  series: content.series || 'General',
+                  topic: content.topic || 'Faith',
+                  video_url: content.video_url,
+                  audio_url: content.audio_url
+                };
+              } catch (e) {
+                console.error('Error parsing sermon content:', e);
+                return null;
+              }
+            }).filter(Boolean) as Sermon[];
+            
+            if (parsedData.length > 0) {
+              setSermons(parsedData);
+            } else {
+              // Fallback to sample data if no valid parsed data
+              setSermons(sampleSermons);
+            }
+          } catch (parseError) {
+            console.error('Error parsing sermon data:', parseError);
+            setSermons(sampleSermons);
+          }
         } else {
           // Use sample data if no sermons in database
           setSermons(sampleSermons);

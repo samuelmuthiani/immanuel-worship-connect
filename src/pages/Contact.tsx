@@ -1,11 +1,11 @@
-
 import React, { useState } from 'react';
 import Layout from '@/components/Layout';
-import { Mail, Phone, Map, Send, Mail as MailIcon, ArrowRight, Clock } from 'lucide-react';
+import { Mail, Phone, Map, Send, Mail as MailIcon, ArrowRight, Clock, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from '@/integrations/supabase/client';
+import { Link } from 'react-router-dom';
 
 const Contact = () => {
   const [activeTab, setActiveTab] = useState<string>("contact");
