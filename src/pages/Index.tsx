@@ -4,12 +4,16 @@ import Layout from '@/components/Layout';
 import HeroSection from '@/components/HeroSection';
 import EventsPreviewSection from '@/components/EventsPreviewSection';
 import NewsletterSignup from '@/components/NewsletterSignup';
+import AboutSection from '@/components/AboutSection';
 
 const Index = () => {
   return (
     <Layout>
       {/* Modern Hero Section with background, heading, and CTAs */}
       <HeroSection />
+
+      {/* About Section Preview */}
+      <AboutSection />
 
       {/* Events Preview Section */}
       <EventsPreviewSection />
