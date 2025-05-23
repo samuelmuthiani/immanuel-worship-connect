@@ -67,6 +67,15 @@ const AdminDashboard = () => {
           </div>
         </div>
         
+        <div className="container mx-auto mt-8">
+          <Card>
+            <CardContent className="p-6">
+              <h2 className="text-xl font-semibold mb-2">Welcome, Admin!</h2>
+              <p>This is your dashboard. Add widgets, stats, or management tools here.</p>
+            </CardContent>
+          </Card>
+        </div>
+        
         {/* Rest of dashboard content */}
       </div>
     </ProtectedRoute>

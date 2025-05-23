@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getSectionContent } from '@/utils/siteContent';
@@ -40,7 +39,7 @@ const HeroSection = () => {
   }, []);
 
   return (
-    <div ref={heroRef} className="relative h-[70vh] flex items-center transition-all duration-1000 opacity-0 translate-y-10">
+    <div ref={heroRef} className="relative h-[70vh] flex items-center transition-all duration-1000 opacity-100 bg-gradient-to-r from-indigo-700 to-blue-500">
       {cmsContent ? (
         <div className="container mx-auto px-4 z-10 w-full prose prose-invert max-w-3xl text-white" dangerouslySetInnerHTML={{ __html: cmsContent }} />
       ) : (
