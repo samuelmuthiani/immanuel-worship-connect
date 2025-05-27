@@ -108,20 +108,52 @@ function ProfileUpdateForm({ user }: { user: any }) {
 }
 
 // Member Involvement Dashboard component
-function MemberInvolvementDashboard({ rsvpHistory }: { rsvpHistory: any[] }) {
-  // Mock donation data
-  const [donations] = useState([
-    { id: 'd1', date: '2024-12-01', amount: 2000, method: 'M-Pesa', note: 'Tithe' },
-    { id: 'd2', date: '2025-01-15', amount: 1500, method: 'Bank', note: 'Offering' },
-    { id: 'd3', date: '2025-03-10', amount: 5000, method: 'M-Pesa', note: 'Building Fund' },
-  ]);
+function MemberInvolvementDashboard({ user }: { user: any }) {
+  const [donations, setDonations] = useState<any[]>([]);
   const [donationSort, setDonationSort] = useState<'date'|'amount'>('date');
+  const [events, setEvents] = useState<any[]>([]);
   const [eventSort, setEventSort] = useState<'date'|'name'>('date');
-  // For demo, RSVP history has no date, so just sort by name
+
+  useEffect(() => {
+    // Fetch donations for this user
+    const fetchDonations = async () => {
+      if (!user?.id) return;
+      // If you don't have a donations table, skip this fetch
+      try {
+        const { data, error } = await supabase
+          .from('donor_thank_yous') // fallback to donor_thank_yous if no donations table
+          .select('*')
+          .eq('name', user.user_metadata?.name || user.email)
+          .order('submitted_at', { ascending: false });
+        if (!error && data) setDonations(data);
+        else setDonations([]);
+      } catch {
+        setDonations([]);
+      }
+    };
+    // Fetch event registrations for this user
+    const fetchEvents = async () => {
+      if (!user?.email) return;
+      try {
+        const { data, error } = await supabase
+          .from('event_registrations')
+          .select('*')
+          .eq('email', user.email)
+          .order('registered_at', { ascending: false });
+        if (!error && data) setEvents(data);
+        else setEvents([]);
+      } catch {
+        setEvents([]);
+      }
+    };
+    fetchDonations();
+    fetchEvents();
+  }, [user]);
+
   const sortedDonations = [...donations].sort((a, b) =>
-    donationSort === 'date' ? b.date.localeCompare(a.date) : b.amount - a.amount
+    donationSort === 'date' ? (b.submitted_at || '').localeCompare(a.submitted_at || '') : (b.amount || 0) - (a.amount || 0)
   );
-  const sortedEvents = [...rsvpHistory].sort((a, b) =>
+  const sortedEvents = [...events].sort((a, b) =>
     eventSort === 'name' ? (a.name||'').localeCompare(b.name||'') : 0
   );
   return (
@@ -142,9 +174,9 @@ function MemberInvolvementDashboard({ rsvpHistory }: { rsvpHistory: any[] }) {
           <ul className="divide-y">
             {sortedDonations.map(d => (
               <li key={d.id} className="py-2 flex flex-col">
-                <span className="font-mono text-sm">{d.date}</span>
-                <span className="font-bold text-lg text-iwc-blue">KES {d.amount.toLocaleString()}</span>
-                <span className="text-xs">{d.method} &ndash; {d.note}</span>
+                <span className="font-mono text-sm">{d.submitted_at ? new Date(d.submitted_at).toLocaleDateString() : ''}</span>
+                <span className="font-bold text-lg text-iwc-blue">{d.amount ? `KES ${d.amount.toLocaleString()}` : d.message}</span>
+                <span className="text-xs">{d.org || d.note}</span>
               </li>
             ))}
           </ul>
@@ -165,8 +197,8 @@ function MemberInvolvementDashboard({ rsvpHistory }: { rsvpHistory: any[] }) {
           <ul className="divide-y">
             {sortedEvents.map((e, idx) => (
               <li key={idx} className="py-2 flex flex-col">
-                <span className="font-bold">{e.name || e.eventId}</span>
-                <span className="text-xs font-mono">Event ID: {e.eventId}</span>
+                <span className="font-bold">{e.name || e.event_id}</span>
+                <span className="text-xs font-mono">Event ID: {e.event_id}</span>
               </li>
             ))}
           </ul>
@@ -180,9 +212,9 @@ function MemberInvolvementDashboard({ rsvpHistory }: { rsvpHistory: any[] }) {
 function ExclusiveContentSection() {
   // Demo: list of exclusive resources
   const resources = [
-    { id: 1, title: 'Monthly Devotional (PDF)', url: '/public/placeholder.svg' },
+    { id: 1, title: 'Monthly Devotional (PDF)', url: '/placeholder.svg' },
     { id: 2, title: 'Special Sermon Video', url: '/media' },
-    { id: 3, title: 'Prayer Guide', url: '/public/placeholder.svg' },
+    { id: 3, title: 'Prayer Guide', url: '/placeholder.svg' },
   ];
   return (
     <ul className="list-disc pl-6">
@@ -200,20 +232,27 @@ const MemberArea = () => {
   const [loading, setLoading] = useState(true);
   const [showResend, setShowResend] = useState(false);
   const [resent, setResent] = useState(false);
-  const [rsvpHistory, setRsvpHistory] = useState<any[]>([]);
-  const [rsvpSearch, setRsvpSearch] = useState('');
-  const [rsvpPage, setRsvpPage] = useState(1);
   const [activeSection, setActiveSection] = useState('profile');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const navigate = useNavigate();
-  const RSVPS_PER_PAGE = 5;
 
-  // Sidebar navigation items
+  // Admin role state
+  const [isAdmin, setIsAdmin] = useState(false);
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data } = await supabase.from('user_roles').select('role').eq('user_id', user.id);
+      setIsAdmin(!!data?.find((r: any) => r.role === 'admin'));
+    })();
+  }, [user]);
+
+  // Sidebar navigation items (admin link conditional)
   const navItems = [
     { key: 'profile', label: 'Profile', icon: <FaUserCircle className="inline mr-2" /> },
     { key: 'dashboard', label: 'Dashboard', icon: <FaTachometerAlt className="inline mr-2" /> },
     { key: 'resources', label: 'Resources', icon: <FaFileAlt className="inline mr-2" /> },
     { key: 'exclusive', label: 'Exclusive', icon: <FaLock className="inline mr-2" /> },
+    ...(isAdmin ? [{ key: 'admin', label: 'Admin', icon: <FaGift className="inline mr-2" /> }] : [])
   ];
 
   useEffect(() => {
@@ -231,17 +270,6 @@ const MemberArea = () => {
       setLoading(false);
     };
     getUser();
-    // Load RSVP history from localStorage (for now)
-    const registrations = JSON.parse(localStorage.getItem('eventRegistrations') || '{}');
-    supabase.auth.getUser().then(({ data }) => {
-      const email = data.user?.email;
-      if (email) {
-        const history = Object.entries(registrations)
-          .filter(([_, reg]: any) => reg.email === email)
-          .map(([eventId, reg]: any) => ({ eventId, ...reg }));
-        setRsvpHistory(history);
-      }
-    });
   }, [navigate]);
 
   const handleLogout = async () => {
@@ -287,13 +315,7 @@ const MemberArea = () => {
     <>
       <div className="flex flex-col items-center md:mb-8 w-full">
         <div className="mb-2">
-          <Avatar className="w-16 h-16 border-2 border-iwc-blue">
-            {user.user_metadata?.avatar_url ? (
-              <AvatarImage src={user.user_metadata.avatar_url} alt="Profile" />
-            ) : (
-              <AvatarFallback><FaUserCircle className="w-12 h-12 text-iwc-blue" /></AvatarFallback>
-            )}
-          </Avatar>
+          <img src="/iwc-logo.png" alt="Immanuel Worship Centre Logo" className="w-20 h-20 object-contain rounded-full border-4 border-iwc-blue bg-white shadow" />
         </div>
         <div className="font-semibold text-lg text-iwc-blue">{user.user_metadata?.name || 'Member'}</div>
         <div className="text-xs text-gray-500 mb-2">{user.email}</div>
@@ -304,7 +326,13 @@ const MemberArea = () => {
             key={item.key}
             variant={activeSection === item.key ? 'default' : 'ghost'}
             className={`flex items-center px-4 py-2 rounded transition-colors w-full text-left font-medium focus:outline-none focus:ring-2 focus:ring-iwc-blue ${activeSection === item.key ? 'bg-iwc-blue text-white' : 'hover:bg-iwc-orange/20 text-iwc-blue'}`}
-            onClick={() => { setActiveSection(item.key); setDrawerOpen(false); }}
+            onClick={() => {
+              if (item.key === 'admin') {
+                navigate('/admin-dashboard');
+                return;
+              }
+              setActiveSection(item.key); setDrawerOpen(false);
+            }}
             aria-current={activeSection === item.key ? 'page' : undefined}
           >
             {item.icon}{item.label}
@@ -361,7 +389,7 @@ const MemberArea = () => {
         {activeSection === 'dashboard' && (
           <section aria-labelledby="dashboard-heading" className="mb-12">
             <h2 id="dashboard-heading" className="text-2xl font-bold mb-6 flex items-center"><FaTachometerAlt className="mr-2" />Involvement Dashboard</h2>
-            <MemberInvolvementDashboard rsvpHistory={rsvpHistory} />
+            <MemberInvolvementDashboard user={user} />
           </section>
         )}
         {/* Resources Section */}
@@ -370,9 +398,11 @@ const MemberArea = () => {
             <h2 id="resources-heading" className="text-2xl font-bold mb-6 flex items-center"><FaFileAlt className="mr-2" />Member Resources</h2>
             <Card className="rounded-lg shadow p-6">
               <ul className="list-disc pl-6">
-                <li><a href="/public/placeholder.svg" download className="text-iwc-blue hover:underline">Download Welcome Pack (PDF)</a></li>
+                <li><a href="/iwc-welcome-pack.pdf" download className="text-iwc-blue hover:underline">Download Welcome Pack (PDF)</a></li>
                 <li><a href="/media" className="text-iwc-blue hover:underline">Access Media Gallery</a></li>
                 <li><a href="/blog" className="text-iwc-blue hover:underline">Read Member Blog</a></li>
+                <li><a href="/iwc-annual-report.pdf" download className="text-iwc-blue hover:underline">Annual Report (PDF)</a></li>
+                <li><a href="/iwc-child-sponsorship.pdf" download className="text-iwc-blue hover:underline">Child Sponsorship Info (PDF)</a></li>
               </ul>
             </Card>
           </section>
