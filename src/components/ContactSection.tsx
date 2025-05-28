@@ -2,7 +2,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getSectionContent } from '@/utils/siteContent';
-import { saveContactSubmission } from '@/utils/storage';
+import { saveContactSubmission } from '@/utils/supabaseStorage';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
 import { Phone, Mail, MapPin, Clock, Send } from 'lucide-react';
