@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { getSectionContent } from '@/utils/siteContent';
 import { saveContactSubmission } from '@/utils/storage';
 import { useToast } from '@/hooks/use-toast';
-import { Card, CardContent } from '@/components/ui/Card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Phone, Mail, MapPin, Clock, Send } from 'lucide-react';
 
 const ContactSection = () => {
