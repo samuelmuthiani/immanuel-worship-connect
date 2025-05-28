@@ -101,8 +101,8 @@ const ContactSection = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
               {/* Contact Cards */}
-              <Card hover className="text-center">
-                <CardContent>
+              <Card className="text-center hover:shadow-lg transition-shadow duration-300">
+                <CardContent className="p-8">
                   <div className="bg-iwc-blue/10 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
                     <Phone className="h-8 w-8 text-iwc-blue" />
                   </div>
@@ -112,8 +112,8 @@ const ContactSection = () => {
                 </CardContent>
               </Card>
 
-              <Card hover className="text-center">
-                <CardContent>
+              <Card className="text-center hover:shadow-lg transition-shadow duration-300">
+                <CardContent className="p-8">
                   <div className="bg-iwc-orange/10 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
                     <Mail className="h-8 w-8 text-iwc-orange" />
                   </div>
@@ -123,8 +123,8 @@ const ContactSection = () => {
                 </CardContent>
               </Card>
 
-              <Card hover className="text-center">
-                <CardContent>
+              <Card className="text-center hover:shadow-lg transition-shadow duration-300">
+                <CardContent className="p-8">
                   <div className="bg-iwc-gold/10 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
                     <MapPin className="h-8 w-8 text-iwc-gold" />
                   </div>
@@ -138,7 +138,7 @@ const ContactSection = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
               {/* Contact Form */}
               <Card>
-                <CardContent>
+                <CardContent className="p-8">
                   <h3 className="text-xl font-semibold mb-6 text-gray-900">Send us a Message</h3>
                   <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -199,7 +199,7 @@ const ContactSection = () => {
               {/* Service Times & Info */}
               <div className="space-y-6">
                 <Card>
-                  <CardContent>
+                  <CardContent className="p-6">
                     <div className="flex items-center mb-4">
                       <Clock className="h-6 w-6 text-iwc-blue mr-3" />
                       <h3 className="text-xl font-semibold">Service Times</h3>
