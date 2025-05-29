@@ -1,5 +1,8 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
+
+type TableName = keyof Database['public']['Tables'];
 
 // Export data to CSV format
 export const exportToCSV = (data: any[], filename: string) => {
@@ -60,7 +63,7 @@ export const getDashboardAnalytics = async () => {
 };
 
 // Bulk operations
-export const bulkDeleteItems = async (table: string, ids: string[]) => {
+export const bulkDeleteItems = async (table: TableName, ids: string[]) => {
   try {
     const { error } = await supabase
       .from(table)
