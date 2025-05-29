@@ -1,113 +1,106 @@
 
 import React, { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Mail, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-
-// Define a type for our newsletter subscriber
-type NewsletterSubscriber = {
-  email: string;
-  subscribed_at?: string;
-}
+import { saveNewsletterSubscription } from '@/utils/storage';
 
 const NewsletterSignup = () => {
   const [email, setEmail] = useState('');
-  const [submitted, setSubmitted] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubscribed, setIsSubscribed] = useState(false);
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     
-    try {
-      // Use the contact_submissions table since it has the fields we need
-      const { data: existingSubscribers, error: checkError } = await supabase
-        .from('newsletter_subscribers')
-        .select('email')
-        .eq('email', email)
-        .maybeSingle();
-      
-      if (checkError) {
-        console.error('Error checking subscription:', checkError);
-        throw new Error('Error checking subscription status');
-      }
-      
-      if (existingSubscribers) {
-        toast({
-          title: "Already subscribed",
-          description: "This email is already subscribed to our newsletter.",
-          variant: "default",
-        });
-        setSubmitted(true);
-        setLoading(false);
-        return;
-      }
-      
-      // Insert into contact_submissions table as a newsletter subscription
-      const { error: insertError } = await supabase
-        .from('newsletter_subscribers')
-        .insert([
-          { 
-            email,
-            // No need to specify subscribed_at as it defaults to now()
-          }
-        ]);
-      
-      if (insertError) {
-        console.error('Newsletter subscription error:', insertError);
-        throw insertError;
-      }
-
-      // Send welcome email notification (this would typically call an Edge Function)
-      try {
-        await fetch('/api/send-newsletter-welcome', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email })
-        });
-      } catch (emailError) {
-        console.log('Welcome email could not be sent, but subscription was successful');
-      }
-      
-      setSubmitted(true);
+    if (!email.trim()) {
       toast({
-        title: "Subscription successful!",
-        description: "Thank you for subscribing to our newsletter.",
-        variant: "default",
+        title: 'Error',
+        description: 'Please enter a valid email address.',
+        variant: 'destructive'
       });
-    } catch (err: any) {
-      console.error('Newsletter subscription error:', err);
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const result = await saveNewsletterSubscription(email.trim());
+      
+      if (result.success) {
+        setIsSubscribed(true);
+        setEmail('');
+        toast({
+          title: 'Successfully Subscribed!',
+          description: 'Thank you for joining our newsletter. You\'ll receive updates and inspiration from our community.',
+        });
+      } else {
+        throw new Error('Failed to subscribe');
+      }
+    } catch (error) {
+      console.error('Error subscribing to newsletter:', error);
       toast({
-        title: "Subscription failed",
-        description: "Please try again later.",
-        variant: "destructive",
+        title: 'Subscription Failed',
+        description: 'There was an error subscribing to our newsletter. Please try again.',
+        variant: 'destructive'
       });
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
+  if (isSubscribed) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+        <div className="w-16 h-16 bg-green-100 dark:bg-green-900/40 rounded-full flex items-center justify-center mb-4">
+          <Check className="h-8 w-8 text-green-600 dark:text-green-400" />
+        </div>
+        <h3 className="text-lg font-semibold text-green-800 dark:text-green-200 mb-2">
+          Welcome to Our Newsletter!
+        </h3>
+        <p className="text-green-700 dark:text-green-300 text-center">
+          You're now subscribed and will receive our latest updates, event announcements, and weekly inspiration.
+        </p>
+        <Button 
+          onClick={() => setIsSubscribed(false)}
+          variant="outline"
+          className="mt-4 border-green-300 text-green-700 hover:bg-green-100 dark:border-green-600 dark:text-green-300 dark:hover:bg-green-900/40"
+        >
+          Subscribe Another Email
+        </Button>
+      </div>
+    );
+  }
+
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2 mt-4" aria-label="Newsletter Signup">
-      <input
-        type="email"
-        required
-        placeholder="Your email"
-        value={email}
-        onChange={e => setEmail(e.target.value)}
-        className="px-4 py-2 rounded-md border border-gray-300"
-        aria-label="Email address"
-        disabled={submitted || loading}
-      />
-      <button
-        type="submit"
-        className="bg-iwc-orange hover:bg-iwc-red text-white font-bold px-6 py-2 rounded-md"
-        disabled={submitted || loading}
-        aria-disabled={submitted || loading}
-      >
-        {loading ? "Subscribing..." : submitted ? "Subscribed!" : "Subscribe"}
-      </button>
-    </form>
+    <div className="w-full max-w-md mx-auto">
+      <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3">
+        <div className="flex-1 relative">
+          <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Input
+            type="email"
+            placeholder="Enter your email address"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            disabled={isSubmitting}
+            className="pl-10 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-iwc-blue focus:border-iwc-blue"
+          />
+        </div>
+        <Button
+          type="submit"
+          disabled={isSubmitting}
+          className="bg-iwc-blue hover:bg-iwc-orange text-white font-semibold px-6 py-2 transition-colors whitespace-nowrap"
+        >
+          {isSubmitting ? 'Subscribing...' : 'Subscribe'}
+        </Button>
+      </form>
+      <p className="text-xs text-gray-500 dark:text-gray-400 mt-3 text-center">
+        We respect your privacy. Unsubscribe at any time.
+      </p>
+    </div>
   );
 };
 

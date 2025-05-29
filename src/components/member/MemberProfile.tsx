@@ -1,15 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { User, Edit, Save, X, Upload, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { User, Mail, Phone, MapPin, Calendar, Edit2, Save, X } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { EnhancedCard, CardContent, CardHeader, CardTitle } from '@/components/ui/enhanced-card';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 import { getUserProfile, updateUserProfile } from '@/utils/storage';
 
 interface ProfileData {
@@ -23,234 +20,334 @@ interface ProfileData {
 }
 
 export function MemberProfile() {
-  const [profile, setProfile] = useState<ProfileData>({});
-  const [isEditing, setIsEditing] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
+  const [isEditing, setIsEditing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [profileData, setProfileData] = useState<ProfileData>({
+    first_name: '',
+    last_name: '',
+    phone: '',
+    date_of_birth: '',
+    address: '',
+    avatar_url: '',
+    bio: ''
+  });
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      const profileData = await getUserProfile();
-      if (profileData) {
-        setProfile(profileData);
+    if (user) {
+      loadProfile();
+    }
+  }, [user]);
+
+  const loadProfile = async () => {
+    try {
+      setIsLoading(true);
+      const profile = await getUserProfile();
+      if (profile) {
+        setProfileData(profile);
       }
-      setLoading(false);
-    };
-    fetchProfile();
-  }, []);
+    } catch (error) {
+      console.error('Error loading profile:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load profile data.',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setProfileData(prev => ({ ...prev, [name]: value }));
+  };
 
   const handleSave = async () => {
-    setSaving(true);
-    const result = await updateUserProfile(profile);
-    
-    if (result.success) {
+    if (!user) return;
+
+    try {
+      setIsLoading(true);
+      const result = await updateUserProfile(profileData);
+      
+      if (result.success) {
+        setIsEditing(false);
+        toast({
+          title: 'Success',
+          description: 'Profile updated successfully!',
+        });
+      } else {
+        throw new Error('Failed to update profile');
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
       toast({
-        title: "Profile Updated",
-        description: "Your profile has been successfully updated."
+        title: 'Error',
+        description: 'Failed to update profile. Please try again.',
+        variant: 'destructive'
       });
-      setIsEditing(false);
-    } else {
-      toast({
-        title: "Error",
-        description: "Failed to update profile. Please try again.",
-        variant: "destructive"
-      });
+    } finally {
+      setIsLoading(false);
     }
-    setSaving(false);
   };
 
   const handleCancel = () => {
     setIsEditing(false);
-    // Reset form data if needed
+    loadProfile(); // Reset to original data
   };
 
-  if (loading) {
+  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // In a real app, you'd upload to a file storage service
+      // For now, we'll just create a local URL for preview
+      const url = URL.createObjectURL(file);
+      setProfileData(prev => ({ ...prev, avatar_url: url }));
+      
+      toast({
+        title: 'Avatar Updated',
+        description: 'Your profile picture has been updated.',
+      });
+    }
+  };
+
+  if (!user) {
     return (
-      <Card>
-        <CardContent className="p-6">
-          <div className="animate-pulse space-y-4">
-            <div className="h-20 w-20 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
-            <div className="space-y-2">
-              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
-              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
-            </div>
-          </div>
+      <EnhancedCard>
+        <CardContent className="p-8 text-center">
+          <User className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+          <p className="text-gray-600 dark:text-gray-400">Please log in to view your profile.</p>
         </CardContent>
-      </Card>
+      </EnhancedCard>
     );
   }
 
   return (
-    <Card className="dark:bg-gray-800">
+    <EnhancedCard className="bg-white dark:bg-gray-800">
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="flex items-center space-x-2">
-          <User className="h-5 w-5 text-iwc-blue" />
-          <span>My Profile</span>
+        <CardTitle className="text-2xl text-gray-900 dark:text-white flex items-center">
+          <User className="mr-3 h-6 w-6 text-iwc-blue" />
+          My Profile
         </CardTitle>
         {!isEditing ? (
-          <Button
-            variant="outline"
-            size="sm"
+          <Button 
             onClick={() => setIsEditing(true)}
-            className="flex items-center space-x-2"
+            className="bg-iwc-blue hover:bg-iwc-orange text-white"
           >
-            <Edit2 className="h-4 w-4" />
-            <span>Edit</span>
+            <Edit className="mr-2 h-4 w-4" />
+            Edit Profile
           </Button>
         ) : (
-          <div className="flex space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleCancel}
-              className="flex items-center space-x-2"
-            >
-              <X className="h-4 w-4" />
-              <span>Cancel</span>
-            </Button>
-            <Button
-              size="sm"
+          <div className="flex gap-2">
+            <Button 
               onClick={handleSave}
-              disabled={saving}
-              className="flex items-center space-x-2"
+              disabled={isLoading}
+              className="bg-green-600 hover:bg-green-700 text-white"
             >
-              <Save className="h-4 w-4" />
-              <span>{saving ? 'Saving...' : 'Save'}</span>
+              <Save className="mr-2 h-4 w-4" />
+              Save
+            </Button>
+            <Button 
+              onClick={handleCancel}
+              variant="outline"
+              className="border-gray-300 text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+            >
+              <X className="mr-2 h-4 w-4" />
+              Cancel
             </Button>
           </div>
         )}
       </CardHeader>
+
       <CardContent className="space-y-6">
         {/* Avatar Section */}
-        <div className="flex items-center space-x-4">
-          <Avatar className="h-20 w-20">
-            <AvatarImage src={profile.avatar_url} alt="Profile" />
-            <AvatarFallback className="bg-gradient-to-br from-iwc-blue to-iwc-orange text-white text-xl">
-              {profile.first_name?.[0] || user?.email?.[0]?.toUpperCase() || 'U'}
-            </AvatarFallback>
-          </Avatar>
-          <div className="space-y-1">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="relative">
+            <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+              {profileData.avatar_url ? (
+                <img 
+                  src={profileData.avatar_url} 
+                  alt="Profile" 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User className="h-12 w-12 text-gray-400" />
+              )}
+            </div>
+            {isEditing && (
+              <label className="absolute bottom-0 right-0 bg-iwc-blue hover:bg-iwc-orange text-white rounded-full p-2 cursor-pointer transition-colors">
+                <Camera className="h-4 w-4" />
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={handleAvatarUpload}
+                  className="hidden" 
+                />
+              </label>
+            )}
+          </div>
+          <div className="text-center">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              {profile.first_name || profile.last_name 
-                ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim()
-                : 'Member'
+              {profileData.first_name || profileData.last_name 
+                ? `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim()
+                : user.email?.split('@')[0] || 'Member'
               }
             </h3>
-            <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
-              <Mail className="h-4 w-4" />
-              <span>{user?.email}</span>
-            </div>
-            <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
-              Active Member
-            </Badge>
+            <p className="text-gray-600 dark:text-gray-400">{user.email}</p>
           </div>
         </div>
 
-        {/* Profile Form */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="first_name">First Name</Label>
+        {/* Profile Fields */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              First Name
+            </label>
             {isEditing ? (
               <Input
-                id="first_name"
-                value={profile.first_name || ''}
-                onChange={(e) => setProfile(prev => ({ ...prev, first_name: e.target.value }))}
+                name="first_name"
+                value={profileData.first_name || ''}
+                onChange={handleInputChange}
                 placeholder="Enter your first name"
+                className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
               />
             ) : (
-              <div className="p-2 bg-gray-50 dark:bg-gray-700 rounded-md text-sm">
-                {profile.first_name || 'Not provided'}
-              </div>
+              <p className="text-gray-900 dark:text-white py-2 px-3 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-700">
+                {profileData.first_name || 'Not provided'}
+              </p>
             )}
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="last_name">Last Name</Label>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Last Name
+            </label>
             {isEditing ? (
               <Input
-                id="last_name"
-                value={profile.last_name || ''}
-                onChange={(e) => setProfile(prev => ({ ...prev, last_name: e.target.value }))}
+                name="last_name"
+                value={profileData.last_name || ''}
+                onChange={handleInputChange}
                 placeholder="Enter your last name"
+                className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
               />
             ) : (
-              <div className="p-2 bg-gray-50 dark:bg-gray-700 rounded-md text-sm">
-                {profile.last_name || 'Not provided'}
-              </div>
+              <p className="text-gray-900 dark:text-white py-2 px-3 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-700">
+                {profileData.last_name || 'Not provided'}
+              </p>
             )}
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="phone">Phone Number</Label>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Phone Number
+            </label>
             {isEditing ? (
               <Input
-                id="phone"
-                value={profile.phone || ''}
-                onChange={(e) => setProfile(prev => ({ ...prev, phone: e.target.value }))}
-                placeholder="Enter your phone number"
+                name="phone"
+                type="tel"
+                value={profileData.phone || ''}
+                onChange={handleInputChange}
+                placeholder="(555) 123-4567"
+                className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
               />
             ) : (
-              <div className="flex items-center space-x-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-md text-sm">
-                <Phone className="h-4 w-4 text-gray-400" />
-                <span>{profile.phone || 'Not provided'}</span>
-              </div>
+              <p className="text-gray-900 dark:text-white py-2 px-3 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-700">
+                {profileData.phone || 'Not provided'}
+              </p>
             )}
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="date_of_birth">Date of Birth</Label>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Date of Birth
+            </label>
             {isEditing ? (
               <Input
-                id="date_of_birth"
+                name="date_of_birth"
                 type="date"
-                value={profile.date_of_birth || ''}
-                onChange={(e) => setProfile(prev => ({ ...prev, date_of_birth: e.target.value }))}
+                value={profileData.date_of_birth || ''}
+                onChange={handleInputChange}
+                className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
               />
             ) : (
-              <div className="flex items-center space-x-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-md text-sm">
-                <Calendar className="h-4 w-4 text-gray-400" />
-                <span>{profile.date_of_birth ? new Date(profile.date_of_birth).toLocaleDateString() : 'Not provided'}</span>
-              </div>
+              <p className="text-gray-900 dark:text-white py-2 px-3 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-700">
+                {profileData.date_of_birth 
+                  ? new Date(profileData.date_of_birth).toLocaleDateString()
+                  : 'Not provided'
+                }
+              </p>
             )}
           </div>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="address">Address</Label>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Address
+          </label>
           {isEditing ? (
             <Input
-              id="address"
-              value={profile.address || ''}
-              onChange={(e) => setProfile(prev => ({ ...prev, address: e.target.value }))}
+              name="address"
+              value={profileData.address || ''}
+              onChange={handleInputChange}
               placeholder="Enter your address"
+              className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
             />
           ) : (
-            <div className="flex items-center space-x-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-md text-sm">
-              <MapPin className="h-4 w-4 text-gray-400" />
-              <span>{profile.address || 'Not provided'}</span>
-            </div>
+            <p className="text-gray-900 dark:text-white py-2 px-3 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-700">
+              {profileData.address || 'Not provided'}
+            </p>
           )}
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="bio">Bio</Label>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Bio / About Me
+          </label>
           {isEditing ? (
             <Textarea
-              id="bio"
-              value={profile.bio || ''}
-              onChange={(e) => setProfile(prev => ({ ...prev, bio: e.target.value }))}
-              placeholder="Tell us about yourself..."
-              rows={3}
+              name="bio"
+              value={profileData.bio || ''}
+              onChange={handleInputChange}
+              placeholder="Tell us a bit about yourself..."
+              rows={4}
+              className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
             />
           ) : (
-            <div className="p-2 bg-gray-50 dark:bg-gray-700 rounded-md text-sm min-h-[60px]">
-              {profile.bio || 'No bio provided'}
-            </div>
+            <p className="text-gray-900 dark:text-white py-2 px-3 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-700 min-h-[100px]">
+              {profileData.bio || 'No bio provided'}
+            </p>
           )}
         </div>
+
+        {/* Account Information */}
+        <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+          <h4 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
+            Account Information
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Email Address
+              </label>
+              <p className="text-gray-900 dark:text-white py-2 px-3 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-700">
+                {user.email}
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Member Since
+              </label>
+              <p className="text-gray-900 dark:text-white py-2 px-3 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-700">
+                {user.created_at 
+                  ? new Date(user.created_at).toLocaleDateString()
+                  : 'Not available'
+                }
+              </p>
+            </div>
+          </div>
+        </div>
       </CardContent>
-    </Card>
+    </EnhancedCard>
   );
 }

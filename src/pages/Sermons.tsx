@@ -1,430 +1,426 @@
 
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
-import { supabase } from '@/integrations/supabase/client';
-import { Search, Calendar, User, Tag, Play, Download, Share2, Filter } from 'lucide-react';
+import { Play, Download, Share2, Calendar, Clock, User, Search, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { EnhancedCard, CardContent, CardHeader, CardTitle } from '@/components/ui/enhanced-card';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Sermon {
   id: string;
   title: string;
   speaker: string;
   date: string;
-  thumbnail: string;
-  duration: string;
-  series: string;
+  description?: string;
   video_url?: string;
   audio_url?: string;
-  topic?: string;
+  download_url?: string;
+  series?: string;
+  duration?: string;
+  thumbnail?: string;
+  tags?: string[];
 }
 
 const Sermons = () => {
   const [sermons, setSermons] = useState<Sermon[]>([]);
   const [filteredSermons, setFilteredSermons] = useState<Sermon[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filters, setFilters] = useState({
-    speaker: '',
-    series: '',
-    topic: '',
-    date: ''
-  });
-  
-  // Get unique values for filter dropdowns
-  const speakers = [...new Set(sermons.map(sermon => sermon.speaker))];
-  const series = [...new Set(sermons.map(sermon => sermon.series))];
-  const topics = [...new Set(sermons.map(sermon => sermon.topic))];
-  
-  // Sample sermon data (replace with actual DB data when available)
-  const sampleSermons: Sermon[] = [
-    {
-      id: '1',
-      title: 'Finding Peace in Troubled Times',
-      speaker: 'Pastor John Thompson',
-      date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 1 week ago
-      thumbnail: 'https://images.unsplash.com/photo-1571275293295-43b3cb72e8a7?q=80&w=400',
-      duration: '38:24',
-      series: 'Faith for Today',
-      topic: 'Peace'
-    },
-    {
-      id: '2',
-      title: 'The Power of Prayer',
-      speaker: 'Pastor Mary Thompson',
-      date: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(), // 2 weeks ago
-      thumbnail: 'https://images.unsplash.com/photo-1476820865390-c52aeebb9891?q=80&w=400',
-      duration: '42:15',
-      series: 'Spiritual Disciplines',
-      topic: 'Prayer'
-    },
-    {
-      id: '3',
-      title: 'Walking in God\'s Purpose',
-      speaker: 'Pastor Michael Roberts',
-      date: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000).toISOString(), // 3 weeks ago
-      thumbnail: 'https://images.unsplash.com/photo-1491438590914-bc09fcaaf77a?q=80&w=400',
-      duration: '45:30',
-      series: 'Destiny Series',
-      topic: 'Purpose'
-    },
-    {
-      id: '4',
-      title: 'Grace Abounds',
-      speaker: 'Pastor John Thompson',
-      date: new Date(Date.now() - 28 * 24 * 60 * 60 * 1000).toISOString(), // 4 weeks ago
-      thumbnail: 'https://images.unsplash.com/photo-1494531835360-80e9790838b8?q=80&w=400',
-      duration: '36:15',
-      series: 'Grace Series',
-      topic: 'Grace'
-    },
-    {
-      id: '5',
-      title: 'Living a Life of Worship',
-      speaker: 'Pastor Mary Thompson',
-      date: new Date(Date.now() - 35 * 24 * 60 * 60 * 1000).toISOString(), // 5 weeks ago
-      thumbnail: 'https://images.unsplash.com/photo-1511448957602-417c5a0cb0e9?q=80&w=400',
-      duration: '39:45',
-      series: 'Spiritual Disciplines',
-      topic: 'Worship'
-    },
-    {
-      id: '6',
-      title: 'Faith That Moves Mountains',
-      speaker: 'Pastor Michael Roberts',
-      date: new Date(Date.now() - 42 * 24 * 60 * 60 * 1000).toISOString(), // 6 weeks ago
-      thumbnail: 'https://images.unsplash.com/photo-1508873535684-277a3cbcc4e8?q=80&w=400',
-      duration: '41:18',
-      series: 'Faith for Today',
-      topic: 'Faith'
-    }
-  ];
+  const [selectedSeries, setSelectedSeries] = useState('all');
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const { toast } = useToast();
+
+  const sermonsPerPage = 6;
 
   useEffect(() => {
-    const fetchSermons = async () => {
-      setLoading(true);
-      try {
-        // Try to fetch sermons from database - using site_content table instead of non-existent sermons table
-        const { data, error } = await supabase
-          .from('site_content')
-          .select('*')
-          .eq('section', 'sermons');
-          
-        if (data && data.length > 0) {
-          // Parse the content field which should contain serialized sermon data
-          try {
-            const parsedData = data.map(item => {
-              try {
-                const content = JSON.parse(item.content);
-                return {
-                  id: item.id,
-                  title: content.title || 'Untitled Sermon',
-                  speaker: content.speaker || 'Unknown Speaker',
-                  date: content.date || new Date().toISOString(),
-                  thumbnail: content.thumbnail || 'https://images.unsplash.com/photo-1571275293295-43b3cb72e8a7?q=80&w=400',
-                  duration: content.duration || '00:00',
-                  series: content.series || 'General',
-                  topic: content.topic || 'Faith',
-                  video_url: content.video_url,
-                  audio_url: content.audio_url
-                };
-              } catch (e) {
-                console.error('Error parsing sermon content:', e);
-                return null;
-              }
-            }).filter(Boolean) as Sermon[];
-            
-            if (parsedData.length > 0) {
-              setSermons(parsedData);
-            } else {
-              // Fallback to sample data if no valid parsed data
-              setSermons(sampleSermons);
-            }
-          } catch (parseError) {
-            console.error('Error parsing sermon data:', parseError);
-            setSermons(sampleSermons);
-          }
-        } else {
-          // Use sample data if no sermons in database
-          setSermons(sampleSermons);
-        }
-      } catch (error) {
-        console.error('Error fetching sermons:', error);
-        // Fallback to sample data
-        setSermons(sampleSermons);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
     fetchSermons();
   }, []);
-  
-  // Apply filters and search
+
   useEffect(() => {
-    let result = [...sermons];
-    
-    // Apply search term
+    filterSermons();
+  }, [sermons, searchTerm, selectedSeries]);
+
+  const fetchSermons = async () => {
+    try {
+      setLoading(true);
+      
+      // Try to fetch from Supabase first
+      const { data, error } = await supabase
+        .from('site_content')
+        .select('content')
+        .eq('section', 'sermons')
+        .maybeSingle();
+
+      let sermonsData: Sermon[] = [];
+
+      if (data && data.content) {
+        sermonsData = JSON.parse(data.content);
+      } else {
+        // Fallback to placeholder data
+        sermonsData = [
+          {
+            id: '1',
+            title: 'Finding Peace in Troubled Times',
+            speaker: 'Pastor John Thompson',
+            date: '2024-05-20',
+            description: 'In a world filled with uncertainty, discover how God\'s peace can guard your heart and mind.',
+            video_url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+            audio_url: '/sermons/audio/peace-troubled-times.mp3',
+            download_url: '/sermons/downloads/peace-troubled-times.pdf',
+            series: 'Faith for Today',
+            duration: '38:24',
+            thumbnail: 'https://images.unsplash.com/photo-1571275293295-43b3cb72e8a7?q=80&w=400',
+            tags: ['Peace', 'Faith', 'Comfort']
+          },
+          {
+            id: '2',
+            title: 'The Power of Prayer',
+            speaker: 'Pastor Mary Thompson',
+            date: '2024-05-13',
+            description: 'Understanding the transformative power of prayer in our daily lives.',
+            video_url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+            audio_url: '/sermons/audio/power-of-prayer.mp3',
+            download_url: '/sermons/downloads/power-of-prayer.pdf',
+            series: 'Spiritual Disciplines',
+            duration: '42:15',
+            thumbnail: 'https://images.unsplash.com/photo-1476820865390-c52aeebb9891?q=80&w=400',
+            tags: ['Prayer', 'Spiritual Growth', 'Discipline']
+          },
+          {
+            id: '3',
+            title: 'Walking in God\'s Purpose',
+            speaker: 'Pastor Michael Roberts',
+            date: '2024-05-06',
+            description: 'Discovering and fulfilling the unique purpose God has for your life.',
+            video_url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+            audio_url: '/sermons/audio/gods-purpose.mp3',
+            download_url: '/sermons/downloads/gods-purpose.pdf',
+            series: 'Destiny Series',
+            duration: '45:30',
+            thumbnail: 'https://images.unsplash.com/photo-1491438590914-bc09fcaaf77a?q=80&w=400',
+            tags: ['Purpose', 'Calling', 'Destiny']
+          },
+          {
+            id: '4',
+            title: 'Love Without Limits',
+            speaker: 'Pastor John Thompson',
+            date: '2024-04-29',
+            description: 'Exploring the boundless love of God and how it transforms our relationships.',
+            video_url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+            audio_url: '/sermons/audio/love-without-limits.mp3',
+            download_url: '/sermons/downloads/love-without-limits.pdf',
+            series: 'Faith for Today',
+            duration: '40:12',
+            thumbnail: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=400',
+            tags: ['Love', 'Relationships', 'Grace']
+          }
+        ];
+      }
+
+      setSermons(sermonsData);
+      setHasMore(sermonsData.length >= sermonsPerPage);
+    } catch (error) {
+      console.error('Error fetching sermons:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load sermons. Please try again.',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filterSermons = () => {
+    let filtered = sermons;
+
     if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase();
-      result = result.filter(sermon => 
-        sermon.title.toLowerCase().includes(searchLower) ||
-        sermon.speaker.toLowerCase().includes(searchLower) ||
-        (sermon.series && sermon.series.toLowerCase().includes(searchLower)) ||
-        (sermon.topic && sermon.topic.toLowerCase().includes(searchLower))
+      filtered = filtered.filter(sermon =>
+        sermon.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        sermon.speaker.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        sermon.series?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        sermon.description?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
-    
-    // Apply filters
-    if (filters.speaker) {
-      result = result.filter(sermon => sermon.speaker === filters.speaker);
-    }
-    
-    if (filters.series) {
-      result = result.filter(sermon => sermon.series === filters.series);
-    }
-    
-    if (filters.topic) {
-      result = result.filter(sermon => sermon.topic === filters.topic);
-    }
-    
-    if (filters.date) {
-      // Example: Simple date filtering logic - can be enhanced
-      const now = new Date();
-      switch (filters.date) {
-        case 'week':
-          const weekAgo = new Date(now.setDate(now.getDate() - 7));
-          result = result.filter(sermon => new Date(sermon.date) >= weekAgo);
-          break;
-        case 'month':
-          const monthAgo = new Date(now.setMonth(now.getMonth() - 1));
-          result = result.filter(sermon => new Date(sermon.date) >= monthAgo);
-          break;
-        case 'year':
-          const yearAgo = new Date(now.setFullYear(now.getFullYear() - 1));
-          result = result.filter(sermon => new Date(sermon.date) >= yearAgo);
-          break;
-        default:
-          break;
-      }
-    }
-    
-    setFilteredSermons(result);
-  }, [sermons, searchTerm, filters]);
 
-  const handleFilterChange = (key: string, value: string) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+    if (selectedSeries !== 'all') {
+      filtered = filtered.filter(sermon => sermon.series === selectedSeries);
+    }
+
+    setFilteredSermons(filtered);
   };
-  
-  const resetFilters = () => {
-    setFilters({
-      speaker: '',
-      series: '',
-      topic: '',
-      date: ''
-    });
-    setSearchTerm('');
-  };
-  
-  const shareSermon = (id: string, title: string) => {
-    if (navigator.share) {
-      navigator.share({
-        title: title,
-        url: `${window.location.origin}/sermons/${id}`
-      }).catch(error => console.error('Error sharing:', error));
+
+  const handleWatchNow = (sermon: Sermon) => {
+    if (sermon.video_url) {
+      window.open(sermon.video_url, '_blank');
+      toast({
+        title: 'Opening Video',
+        description: `Playing "${sermon.title}"`,
+      });
     } else {
-      // Fallback
-      const url = `${window.location.origin}/sermons/${id}`;
-      navigator.clipboard.writeText(url);
-      alert('Sermon link copied to clipboard!');
+      toast({
+        title: 'Video Unavailable',
+        description: 'This sermon video is currently not available.',
+        variant: 'destructive'
+      });
     }
   };
+
+  const handleDownload = (sermon: Sermon) => {
+    if (sermon.download_url) {
+      const link = document.createElement('a');
+      link.href = sermon.download_url;
+      link.download = `${sermon.title}.pdf`;
+      link.click();
+      toast({
+        title: 'Download Started',
+        description: `Downloading "${sermon.title}"`,
+      });
+    } else if (sermon.audio_url) {
+      const link = document.createElement('a');
+      link.href = sermon.audio_url;
+      link.download = `${sermon.title}.mp3`;
+      link.click();
+      toast({
+        title: 'Download Started',
+        description: `Downloading audio for "${sermon.title}"`,
+      });
+    } else {
+      toast({
+        title: 'Download Unavailable',
+        description: 'No downloadable content available for this sermon.',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleShare = async (sermon: Sermon) => {
+    const shareData = {
+      title: sermon.title,
+      text: `Check out this sermon: "${sermon.title}" by ${sermon.speaker}`,
+      url: window.location.href + `#sermon-${sermon.id}`
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+        toast({
+          title: 'Shared Successfully',
+          description: `"${sermon.title}" has been shared.`,
+        });
+      } else {
+        await navigator.clipboard.writeText(`${shareData.title} - ${shareData.url}`);
+        toast({
+          title: 'Link Copied',
+          description: 'Sermon link copied to clipboard!',
+        });
+      }
+    } catch (error) {
+      console.error('Error sharing:', error);
+      toast({
+        title: 'Share Failed',
+        description: 'Unable to share this sermon.',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleLoadMore = async () => {
+    try {
+      setLoading(true);
+      // Simulate loading more sermons
+      const newSermons = sermons.slice(0, Math.min(sermons.length + sermonsPerPage, sermons.length));
+      
+      if (newSermons.length === sermons.length) {
+        setHasMore(false);
+        toast({
+          title: 'All Sermons Loaded',
+          description: 'You\'ve reached the end of our sermon collection.',
+        });
+      }
+      
+      setPage(page + 1);
+    } catch (error) {
+      console.error('Error loading more sermons:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load more sermons.',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const uniqueSeries = Array.from(new Set(sermons.map(s => s.series).filter(Boolean)));
+
+  const displayedSermons = filteredSermons.slice(0, page * sermonsPerPage);
 
   return (
     <Layout>
-      <div className="bg-gray-50 py-16">
-        <div className="container mx-auto px-4 max-w-7xl">
-          <div className="text-center mb-12">
-            <h1 className="text-4xl md:text-5xl font-bold mb-4 text-gray-900">Sermons</h1>
-            <div className="w-20 h-1 bg-iwc-orange mx-auto mb-6"></div>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Explore our collection of messages that inspire growth, faith, and transformation.
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
+        {/* Hero Section */}
+        <div className="bg-gradient-to-r from-iwc-blue to-iwc-orange text-white py-16">
+          <div className="container mx-auto px-4 text-center">
+            <h1 className="text-4xl md:text-5xl font-bold mb-4">Sermons & Messages</h1>
+            <p className="text-xl md:text-2xl max-w-3xl mx-auto">
+              Be inspired by God's Word through our weekly messages and sermon series
             </p>
           </div>
-          
-          {/* Search and Filter Section */}
-          <div className="bg-white rounded-xl shadow-md p-6 mb-10">
-            <div className="flex flex-col md:flex-row gap-4 mb-6">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-                <Input
-                  type="text"
-                  placeholder="Search sermons..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              <Button 
-                variant="outline" 
-                className="md:hidden flex items-center justify-center"
-                onClick={() => document.getElementById('filter-collapse')?.classList.toggle('hidden')}
-              >
-                <Filter className="mr-2 h-4 w-4" /> Filters
-              </Button>
+        </div>
+
+        {/* Search and Filter Section */}
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex flex-col md:flex-row gap-4 mb-8">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                type="text"
+                placeholder="Search sermons, speakers, or topics..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+              />
             </div>
-            
-            <div id="filter-collapse" className="hidden md:block">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Speaker</label>
-                  <select
-                    value={filters.speaker}
-                    onChange={(e) => handleFilterChange('speaker', e.target.value)}
-                    className="w-full rounded-md border border-gray-300 py-2 px-3"
-                  >
-                    <option value="">All Speakers</option>
-                    {speakers.map(speaker => (
-                      <option key={speaker} value={speaker}>{speaker}</option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Series</label>
-                  <select
-                    value={filters.series}
-                    onChange={(e) => handleFilterChange('series', e.target.value)}
-                    className="w-full rounded-md border border-gray-300 py-2 px-3"
-                  >
-                    <option value="">All Series</option>
-                    {series.map(s => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Topic</label>
-                  <select
-                    value={filters.topic}
-                    onChange={(e) => handleFilterChange('topic', e.target.value)}
-                    className="w-full rounded-md border border-gray-300 py-2 px-3"
-                  >
-                    <option value="">All Topics</option>
-                    {topics.map(topic => topic && (
-                      <option key={topic} value={topic}>{topic}</option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                  <select
-                    value={filters.date}
-                    onChange={(e) => handleFilterChange('date', e.target.value)}
-                    className="w-full rounded-md border border-gray-300 py-2 px-3"
-                  >
-                    <option value="">All Time</option>
-                    <option value="week">Past Week</option>
-                    <option value="month">Past Month</option>
-                    <option value="year">Past Year</option>
-                  </select>
-                </div>
-              </div>
-              
-              <div className="flex justify-end">
-                <Button
-                  variant="ghost"
-                  onClick={resetFilters}
-                >
-                  Reset Filters
-                </Button>
-              </div>
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-gray-500" />
+              <select
+                value={selectedSeries}
+                onChange={(e) => setSelectedSeries(e.target.value)}
+                className="px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+              >
+                <option value="all">All Series</option>
+                {uniqueSeries.map(series => (
+                  <option key={series} value={series}>{series}</option>
+                ))}
+              </select>
             </div>
           </div>
-          
+
           {/* Sermons Grid */}
-          {loading ? (
-            <div className="text-center py-16">
-              <div className="w-12 h-12 border-4 border-iwc-blue border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-lg">Loading sermons...</p>
-            </div>
-          ) : filteredSermons.length === 0 ? (
-            <div className="text-center py-16">
-              <p className="text-lg mb-4">No sermons found matching your filters.</p>
-              <Button variant="outline" onClick={resetFilters}>Clear Filters</Button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {filteredSermons.map((sermon) => (
-                <div key={sermon.id} className="group bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow">
-                  <div className="relative aspect-video bg-gray-200 overflow-hidden">
-                    <img 
-                      src={sermon.thumbnail} 
-                      alt={sermon.title}
-                      className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                    />
-                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button variant="default" size="sm" className="bg-iwc-orange hover:bg-iwc-red">
-                        <Play className="mr-2 h-4 w-4" /> Watch Now
-                      </Button>
-                    </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+            {displayedSermons.map((sermon, index) => (
+              <EnhancedCard 
+                key={sermon.id} 
+                className="overflow-hidden group animate-fade-in"
+                style={{ animationDelay: `${index * 0.1}s` }}
+                hover={true}
+                gradient={false}
+              >
+                <div className="relative aspect-video bg-gray-200 dark:bg-gray-700 overflow-hidden">
+                  <img 
+                    src={sermon.thumbnail} 
+                    alt={sermon.title}
+                    className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <Button 
+                      onClick={() => handleWatchNow(sermon)}
+                      className="bg-iwc-orange hover:bg-iwc-red text-white"
+                    >
+                      <Play className="mr-2 h-4 w-4" /> Watch Now
+                    </Button>
+                  </div>
+                  {sermon.duration && (
                     <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
                       {sermon.duration}
                     </div>
+                  )}
+                </div>
+                
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between mb-2">
+                    {sermon.series && (
+                      <Badge variant="secondary" className="text-xs">
+                        {sermon.series}
+                      </Badge>
+                    )}
+                    <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                      <Calendar className="h-3 w-3 mr-1" />
+                      {new Date(sermon.date).toLocaleDateString()}
+                    </div>
+                  </div>
+                  <CardTitle className="text-lg line-clamp-2 text-gray-900 dark:text-white">
+                    {sermon.title}
+                  </CardTitle>
+                </CardHeader>
+                
+                <CardContent className="pt-0">
+                  <div className="flex items-center mb-3 text-sm text-iwc-blue dark:text-iwc-orange">
+                    <User className="h-4 w-4 mr-2" />
+                    {sermon.speaker}
                   </div>
                   
-                  <div className="p-6">
-                    <h3 className="font-semibold text-lg mb-2">{sermon.title}</h3>
-                    
-                    <div className="flex items-center mb-2">
-                      <User className="h-4 w-4 text-iwc-blue mr-2" />
-                      <span className="text-gray-700">{sermon.speaker}</span>
+                  {sermon.description && (
+                    <p className="text-gray-600 dark:text-gray-300 text-sm mb-4 line-clamp-2">
+                      {sermon.description}
+                    </p>
+                  )}
+                  
+                  {sermon.tags && (
+                    <div className="flex flex-wrap gap-1 mb-4">
+                      {sermon.tags.slice(0, 3).map(tag => (
+                        <Badge key={tag} variant="outline" className="text-xs">
+                          {tag}
+                        </Badge>
+                      ))}
                     </div>
-                    
-                    <div className="flex items-center mb-2">
-                      <Calendar className="h-4 w-4 text-iwc-blue mr-2" />
-                      <span className="text-gray-700">
-                        {new Date(sermon.date).toLocaleDateString('en-US', {
-                          month: 'long',
-                          day: 'numeric',
-                          year: 'numeric'
-                        })}
-                      </span>
-                    </div>
-                    
-                    {sermon.series && (
-                      <div className="flex items-center mb-4">
-                        <Tag className="h-4 w-4 text-iwc-blue mr-2" />
-                        <span className="text-gray-700">{sermon.series}</span>
-                      </div>
-                    )}
-                    
-                    <div className="flex space-x-2 mt-4">
-                      <Button variant="outline" size="sm" className="flex-1">
-                        <Download className="mr-2 h-4 w-4" /> Download
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="flex-1"
-                        onClick={() => shareSermon(sermon.id, sermon.title)}
-                      >
-                        <Share2 className="mr-2 h-4 w-4" /> Share
-                      </Button>
-                    </div>
+                  )}
+                  
+                  <div className="flex flex-wrap gap-2">
+                    <Button 
+                      onClick={() => handleWatchNow(sermon)}
+                      size="sm" 
+                      className="bg-iwc-blue hover:bg-iwc-orange text-white flex-1"
+                    >
+                      <Play className="h-3 w-3 mr-1" /> Watch
+                    </Button>
+                    <Button 
+                      onClick={() => handleDownload(sermon)}
+                      size="sm" 
+                      variant="outline"
+                      className="border-iwc-blue text-iwc-blue hover:bg-iwc-blue hover:text-white dark:border-iwc-orange dark:text-iwc-orange dark:hover:bg-iwc-orange"
+                    >
+                      <Download className="h-3 w-3 mr-1" /> Download
+                    </Button>
+                    <Button 
+                      onClick={() => handleShare(sermon)}
+                      size="sm" 
+                      variant="outline"
+                      className="border-gray-300 text-gray-600 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700"
+                    >
+                      <Share2 className="h-3 w-3" />
+                    </Button>
                   </div>
-                </div>
-              ))}
+                </CardContent>
+              </EnhancedCard>
+            ))}
+          </div>
+
+          {/* Load More Button */}
+          {hasMore && displayedSermons.length < filteredSermons.length && (
+            <div className="text-center">
+              <Button 
+                onClick={handleLoadMore}
+                disabled={loading}
+                size="lg"
+                className="bg-iwc-orange hover:bg-iwc-red text-white"
+              >
+                {loading ? 'Loading...' : 'Load More Sermons'}
+              </Button>
             </div>
           )}
-          
-          {filteredSermons.length > 0 && (
-            <div className="mt-12 flex justify-center">
-              <Button variant="outline" size="lg">
-                Load More Sermons
-              </Button>
+
+          {filteredSermons.length === 0 && !loading && (
+            <div className="text-center py-12">
+              <p className="text-gray-500 dark:text-gray-400 text-lg">
+                No sermons found matching your criteria.
+              </p>
             </div>
           )}
         </div>

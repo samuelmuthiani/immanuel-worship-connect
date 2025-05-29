@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import NewsletterSignup from '@/components/NewsletterSignup';
@@ -171,11 +172,11 @@ const Index = () => {
               Join us as we grow together in Christ's love.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
-              <Link to="/services">
-                <Button size="lg" className="bg-iwc-orange hover:bg-iwc-red text-white">
+              <Button asChild size="lg" className="bg-iwc-orange hover:bg-iwc-red text-white">
+                <Link to="/services">
                   Plan Your Visit
-                </Button>
-              </Link>
+                </Link>
+              </Button>
               <a href="https://www.youtube.com/channel/your-channel" target="_blank" rel="noopener noreferrer">
                 <Button size="lg" variant="outline" className="bg-white/10 border-white text-white hover:bg-white/20">
                   <Play className="mr-2 h-5 w-5" /> Watch Live
@@ -222,12 +223,12 @@ const Index = () => {
       </section>
 
       {/* Mission & Vision */}
-      <section className="py-16 px-4 bg-gray-50">
+      <section className="py-16 px-4 bg-gray-50 dark:bg-gray-800 transition-colors">
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Our Mission & Vision</h2>
+            <h2 className="text-3xl font-bold mb-4 text-gray-900 dark:text-white">Our Mission & Vision</h2>
             <div className="w-24 h-1 bg-iwc-orange mx-auto mb-6"></div>
-            <p className="text-lg text-gray-700 max-w-3xl mx-auto">
+            <p className="text-lg text-gray-700 dark:text-gray-300 max-w-3xl mx-auto">
               To glorify God by making disciples who love God wholeheartedly, grow in
               Christlike maturity, and serve others effectively through vibrant worship,
               biblical teaching, and compassionate outreach.
@@ -235,41 +236,41 @@ const Index = () => {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-white rounded-xl p-8 shadow-md flex flex-col items-center text-center">
+            <div className="bg-white dark:bg-gray-700 rounded-xl p-8 shadow-md flex flex-col items-center text-center transition-colors">
               <div className="bg-iwc-blue/10 p-4 rounded-full mb-6">
                 <Calendar className="h-8 w-8 text-iwc-blue" />
               </div>
-              <h3 className="text-xl font-semibold mb-3">Weekly Services</h3>
-              <p className="text-gray-600 mb-6">
+              <h3 className="text-xl font-semibold mb-3 text-gray-900 dark:text-white">Weekly Services</h3>
+              <p className="text-gray-600 dark:text-gray-300 mb-6">
                 Join us for vibrant worship, inspiring messages, and a welcoming community every Sunday at 9:00 AM.
               </p>
-              <Link to="/services" className="mt-auto text-iwc-blue font-medium flex items-center">
+              <Link to="/services" className="mt-auto text-iwc-blue dark:text-iwc-orange font-medium flex items-center hover:underline">
                 Service Times <ChevronRight className="ml-1 h-4 w-4" />
               </Link>
             </div>
             
-            <div className="bg-white rounded-xl p-8 shadow-md flex flex-col items-center text-center">
+            <div className="bg-white dark:bg-gray-700 rounded-xl p-8 shadow-md flex flex-col items-center text-center transition-colors">
               <div className="bg-iwc-orange/10 p-4 rounded-full mb-6">
                 <Book className="h-8 w-8 text-iwc-orange" />
               </div>
-              <h3 className="text-xl font-semibold mb-3">Bible Study</h3>
-              <p className="text-gray-600 mb-6">
+              <h3 className="text-xl font-semibold mb-3 text-gray-900 dark:text-white">Bible Study</h3>
+              <p className="text-gray-600 dark:text-gray-300 mb-6">
                 Deepen your understanding of God's Word through our weekly Bible studies and small groups.
               </p>
-              <Link to="/services" className="mt-auto text-iwc-blue font-medium flex items-center">
+              <Link to="/services" className="mt-auto text-iwc-blue dark:text-iwc-orange font-medium flex items-center hover:underline">
                 Learn More <ChevronRight className="ml-1 h-4 w-4" />
               </Link>
             </div>
             
-            <div className="bg-white rounded-xl p-8 shadow-md flex flex-col items-center text-center">
+            <div className="bg-white dark:bg-gray-700 rounded-xl p-8 shadow-md flex flex-col items-center text-center transition-colors">
               <div className="bg-iwc-gold/10 p-4 rounded-full mb-6">
                 <Users className="h-8 w-8 text-iwc-gold" />
               </div>
-              <h3 className="text-xl font-semibold mb-3">Community</h3>
-              <p className="text-gray-600 mb-6">
+              <h3 className="text-xl font-semibold mb-3 text-gray-900 dark:text-white">Community</h3>
+              <p className="text-gray-600 dark:text-gray-300 mb-6">
                 Find belonging in our diverse community through fellowship, events, and ministry opportunities.
               </p>
-              <Link to="/about" className="mt-auto text-iwc-blue font-medium flex items-center">
+              <Link to="/about" className="mt-auto text-iwc-blue dark:text-iwc-orange font-medium flex items-center hover:underline">
                 Get Involved <ChevronRight className="ml-1 h-4 w-4" />
               </Link>
             </div>
@@ -278,26 +279,26 @@ const Index = () => {
       </section>
 
       {/* Latest Sermons Section */}
-      <section className="py-16 px-4 bg-white">
+      <section className="py-16 px-4 bg-white dark:bg-gray-900 transition-colors">
         <div className="container mx-auto max-w-6xl">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-10">
             <div>
-              <h2 className="text-3xl font-bold mb-2">Latest Sermons</h2>
+              <h2 className="text-3xl font-bold mb-2 text-gray-900 dark:text-white">Latest Sermons</h2>
               <div className="w-20 h-1 bg-iwc-orange mb-4"></div>
-              <p className="text-gray-600">Be inspired by our recent messages</p>
+              <p className="text-gray-600 dark:text-gray-300">Be inspired by our recent messages</p>
             </div>
-            <Link to="/sermons" className="mt-4 md:mt-0 text-iwc-blue font-medium flex items-center">
+            <Link to="/sermons" className="mt-4 md:mt-0 text-iwc-blue dark:text-iwc-orange font-medium flex items-center hover:underline">
               View All Sermons <ChevronRight className="ml-1 h-4 w-4" />
             </Link>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {loading ? (
-              <div className="col-span-3 text-center py-12">Loading sermons...</div>
+              <div className="col-span-3 text-center py-12 text-gray-600 dark:text-gray-400">Loading sermons...</div>
             ) : (
               latestSermons.map((sermon) => (
-                <div key={sermon.id} className="group bg-gray-50 rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow">
-                  <div className="relative aspect-video bg-gray-200 overflow-hidden">
+                <div key={sermon.id} className="group bg-gray-50 dark:bg-gray-800 rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all">
+                  <div className="relative aspect-video bg-gray-200 dark:bg-gray-700 overflow-hidden">
                     <img 
                       src={sermon.thumbnail} 
                       alt={sermon.title}
@@ -313,9 +314,9 @@ const Index = () => {
                     </div>
                   </div>
                   <div className="p-6">
-                    <h3 className="font-semibold text-lg mb-1 line-clamp-1">{sermon.title}</h3>
-                    <p className="text-iwc-blue text-sm mb-2">{sermon.speaker}</p>
-                    <div className="flex justify-between text-sm text-gray-500">
+                    <h3 className="font-semibold text-lg mb-1 line-clamp-1 text-gray-900 dark:text-white">{sermon.title}</h3>
+                    <p className="text-iwc-blue dark:text-iwc-orange text-sm mb-2">{sermon.speaker}</p>
+                    <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400">
                       <span>{sermon.series}</span>
                       <time dateTime={sermon.date}>
                         {new Date(sermon.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
@@ -330,43 +331,43 @@ const Index = () => {
       </section>
 
       {/* Upcoming Events */}
-      <section className="py-16 px-4 bg-gray-50">
+      <section className="py-16 px-4 bg-gray-50 dark:bg-gray-800 transition-colors">
         <div className="container mx-auto max-w-6xl">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-10">
             <div>
-              <h2 className="text-3xl font-bold mb-2">Upcoming Events</h2>
+              <h2 className="text-3xl font-bold mb-2 text-gray-900 dark:text-white">Upcoming Events</h2>
               <div className="w-20 h-1 bg-iwc-orange mb-4"></div>
-              <p className="text-gray-600">Join us for these upcoming gatherings</p>
+              <p className="text-gray-600 dark:text-gray-300">Join us for these upcoming gatherings</p>
             </div>
-            <Link to="/events" className="mt-4 md:mt-0 text-iwc-blue font-medium flex items-center">
+            <Link to="/events" className="mt-4 md:mt-0 text-iwc-blue dark:text-iwc-orange font-medium flex items-center hover:underline">
               View All Events <ChevronRight className="ml-1 h-4 w-4" />
             </Link>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {loading ? (
-              <div className="col-span-3 text-center py-12">Loading events...</div>
+              <div className="col-span-3 text-center py-12 text-gray-600 dark:text-gray-400">Loading events...</div>
             ) : (
               upcomingEvents.map((event) => (
-                <div key={event.id} className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow">
+                <div key={event.id} className="bg-white dark:bg-gray-700 rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all">
                   <div className="p-6">
-                    <h3 className="font-semibold text-lg mb-3">{event.title}</h3>
+                    <h3 className="font-semibold text-lg mb-3 text-gray-900 dark:text-white">{event.title}</h3>
                     <div className="flex items-start mb-3">
                       <Calendar className="h-5 w-5 text-iwc-orange mr-3 mt-0.5" />
                       <div>
-                        <div className="font-medium">
+                        <div className="font-medium text-gray-900 dark:text-white">
                           {new Date(event.event_date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
                         </div>
-                        <div className="text-sm text-gray-600">
+                        <div className="text-sm text-gray-600 dark:text-gray-400">
                           {new Date(event.event_date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                         </div>
                       </div>
                     </div>
                     <div className="flex items-start mb-4">
                       <Video className="h-5 w-5 text-iwc-orange mr-3 mt-0.5" />
-                      <span>{event.location}</span>
+                      <span className="text-gray-700 dark:text-gray-300">{event.location}</span>
                     </div>
-                    <p className="text-gray-600 mb-5 line-clamp-2">{event.description}</p>
+                    <p className="text-gray-600 dark:text-gray-300 mb-5 line-clamp-2">{event.description}</p>
                     <Button className="w-full bg-iwc-blue hover:bg-iwc-orange text-white">
                       Register
                     </Button>
@@ -389,31 +390,31 @@ const Index = () => {
             Whether you're exploring faith or looking for a church home, we'd love to welcome you this Sunday.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
-            <Link to="/contact">
-              <Button size="lg" className="bg-white text-iwc-blue hover:bg-gray-200">
+            <Button asChild size="lg" className="bg-white text-iwc-blue hover:bg-gray-200">
+              <Link to="/contact">
                 Contact Us
-              </Button>
-            </Link>
-            <Link to="/services">
-              <Button size="lg" className="bg-iwc-orange hover:bg-iwc-red text-white">
+              </Link>
+            </Button>
+            <Button asChild size="lg" className="bg-iwc-orange hover:bg-iwc-red text-white">
+              <Link to="/services">
                 Plan Your Visit
-              </Button>
-            </Link>
-            <Link to="/donate">
-              <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10">
+              </Link>
+            </Button>
+            <Button asChild size="lg" variant="outline" className="border-white text-white hover:bg-white/10">
+              <Link to="/donate">
                 Support Our Mission
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           </div>
         </div>
       </section>
 
       {/* Newsletter Signup */}
-      <section className="py-16 px-4 bg-white">
+      <section className="py-16 px-4 bg-white dark:bg-gray-900 transition-colors">
         <div className="container mx-auto max-w-xl text-center">
-          <h2 className="text-3xl font-bold mb-4">Stay Connected</h2>
+          <h2 className="text-3xl font-bold mb-4 text-gray-900 dark:text-white">Stay Connected</h2>
           <div className="w-16 h-1 bg-iwc-orange mx-auto mb-6"></div>
-          <p className="text-lg text-gray-700 mb-8">
+          <p className="text-lg text-gray-700 dark:text-gray-300 mb-8">
             Subscribe to our newsletter for updates, upcoming events, and weekly inspiration.
           </p>
           <NewsletterSignup />
