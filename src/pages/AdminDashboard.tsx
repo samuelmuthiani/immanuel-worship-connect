@@ -3,7 +3,7 @@ import Layout from '@/components/Layout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import { LogOut, ExternalLink } from 'lucide-react';
+import { LogOut, ExternalLink, BarChart3, Users, Calendar, Heart, Settings as SettingsIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -11,6 +11,8 @@ import { useNavigate } from 'react-router-dom';
 import { logAudit } from '@/lib/audit';
 import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
+import AdminAnalytics from '@/components/admin/AdminAnalytics';
+import { PageContainer } from '@/components/ui/page-container';
 
 // Reusable confirmation dialog component
 interface ConfirmDialogProps {
@@ -403,56 +405,82 @@ const AdminDashboard = () => {
   
   return (
     <ProtectedRoute adminOnly>
-      <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
-        <div className="bg-white dark:bg-gray-800 shadow">
-          <div className="container mx-auto px-4 py-4">
-            <div className="flex flex-col md:flex-row justify-between items-center">
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white">Admin Dashboard</h1>
-              
-              <div className="flex gap-2 items-center mt-4 md:mt-0">
-                <Button 
-                  variant="outline" 
-                  onClick={viewSite} 
-                  className="flex items-center gap-2"
-                >
-                  <ExternalLink size={18} />
-                  View Site
-                </Button>
+      <Layout>
+        <PageContainer maxWidth="full">
+          <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg mb-8 border border-gray-200 dark:border-gray-700">
+            <div className="px-6 py-4">
+              <div className="flex flex-col md:flex-row justify-between items-center">
+                <div className="flex items-center space-x-3 mb-4 md:mb-0">
+                  <div className="p-2 bg-gradient-to-br from-iwc-blue to-iwc-orange rounded-lg">
+                    <SettingsIcon className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white">Admin Dashboard</h1>
+                    <p className="text-gray-600 dark:text-gray-400">Manage your church community</p>
+                  </div>
+                </div>
                 
-                <Button 
-                  variant="destructive"
-                  onClick={handleLogout}
-                  className="flex items-center gap-2"
-                >
-                  <LogOut size={18} />
-                  Logout
-                </Button>
+                <div className="flex gap-2 items-center">
+                  <Button 
+                    variant="outline" 
+                    onClick={viewSite} 
+                    className="flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700"
+                  >
+                    <ExternalLink size={18} />
+                    View Site
+                  </Button>
+                  
+                  <Button 
+                    variant="destructive"
+                    onClick={handleLogout}
+                    className="flex items-center gap-2"
+                  >
+                    <LogOut size={18} />
+                    Logout
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-        
-        <div className="container mx-auto mt-8">
-          <Tabs defaultValue="users" className="w-full">
-            <TabsList className="mb-4">
-              <TabsTrigger value="users">Users</TabsTrigger>
-              <TabsTrigger value="events">Events</TabsTrigger>
-              <TabsTrigger value="donations">Donations</TabsTrigger>
+          
+          <Tabs defaultValue="analytics" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 mb-6 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
+              <TabsTrigger value="analytics" className="flex items-center gap-2">
+                <BarChart3 className="h-4 w-4" />
+                <span className="hidden sm:inline">Analytics</span>
+              </TabsTrigger>
+              <TabsTrigger value="users" className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                <span className="hidden sm:inline">Users</span>
+              </TabsTrigger>
+              <TabsTrigger value="events" className="flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                <span className="hidden sm:inline">Events</span>
+              </TabsTrigger>
+              <TabsTrigger value="donations" className="flex items-center gap-2">
+                <Heart className="h-4 w-4" />
+                <span className="hidden sm:inline">Donations</span>
+              </TabsTrigger>
             </TabsList>
+            
+            <TabsContent value="analytics" className="mt-6">
+              <AdminAnalytics />
+            </TabsContent>
+            
             <TabsContent value="users">
               <AdminUsersTable />
             </TabsContent>
+            
             <TabsContent value="events">
               <AdminEventsTable />
             </TabsContent>
+            
             <TabsContent value="donations">
               <AdminDonationsTable />
             </TabsContent>
           </Tabs>
-        </div>
-        
-        {/* Rest of dashboard content */}
-      </div>
+        </PageContainer>
+      </Layout>
     </ProtectedRoute>
   );
 };
