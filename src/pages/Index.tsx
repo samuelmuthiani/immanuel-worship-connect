@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import NewsletterSignup from '@/components/NewsletterSignup';
@@ -409,15 +408,68 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Newsletter Signup */}
-      <section className="py-16 px-4 bg-white dark:bg-gray-900 transition-colors">
-        <div className="container mx-auto max-w-xl text-center">
-          <h2 className="text-3xl font-bold mb-4 text-gray-900 dark:text-white">Stay Connected</h2>
-          <div className="w-16 h-1 bg-iwc-orange mx-auto mb-6"></div>
-          <p className="text-lg text-gray-700 dark:text-gray-300 mb-8">
-            Subscribe to our newsletter for updates, upcoming events, and weekly inspiration.
+      {/* Join Our Community Section */}
+      <section className="py-20 bg-gradient-to-r from-iwc-blue to-iwc-orange text-white">
+        <div className="container mx-auto px-4 text-center">
+          <h2 className="text-4xl font-bold mb-6">Join Our Community</h2>
+          <p className="text-xl mb-8 max-w-2xl mx-auto opacity-90">
+            Experience the warmth of fellowship and grow in your faith journey with us.
           </p>
-          <NewsletterSignup />
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <Button 
+              asChild
+              size="lg" 
+              className="bg-white text-iwc-blue hover:bg-gray-100 font-semibold px-8 py-3"
+            >
+              <Link to="/contact">
+                <span className="text-iwc-blue">Contact Us</span>
+              </Link>
+            </Button>
+            <Button 
+              asChild
+              size="lg" 
+              variant="outline" 
+              className="border-white text-white hover:bg-white hover:text-iwc-blue font-semibold px-8 py-3"
+            >
+              <Link to="/about">
+                <span>Plan Your Visit</span>
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Support Our Mission */}
+      <section className="py-20 bg-gray-50 dark:bg-gray-800">
+        <div className="container mx-auto px-4 text-center">
+          <h2 className="text-4xl font-bold mb-6 text-gray-900 dark:text-white">Support Our Mission</h2>
+          <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
+            Your generous support helps us continue spreading hope, love, and transformation in our community and beyond.
+          </p>
+          <Button 
+            asChild
+            size="lg" 
+            className="bg-iwc-blue hover:bg-iwc-orange text-white font-semibold px-8 py-3"
+          >
+            <Link to="/donate">
+              <span className="text-white">Support Our Mission</span>
+            </Link>
+          </Button>
+        </div>
+      </section>
+
+      {/* Stay Connected Section */}
+      <section className="py-20 bg-white dark:bg-gray-900">
+        <div className="container mx-auto px-4">
+          <div className="max-w-3xl mx-auto text-center">
+            <h2 className="text-4xl font-bold mb-6 text-gray-900 dark:text-white">Stay Connected</h2>
+            <p className="text-xl text-gray-600 dark:text-gray-300 mb-8">
+              Subscribe to our newsletter for weekly inspiration, event updates, and community news.
+            </p>
+            <div className="flex justify-center">
+              <NewsletterSignup />
+            </div>
+          </div>
         </div>
       </section>
     </Layout>

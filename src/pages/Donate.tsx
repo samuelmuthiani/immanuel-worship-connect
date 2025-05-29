@@ -1,207 +1,288 @@
+
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
-import { Youtube } from 'lucide-react';
+import Layout from '@/components/Layout';
+import { Heart, Shield, Users, Globe, Award, CreditCard, Smartphone, Building2, CheckCircle, Star, ArrowRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { EnhancedCard, CardContent, CardHeader, CardTitle } from '@/components/ui/enhanced-card';
+import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
-const mpesaPaybill = '247247';
-const mpesaAccount = '200470';
-const equityAccount = '1234567890';
-const equityName = 'Immanuel Worship Centre';
-const bankName = 'Equity Bank';
-const bankBranch = 'Nairobi West';
-const swiftCode = 'EQBLKENA';
-const montageUrl = 'https://www.youtube.com/embed/1V_xRb0x9aw';
-
-const copyToClipboard = (text: string, setCopied: (v: string) => void) => {
-  navigator.clipboard.writeText(text);
-  setCopied(text);
-  setTimeout(() => setCopied(''), 2000);
-};
-
 const Donate = () => {
-  const [form, setForm] = useState({ name: '', org: '', message: '' });
+  const [thankYouForm, setThankYouForm] = useState({ name: '', org: '', message: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [copied, setCopied] = useState('');
+  const { toast } = useToast();
 
   const handleThanksSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
+    setIsSubmitting(true);
+
     try {
-      const { error: dbError } = await (supabase as any).from('donor_thank_yous').insert([
-        { name: form.name, org: form.org, message: form.message, submitted_at: new Date().toISOString() }
-      ]);
-      if (dbError) throw dbError;
-      setForm({ name: '', org: '', message: '' });
+      const { error } = await supabase
+        .from('donor_thank_yous')
+        .insert([{
+          name: thankYouForm.name,
+          org: thankYouForm.org,
+          message: thankYouForm.message,
+          submitted_at: new Date().toISOString()
+        }]);
+
+      if (error) throw error;
+
+      setThankYouForm({ name: '', org: '', message: '' });
       setSubmitted(true);
+      toast({
+        title: 'Thank You Message Sent!',
+        description: 'Your gratitude has been shared with our team.',
+      });
       setTimeout(() => setSubmitted(false), 3000);
-    } catch (err: any) {
-      setError('Submission failed. Please try again.');
+    } catch (error) {
+      console.error('Error submitting thank you:', error);
+      toast({
+        title: 'Submission Failed',
+        description: 'Please try again later.',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  return (
-    <>
-      <main className="min-h-screen bg-gradient-to-t from-iwc-blue/10 via-white/80 to-iwc-orange/10 py-10 px-4 flex flex-col items-center">
-        <div className="max-w-5xl w-full mx-auto space-y-8">
-          <header className="text-center mb-6">
-            <h1 className="text-4xl md:text-5xl font-extrabold text-iwc-blue drop-shadow mb-2">Support Our Mission</h1>
-            <p className="text-lg md:text-xl text-gray-700">Your generosity empowers us to serve, inspire, and transform lives. Every gift makes a difference!</p>
-          </header>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-            {/* Left Panel: Donation Methods */}
-            <section aria-labelledby="donation-methods" className="space-y-6">
-              <h2 id="donation-methods" className="text-2xl font-bold text-iwc-blue mb-2">Ways to Give</h2>
-              {/* Mpesa Card */}
-              <div className="bg-white rounded-xl shadow-lg border border-iwc-blue/10 p-6 space-y-4 transition hover:scale-[1.02] hover:shadow-xl">
-                <h3 className="text-lg font-semibold text-green-700 flex items-center">M-Pesa Paybill</h3>
-                <div className="flex items-center justify-between">
-                  <span className="font-medium">Paybill Number:</span>
-                  <span className="font-mono text-lg" aria-label="Mpesa Paybill">{mpesaPaybill}</span>
-                  <button
-                    className={`ml-2 px-2 py-1 rounded text-xs font-semibold border border-green-600 text-green-700 hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-green-400 transition ${copied === mpesaPaybill ? 'bg-green-100' : ''}`}
-                    onClick={() => copyToClipboard(mpesaPaybill, setCopied)}
-                    aria-label="Copy Paybill Number"
-                  >
-                    {copied === mpesaPaybill ? 'Copied!' : 'Copy'}
-                  </button>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="font-medium">Account Number:</span>
-                  <span className="font-mono text-lg" aria-label="Mpesa Account">{mpesaAccount}</span>
-                  <button
-                    className={`ml-2 px-2 py-1 rounded text-xs font-semibold border border-green-600 text-green-700 hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-green-400 transition ${copied === mpesaAccount ? 'bg-green-100' : ''}`}
-                    onClick={() => copyToClipboard(mpesaAccount, setCopied)}
-                    aria-label="Copy Account Number"
-                  >
-                    {copied === mpesaAccount ? 'Copied!' : 'Copy'}
-                  </button>
-                </div>
-              </div>
-              {/* Bank Card */}
-              <div className="bg-white rounded-xl shadow-lg border border-iwc-blue/10 p-6 space-y-4 transition hover:scale-[1.02] hover:shadow-xl">
-                <h3 className="text-lg font-semibold text-blue-700 flex items-center">Bank Transfer</h3>
-                <div className="flex items-center justify-between">
-                  <span className="font-medium">Bank Name:</span>
-                  <span className="font-mono text-lg">{bankName}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="font-medium">Branch:</span>
-                  <span className="font-mono text-lg">{bankBranch}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="font-medium">Account Name:</span>
-                  <span className="font-mono text-lg">{equityName}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="font-medium">Account Number:</span>
-                  <span className="font-mono text-lg" aria-label="Bank Account">{equityAccount}</span>
-                  <button
-                    className={`ml-2 px-2 py-1 rounded text-xs font-semibold border border-blue-600 text-blue-700 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-400 transition ${copied === equityAccount ? 'bg-blue-100' : ''}`}
-                    onClick={() => copyToClipboard(equityAccount, setCopied)}
-                    aria-label="Copy Bank Account Number"
-                  >
-                    {copied === equityAccount ? 'Copied!' : 'Copy'}
-                  </button>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="font-medium">SWIFT Code:</span>
-                  <span className="font-mono text-lg" aria-label="SWIFT Code">{swiftCode}</span>
-                  <button
-                    className={`ml-2 px-2 py-1 rounded text-xs font-semibold border border-blue-600 text-blue-700 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-400 transition ${copied === swiftCode ? 'bg-blue-100' : ''}`}
-                    onClick={() => copyToClipboard(swiftCode, setCopied)}
-                    aria-label="Copy SWIFT Code"
-                  >
-                    {copied === swiftCode ? 'Copied!' : 'Copy'}
-                  </button>
-                </div>
-              </div>
-              {/* Card/Online Option */}
-              <div className="bg-white rounded-xl shadow-lg border border-iwc-blue/10 p-6 space-y-4 transition hover:scale-[1.02] hover:shadow-xl">
-                <h3 className="text-lg font-semibold text-purple-700 flex items-center">Online (Card)</h3>
-                <a
-                  href="https://donate.stripe.com/test_00g7uQ0wQ0wQ0wQ0wQ"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-block bg-purple-600 hover:bg-purple-700 text-white font-bold px-6 py-2 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-400"
-                  aria-label="Donate via Stripe"
-                >
-                  Donate via Stripe
-                </a>
-              </div>
-            </section>
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: 'Copied!',
+      description: `${text} copied to clipboard`,
+    });
+  };
 
-            {/* Right Panel: Thank You Form (Admin Only) */}
-            <section aria-labelledby="thank-you-form" className="bg-white rounded-xl shadow-lg border border-iwc-blue/10 p-6 flex flex-col space-y-4 animate-fade-in">
-              <h2 id="thank-you-form" className="text-2xl font-bold text-iwc-blue mb-2">Send a Thank You (Admin Only)</h2>
-              <form onSubmit={handleThanksSubmit} className="space-y-3" aria-label="Thank You Form">
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700">Name (optional)</label>
-                <input
-                  id="name"
-                  type="text"
-                  name="name"
-                  value={form.name}
-                  onChange={e => setForm({ ...form, name: e.target.value })}
-                  className="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-iwc-blue"
-                  autoComplete="off"
-                />
-                <label htmlFor="org" className="block text-sm font-medium text-gray-700">Organization (optional)</label>
-                <input
-                  id="org"
-                  type="text"
-                  name="org"
-                  value={form.org}
-                  onChange={e => setForm({ ...form, org: e.target.value })}
-                  className="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-iwc-blue"
-                  autoComplete="off"
-                />
-                <label htmlFor="message" className="block text-sm font-medium text-gray-700">Message (optional)</label>
-                <textarea
-                  id="message"
-                  name="message"
-                  value={form.message}
-                  onChange={e => setForm({ ...form, message: e.target.value })}
-                  className="w-full px-4 py-2 border rounded min-h-[80px] focus:ring-2 focus:ring-iwc-blue"
-                />
-                <button
-                  type="submit"
-                  className="bg-iwc-orange hover:bg-iwc-red text-white font-bold px-6 py-2 rounded-md w-full transition-colors focus:outline-none focus:ring-2 focus:ring-iwc-orange"
-                  disabled={submitted}
-                >
-                  {submitted ? 'Thank You Sent!' : 'Send Thank You'}
-                </button>
-                <div aria-live="polite" className="h-6">
-                  {error && <div className="text-red-600 text-sm mt-1">{error}</div>}
-                  {submitted && !error && <div className="text-green-600 text-sm mt-1">Thank you for your message!</div>}
-                </div>
-              </form>
-              <div className="mt-2 text-xs text-gray-500 text-center">Your message will only be visible to the admin for privacy and security.</div>
-            </section>
+  const impactStats = [
+    { number: '500+', label: 'Lives Transformed', icon: Heart },
+    { number: '25+', label: 'Years of Service', icon: Award },
+    { number: '50+', label: 'Community Programs', icon: Users },
+    { number: '12', label: 'Countries Reached', icon: Globe }
+  ];
+
+  const paymentMethods = [
+    {
+      title: 'M-Pesa Mobile Money',
+      icon: Smartphone,
+      color: 'text-green-600',
+      bgColor: 'bg-green-50 dark:bg-green-900/20',
+      borderColor: 'border-green-200 dark:border-green-800',
+      details: [
+        { label: 'Paybill Number', value: '247247' },
+        { label: 'Account Number', value: '200470' }
+      ],
+      description: 'Quick and secure mobile payments'
+    },
+    {
+      title: 'Bank Transfer',
+      icon: Building2,
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-50 dark:bg-blue-900/20',
+      borderColor: 'border-blue-200 dark:border-blue-800',
+      details: [
+        { label: 'Bank', value: 'Equity Bank' },
+        { label: 'Branch', value: 'Nairobi West' },
+        { label: 'Account Name', value: 'Immanuel Worship Centre' },
+        { label: 'Account Number', value: '1234567890' },
+        { label: 'SWIFT Code', value: 'EQBLKENA' }
+      ],
+      description: 'Traditional banking for larger donations'
+    },
+    {
+      title: 'Online Card Payment',
+      icon: CreditCard,
+      color: 'text-purple-600',
+      bgColor: 'bg-purple-50 dark:bg-purple-900/20',
+      borderColor: 'border-purple-200 dark:border-purple-800',
+      details: [],
+      description: 'Secure online payments via Stripe',
+      actionUrl: 'https://donate.stripe.com/test_00g7uQ0wQ0wQ0wQ0wQ'
+    }
+  ];
+
+  return (
+    <Layout>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-900 dark:to-blue-950">
+        <div className="container mx-auto px-4 py-16">
+          {/* Hero Section */}
+          <div className="text-center mb-16">
+            <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-iwc-blue via-iwc-orange to-iwc-gold bg-clip-text text-transparent">
+              Support Our Mission
+            </h1>
+            <p className="text-xl md:text-2xl text-gray-700 dark:text-gray-300 max-w-4xl mx-auto mb-8 leading-relaxed">
+              Your generous support empowers us to transform lives, strengthen communities, 
+              and spread hope across the world. Every gift makes an eternal difference.
+            </p>
+            
+            {/* Impact Statistics */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
+              {impactStats.map((stat, index) => (
+                <EnhancedCard key={stat.label} className="text-center bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm group hover:scale-105 transition-all duration-300">
+                  <CardContent className="p-6">
+                    <div className="flex justify-center mb-3">
+                      <stat.icon className="h-8 w-8 text-iwc-blue group-hover:text-iwc-orange transition-colors" />
+                    </div>
+                    <div className="text-3xl font-bold text-gray-900 dark:text-white mb-1">{stat.number}</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400 font-medium">{stat.label}</div>
+                  </CardContent>
+                </EnhancedCard>
+              ))}
+            </div>
           </div>
-          {/* Sponsor Our Children - CTA below contact form */}
-          <section className="flex justify-center mt-10">
-            <Dialog>
-              <DialogTrigger asChild>
-                <button className="flex items-center bg-gradient-to-r from-red-600 via-orange-500 to-yellow-400 hover:from-red-700 hover:to-yellow-500 text-white font-extrabold py-4 px-8 rounded-2xl text-2xl shadow-xl transition-transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-red-300 border-4 border-white" aria-label="Sponsor Our Children">
-                  <Youtube className="w-8 h-8 mr-3" aria-label="YouTube" /> Sponsor Our Children
-                </button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl w-full">
-                <div className="aspect-w-16 aspect-h-9 w-full">
-                  <iframe
-                    src={montageUrl}
-                    title="Sponsor Our Children Video"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    className="w-full h-80 rounded"
+
+          {/* Payment Methods */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16">
+            {paymentMethods.map((method, index) => (
+              <EnhancedCard 
+                key={method.title} 
+                className={`${method.bgColor} ${method.borderColor} border-2 hover:shadow-xl transition-all duration-300 group`}
+              >
+                <CardHeader className="text-center pb-4">
+                  <div className="flex justify-center mb-4">
+                    <div className={`p-4 rounded-full bg-white dark:bg-gray-800 shadow-lg group-hover:scale-110 transition-transform`}>
+                      <method.icon className={`h-8 w-8 ${method.color}`} />
+                    </div>
+                  </div>
+                  <CardTitle className="text-xl font-bold text-gray-900 dark:text-white">
+                    {method.title}
+                  </CardTitle>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">{method.description}</p>
+                </CardHeader>
+                
+                <CardContent className="space-y-4">
+                  {method.details.map((detail, idx) => (
+                    <div key={idx} className="flex items-center justify-between">
+                      <span className="font-medium text-gray-700 dark:text-gray-300">{detail.label}:</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-lg text-gray-900 dark:text-white">{detail.value}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => copyToClipboard(detail.value)}
+                          className="h-8 w-8 p-0 hover:bg-white/50 dark:hover:bg-gray-700/50"
+                        >
+                          <CheckCircle className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {method.actionUrl && (
+                    <Button 
+                      asChild
+                      className="w-full bg-gradient-to-r from-iwc-blue to-iwc-purple text-white hover:from-iwc-orange hover:to-iwc-red transition-all duration-300"
+                    >
+                      <a href={method.actionUrl} target="_blank" rel="noopener noreferrer">
+                        Donate Now <ArrowRight className="ml-2 h-4 w-4" />
+                      </a>
+                    </Button>
+                  )}
+                </CardContent>
+              </EnhancedCard>
+            ))}
+          </div>
+
+          {/* Trust and Security */}
+          <EnhancedCard className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 border-green-200 dark:border-green-800 mb-12">
+            <CardContent className="p-8 text-center">
+              <div className="flex justify-center mb-4">
+                <Shield className="h-12 w-12 text-green-600" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Secure & Trusted Giving</h3>
+              <p className="text-gray-700 dark:text-gray-300 mb-6 max-w-2xl mx-auto">
+                Your donations are processed through encrypted, secure channels. We are committed to financial 
+                transparency and responsible stewardship of every gift we receive.
+              </p>
+              <div className="flex justify-center items-center gap-6 text-sm text-gray-600 dark:text-gray-400">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <span>SSL Encrypted</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <span>Bank Grade Security</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <span>100% Transparent</span>
+                </div>
+              </div>
+            </CardContent>
+          </EnhancedCard>
+
+          {/* Admin Thank You Form */}
+          <EnhancedCard className="bg-white dark:bg-gray-800 max-w-2xl mx-auto">
+            <CardHeader>
+              <CardTitle className="text-2xl text-center text-gray-900 dark:text-white flex items-center justify-center gap-2">
+                <Star className="h-6 w-6 text-iwc-gold" />
+                Send Appreciation (Admin Only)
+                <Star className="h-6 w-6 text-iwc-gold" />
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleThanksSubmit} className="space-y-6">
+                <div>
+                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Donor Name (Optional)
+                  </label>
+                  <Input
+                    id="name"
+                    value={thankYouForm.name}
+                    onChange={(e) => setThankYouForm(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="Enter donor's name"
+                    className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
                   />
                 </div>
-              </DialogContent>
-            </Dialog>
-          </section>
+                
+                <div>
+                  <label htmlFor="org" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Organization (Optional)
+                  </label>
+                  <Input
+                    id="org"
+                    value={thankYouForm.org}
+                    onChange={(e) => setThankYouForm(prev => ({ ...prev, org: e.target.value }))}
+                    placeholder="Organization or company name"
+                    className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="message" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Thank You Message (Optional)
+                  </label>
+                  <Textarea
+                    id="message"
+                    value={thankYouForm.message}
+                    onChange={(e) => setThankYouForm(prev => ({ ...prev, message: e.target.value }))}
+                    placeholder="Write a personalized thank you message..."
+                    rows={4}
+                    className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+                  />
+                </div>
+                
+                <Button
+                  type="submit"
+                  disabled={isSubmitting || submitted}
+                  className="w-full bg-gradient-to-r from-iwc-blue to-iwc-orange hover:from-iwc-orange hover:to-iwc-red text-white font-semibold py-3"
+                >
+                  {submitted ? 'Thank You Sent!' : isSubmitting ? 'Sending...' : 'Send Thank You Message'}
+                </Button>
+              </form>
+              
+              <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-4">
+                This form is for administrators to send appreciation messages to donors. All submissions are secure and private.
+              </p>
+            </CardContent>
+          </EnhancedCard>
         </div>
-      </main>
-    </>
+      </div>
+    </Layout>
   );
 };
 

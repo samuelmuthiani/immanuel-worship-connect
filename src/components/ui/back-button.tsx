@@ -8,10 +8,14 @@ interface BackButtonProps {
   to?: string;
   label?: string;
   className?: string;
+  show?: boolean; // Add show prop to control visibility
 }
 
-export function BackButton({ to, label = 'Back', className = '' }: BackButtonProps) {
+export function BackButton({ to, label = 'Back', className = '', show = true }: BackButtonProps) {
   const navigate = useNavigate();
+
+  // Don't render if show is false
+  if (!show) return null;
 
   const handleBack = () => {
     if (to) {
@@ -25,7 +29,7 @@ export function BackButton({ to, label = 'Back', className = '' }: BackButtonPro
     <Button
       variant="ghost"
       onClick={handleBack}
-      className={`mb-4 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${className}`}
+      className={`mb-6 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 ${className}`}
     >
       <ArrowLeft className="h-4 w-4 mr-2" />
       {label}
