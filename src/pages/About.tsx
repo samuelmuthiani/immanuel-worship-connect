@@ -1,23 +1,11 @@
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import Layout from '@/components/Layout';
 import { Heart, Users, BookOpen, Globe, Award, Calendar, MapPin, Clock } from 'lucide-react';
 import { EnhancedCard, CardContent, CardHeader, CardTitle } from '@/components/ui/enhanced-card';
 import { BackButton } from '@/components/ui/back-button';
-import { getSectionContent } from '@/utils/siteContent';
 
 const About = () => {
-  const [cmsContent, setCmsContent] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchContent = async () => {
-      const content = await getSectionContent('about');
-      if (content) setCmsContent(content);
-    };
-    
-    fetchContent();
-  }, []);
-
   const values = [
     {
       icon: Heart,
@@ -87,21 +75,6 @@ const About = () => {
     { number: '100+', label: 'Weekly Gatherings', icon: Calendar },
     { number: '50+', label: 'Ministries', icon: Heart }
   ];
-
-  if (cmsContent) {
-    return (
-      <Layout>
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-          <div className="container mx-auto px-4 py-8">
-            <BackButton to="/" />
-            <div className="prose prose-lg max-w-4xl mx-auto dark:prose-invert">
-              <div dangerouslySetInnerHTML={{ __html: cmsContent }} />
-            </div>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
 
   return (
     <Layout>
