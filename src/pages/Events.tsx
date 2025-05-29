@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { Calendar, MapPin, Clock, Users, Filter, Search, X } from 'lucide-react';
@@ -10,7 +9,7 @@ import { BackButton } from '@/components/ui/back-button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { saveEventRSVP } from '@/utils/storage';
+import { saveRSVP } from '@/utils/storage';
 
 interface Event {
   id: string;
@@ -205,7 +204,7 @@ const Events = () => {
     setIsSubmitting(true);
 
     try {
-      const result = await saveEventRSVP(registrationModal.event.id, {
+      const result = await saveRSVP(registrationModal.event.id, {
         name: registrationForm.name.trim(),
         email: registrationForm.email.trim(),
         phone: registrationForm.phone.trim()
