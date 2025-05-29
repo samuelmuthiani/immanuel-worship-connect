@@ -10,6 +10,7 @@ interface EnhancedCardProps {
   gradient?: boolean;
   bordered?: boolean;
   shadow?: 'sm' | 'md' | 'lg' | 'xl';
+  style?: React.CSSProperties;
 }
 
 export function EnhancedCard({ 
@@ -18,7 +19,8 @@ export function EnhancedCard({
   hover = true, 
   gradient = false,
   bordered = false,
-  shadow = 'md'
+  shadow = 'md',
+  style
 }: EnhancedCardProps) {
   return (
     <Card
@@ -33,6 +35,7 @@ export function EnhancedCard({
         shadow === 'xl' && 'shadow-xl',
         className
       )}
+      style={style}
     >
       {children}
     </Card>
