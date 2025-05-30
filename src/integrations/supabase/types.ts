@@ -27,6 +27,44 @@ export type Database = {
         }
         Relationships: []
       }
+      appreciations: {
+        Row: {
+          donation_id: string
+          id: string
+          message: string
+          read_at: string | null
+          recipient_id: string
+          sender_id: string
+          sent_at: string
+        }
+        Insert: {
+          donation_id: string
+          id?: string
+          message: string
+          read_at?: string | null
+          recipient_id: string
+          sender_id: string
+          sent_at?: string
+        }
+        Update: {
+          donation_id?: string
+          id?: string
+          message?: string
+          read_at?: string | null
+          recipient_id?: string
+          sender_id?: string
+          sent_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appreciations_donation_id_fkey"
+            columns: ["donation_id"]
+            isOneToOne: false
+            referencedRelation: "donations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action: string
@@ -102,6 +140,39 @@ export type Database = {
           name?: string
           subject?: string | null
           submitted_at?: string | null
+        }
+        Relationships: []
+      }
+      donations: {
+        Row: {
+          amount: number
+          created_at: string
+          donation_type: string | null
+          id: string
+          notes: string | null
+          payment_method: string | null
+          transaction_reference: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          donation_type?: string | null
+          id?: string
+          notes?: string | null
+          payment_method?: string | null
+          transaction_reference?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          donation_type?: string | null
+          id?: string
+          notes?: string | null
+          payment_method?: string | null
+          transaction_reference?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -304,7 +375,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_email: {
+        Args: { user_uuid: string }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

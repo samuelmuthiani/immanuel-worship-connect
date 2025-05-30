@@ -1,4 +1,3 @@
-
 // Centralized Supabase storage utilities
 import { supabase } from '@/integrations/supabase/client';
 
@@ -95,6 +94,92 @@ export const saveNewsletterSubscription = async (email: string) => {
   } catch (error) {
     console.error('Error saving newsletter subscription:', error);
     return { success: false, error };
+  }
+};
+
+// Donation utilities (using the new donations table)
+export const saveDonationToSupabase = async (donationData: {
+  amount: number;
+  donation_type: string;
+  payment_method?: string;
+  transaction_reference?: string;
+  notes?: string;
+}) => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Not authenticated');
+
+    console.log('Saving donation to Supabase:', donationData);
+
+    const { data, error } = await supabase
+      .from('donations')
+      .insert([{
+        user_id: user.id,
+        ...donationData,
+      }])
+      .select();
+    
+    if (error) {
+      console.error('Supabase error saving donation:', error);
+      throw error;
+    }
+    
+    console.log('Donation saved successfully:', data);
+    return { success: true, data };
+  } catch (error) {
+    console.error('Error saving donation:', error);
+    return { success: false, error };
+  }
+};
+
+export const getAllDonationsFromSupabase = async () => {
+  try {
+    console.log('Fetching all donations from Supabase...');
+    
+    const { data, error } = await supabase
+      .from('donations')
+      .select(`
+        *,
+        user_email:get_user_email(user_id)
+      `)
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('Error fetching donations:', error);
+      throw error;
+    }
+    
+    console.log('Donations fetched:', data?.length || 0);
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching donations:', error);
+    return [];
+  }
+};
+
+export const getUserDonationsFromSupabase = async () => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    console.log('Fetching user donations for:', user.id);
+
+    const { data, error } = await supabase
+      .from('donations')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('Error fetching user donations:', error);
+      throw error;
+    }
+    
+    console.log('User donations fetched:', data?.length || 0);
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching user donations:', error);
+    return [];
   }
 };
 
