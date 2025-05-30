@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, ChevronDown, User, Settings, LogOut, Bell } from 'lucide-react';
+import { Menu, ChevronDown, User, Settings, LogOut, Shield, Activity } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { MobileMenu } from '@/components/ui/MobileMenu';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
@@ -23,6 +23,39 @@ export function EnhancedNavigation() {
     { path: '/contact', label: 'Contact' },
     { path: '/donate', label: 'Donate', highlight: true },
   ];
+
+  // Role-based dropdown configuration
+  const getDropdownItems = () => {
+    if (!user) return [];
+    
+    const items = [];
+    
+    if (isAdmin) {
+      items.push({
+        path: '/admin',
+        label: 'Admin Dashboard',
+        icon: Shield,
+        description: 'Manage the system'
+      });
+      items.push({
+        path: '/member',
+        label: 'Member Area',
+        icon: User,
+        description: 'View member features'
+      });
+    } else {
+      items.push({
+        path: '/member',
+        label: 'Member Area',
+        icon: User,
+        description: 'Your personal area'
+      });
+    }
+    
+    return items;
+  };
+
+  const dropdownItems = getDropdownItems();
 
   return (
     <header className="bg-white dark:bg-gray-900 shadow-md sticky top-0 z-40 transition-colors border-b border-gray-200 dark:border-gray-700">
@@ -74,44 +107,52 @@ export function EnhancedNavigation() {
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                   className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 border border-gray-200 dark:border-gray-700"
                 >
-                  <div className="w-8 h-8 bg-gradient-to-br from-iwc-blue to-iwc-orange text-white rounded-full flex items-center justify-center shadow-md">
-                    <User className="h-4 w-4" />
+                  <div className={`w-8 h-8 ${isAdmin ? 'bg-gradient-to-br from-purple-600 to-iwc-blue' : 'bg-gradient-to-br from-iwc-blue to-iwc-orange'} text-white rounded-full flex items-center justify-center shadow-md`}>
+                    {isAdmin ? <Shield className="h-4 w-4" /> : <User className="h-4 w-4" />}
                   </div>
                   <span className="hidden xl:block">{user.email?.split('@')[0]}</span>
+                  {isAdmin && <span className="hidden xl:block text-xs bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 px-2 py-0.5 rounded-full">Admin</span>}
                   <ChevronDown className="h-4 w-4" />
                 </button>
 
-                {/* User Dropdown */}
+                {/* Enhanced User Dropdown */}
                 {isUserMenuOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50 animate-fade-in">
-                    <Link
-                      to="/member"
-                      onClick={() => setIsUserMenuOpen(false)}
-                      className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                    >
-                      <User className="h-4 w-4 mr-3" />
-                      Member Area
-                    </Link>
-                    {isAdmin && (
+                  <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50 animate-fade-in">
+                    {/* User Info Header */}
+                    <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">{user.email}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{isAdmin ? 'Administrator' : 'Member'}</p>
+                    </div>
+                    
+                    {/* Navigation Items */}
+                    {dropdownItems.map((item) => (
                       <Link
-                        to="/admin"
+                        key={item.path}
+                        to={item.path}
                         onClick={() => setIsUserMenuOpen(false)}
-                        className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        className="flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors group"
                       >
-                        <Settings className="h-4 w-4 mr-3" />
-                        Admin Dashboard
+                        <item.icon className="h-4 w-4 mr-3 text-gray-500 dark:text-gray-400 group-hover:text-iwc-blue dark:group-hover:text-iwc-orange" />
+                        <div className="flex flex-col">
+                          <span className="font-medium">{item.label}</span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">{item.description}</span>
+                        </div>
                       </Link>
-                    )}
+                    ))}
+                    
                     <div className="border-t border-gray-100 dark:border-gray-700 my-1" />
                     <button
                       onClick={() => {
                         setIsUserMenuOpen(false);
                         signOut();
                       }}
-                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      className="flex items-center w-full px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 transition-colors group"
                     >
                       <LogOut className="h-4 w-4 mr-3" />
-                      Sign Out
+                      <div className="flex flex-col">
+                        <span className="font-medium">Sign Out</span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">End your session</span>
+                      </div>
                     </button>
                   </div>
                 )}

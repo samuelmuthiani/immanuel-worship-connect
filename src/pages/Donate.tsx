@@ -8,12 +8,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { EnhancedCard, CardContent, CardHeader, CardTitle } from '@/components/ui/enhanced-card';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 const Donate = () => {
   const [thankYouForm, setThankYouForm] = useState({ name: '', org: '', message: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const { toast } = useToast();
+  const { isAdmin } = useAuth();
 
   const handleThanksSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,24 +112,24 @@ const Donate = () => {
         <div className="container mx-auto px-4 py-16">
           {/* Hero Section */}
           <div className="text-center mb-16">
-            <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-iwc-blue via-iwc-orange to-iwc-gold bg-clip-text text-transparent">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 bg-gradient-to-r from-iwc-blue via-iwc-orange to-iwc-gold bg-clip-text text-transparent leading-tight">
               Support Our Mission
             </h1>
-            <p className="text-xl md:text-2xl text-gray-700 dark:text-gray-300 max-w-4xl mx-auto mb-8 leading-relaxed">
+            <p className="text-lg md:text-xl text-gray-700 dark:text-gray-300 max-w-3xl mx-auto mb-12 leading-relaxed">
               Your generous support empowers us to transform lives, strengthen communities, 
               and spread hope across the world. Every gift makes an eternal difference.
             </p>
             
             {/* Impact Statistics */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
               {impactStats.map((stat, index) => (
-                <EnhancedCard key={stat.label} className="text-center bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm group hover:scale-105 transition-all duration-300">
-                  <CardContent className="p-6">
+                <EnhancedCard key={stat.label} className="text-center bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm group hover:scale-105 transition-all duration-300 border border-gray-200 dark:border-gray-700">
+                  <CardContent className="p-4 md:p-6">
                     <div className="flex justify-center mb-3">
-                      <stat.icon className="h-8 w-8 text-iwc-blue dark:text-iwc-orange group-hover:text-iwc-orange dark:group-hover:text-iwc-blue transition-colors" />
+                      <stat.icon className="h-6 w-6 md:h-8 md:w-8 text-iwc-blue dark:text-iwc-orange group-hover:text-iwc-orange dark:group-hover:text-iwc-blue transition-colors" />
                     </div>
-                    <div className="text-3xl font-bold text-gray-900 dark:text-white mb-1">{stat.number}</div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400 font-medium">{stat.label}</div>
+                    <div className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-1">{stat.number}</div>
+                    <div className="text-xs md:text-sm text-gray-600 dark:text-gray-400 font-medium">{stat.label}</div>
                   </CardContent>
                 </EnhancedCard>
               ))}
@@ -135,7 +137,7 @@ const Donate = () => {
           </div>
 
           {/* Payment Methods */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 mb-16">
             {paymentMethods.map((method, index) => (
               <EnhancedCard 
                 key={method.title} 
@@ -143,11 +145,11 @@ const Donate = () => {
               >
                 <CardHeader className="text-center pb-4">
                   <div className="flex justify-center mb-4">
-                    <div className={`p-4 rounded-full bg-white dark:bg-gray-800 shadow-lg group-hover:scale-110 transition-transform`}>
-                      <method.icon className={`h-8 w-8 ${method.color}`} />
+                    <div className={`p-3 md:p-4 rounded-full bg-white dark:bg-gray-800 shadow-lg group-hover:scale-110 transition-transform`}>
+                      <method.icon className={`h-6 w-6 md:h-8 md:w-8 ${method.color}`} />
                     </div>
                   </div>
-                  <CardTitle className="text-xl font-bold text-gray-900 dark:text-white">
+                  <CardTitle className="text-lg md:text-xl font-bold text-gray-900 dark:text-white">
                     {method.title}
                   </CardTitle>
                   <p className="text-sm text-gray-600 dark:text-gray-400">{method.description}</p>
@@ -156,9 +158,9 @@ const Donate = () => {
                 <CardContent className="space-y-4">
                   {method.details.map((detail, idx) => (
                     <div key={idx} className="flex items-center justify-between">
-                      <span className="font-medium text-gray-700 dark:text-gray-300">{detail.label}:</span>
+                      <span className="font-medium text-gray-700 dark:text-gray-300 text-sm">{detail.label}:</span>
                       <div className="flex items-center gap-2">
-                        <span className="font-mono text-lg text-gray-900 dark:text-white">{detail.value}</span>
+                        <span className="font-mono text-sm md:text-base text-gray-900 dark:text-white">{detail.value}</span>
                         <Button
                           variant="ghost"
                           size="sm"
@@ -174,7 +176,7 @@ const Donate = () => {
                   {method.actionUrl && (
                     <Button 
                       asChild
-                      className="w-full bg-gradient-to-r from-iwc-blue to-iwc-purple text-white hover:from-iwc-orange hover:to-iwc-red transition-all duration-300"
+                      className="w-full bg-gradient-to-r from-iwc-blue to-iwc-purple text-white hover:from-iwc-orange hover:to-iwc-red transition-all duration-300 font-semibold"
                     >
                       <a href={method.actionUrl} target="_blank" rel="noopener noreferrer">
                         Donate Now <ArrowRight className="ml-2 h-4 w-4" />
@@ -188,16 +190,16 @@ const Donate = () => {
 
           {/* Trust and Security */}
           <EnhancedCard className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 border-green-200 dark:border-green-800 mb-12">
-            <CardContent className="p-8 text-center">
+            <CardContent className="p-6 md:p-8 text-center">
               <div className="flex justify-center mb-4">
-                <Shield className="h-12 w-12 text-green-600 dark:text-green-400" />
+                <Shield className="h-10 w-10 md:h-12 md:w-12 text-green-600 dark:text-green-400" />
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Secure & Trusted Giving</h3>
-              <p className="text-gray-700 dark:text-gray-300 mb-6 max-w-2xl mx-auto">
+              <h3 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white mb-4">Secure & Trusted Giving</h3>
+              <p className="text-gray-700 dark:text-gray-300 mb-6 max-w-2xl mx-auto leading-relaxed">
                 Your donations are processed through encrypted, secure channels. We are committed to financial 
                 transparency and responsible stewardship of every gift we receive.
               </p>
-              <div className="flex justify-center items-center gap-6 text-sm text-gray-600 dark:text-gray-400">
+              <div className="flex flex-wrap justify-center items-center gap-4 md:gap-6 text-sm text-gray-600 dark:text-gray-400">
                 <div className="flex items-center gap-2">
                   <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
                   <span>SSL Encrypted</span>
@@ -214,71 +216,76 @@ const Donate = () => {
             </CardContent>
           </EnhancedCard>
 
-          {/* Admin Thank You Form */}
-          <EnhancedCard className="bg-white dark:bg-gray-800 max-w-2xl mx-auto">
-            <CardHeader>
-              <CardTitle className="text-2xl text-center text-gray-900 dark:text-white flex items-center justify-center gap-2">
-                <Star className="h-6 w-6 text-iwc-gold" />
-                Send Appreciation (Admin Only)
-                <Star className="h-6 w-6 text-iwc-gold" />
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleThanksSubmit} className="space-y-6">
-                <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Donor Name (Optional)
-                  </label>
-                  <Input
-                    id="name"
-                    value={thankYouForm.name}
-                    onChange={(e) => setThankYouForm(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="Enter donor's name"
-                    className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-                  />
-                </div>
+          {/* Admin Appreciation Form - Only visible to admins */}
+          {isAdmin && (
+            <EnhancedCard className="bg-white dark:bg-gray-800 max-w-2xl mx-auto border border-gray-200 dark:border-gray-700">
+              <CardHeader>
+                <CardTitle className="text-xl md:text-2xl text-center text-gray-900 dark:text-white flex items-center justify-center gap-2">
+                  <Star className="h-5 w-5 md:h-6 md:w-6 text-iwc-gold" />
+                  Send Donor Appreciation
+                  <Star className="h-5 w-5 md:h-6 md:w-6 text-iwc-gold" />
+                </CardTitle>
+                <p className="text-center text-gray-600 dark:text-gray-400 text-sm">
+                  Send personalized thank you messages to donors and supporters
+                </p>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleThanksSubmit} className="space-y-6">
+                  <div>
+                    <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Donor Name (Optional)
+                    </label>
+                    <Input
+                      id="name"
+                      value={thankYouForm.name}
+                      onChange={(e) => setThankYouForm(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="Enter donor's name"
+                      className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-iwc-blue focus:border-iwc-blue"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="org" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Organization (Optional)
+                    </label>
+                    <Input
+                      id="org"
+                      value={thankYouForm.org}
+                      onChange={(e) => setThankYouForm(prev => ({ ...prev, org: e.target.value }))}
+                      placeholder="Organization or company name"
+                      className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-iwc-blue focus:border-iwc-blue"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="message" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Thank You Message
+                    </label>
+                    <Textarea
+                      id="message"
+                      value={thankYouForm.message}
+                      onChange={(e) => setThankYouForm(prev => ({ ...prev, message: e.target.value }))}
+                      placeholder="Write a personalized thank you message..."
+                      rows={4}
+                      className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-iwc-blue focus:border-iwc-blue"
+                    />
+                  </div>
+                  
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting || submitted}
+                    className="w-full bg-gradient-to-r from-iwc-blue to-iwc-orange hover:from-iwc-orange hover:to-iwc-red text-white font-semibold py-3 transition-all duration-300"
+                  >
+                    {submitted ? 'Thank You Sent!' : isSubmitting ? 'Sending...' : 'Send Thank You Message'}
+                  </Button>
+                </form>
                 
-                <div>
-                  <label htmlFor="org" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Organization (Optional)
-                  </label>
-                  <Input
-                    id="org"
-                    value={thankYouForm.org}
-                    onChange={(e) => setThankYouForm(prev => ({ ...prev, org: e.target.value }))}
-                    placeholder="Organization or company name"
-                    className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-                  />
-                </div>
-                
-                <div>
-                  <label htmlFor="message" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Thank You Message (Optional)
-                  </label>
-                  <Textarea
-                    id="message"
-                    value={thankYouForm.message}
-                    onChange={(e) => setThankYouForm(prev => ({ ...prev, message: e.target.value }))}
-                    placeholder="Write a personalized thank you message..."
-                    rows={4}
-                    className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-                  />
-                </div>
-                
-                <Button
-                  type="submit"
-                  disabled={isSubmitting || submitted}
-                  className="w-full bg-gradient-to-r from-iwc-blue to-iwc-orange hover:from-iwc-orange hover:to-iwc-red text-white font-semibold py-3"
-                >
-                  {submitted ? 'Thank You Sent!' : isSubmitting ? 'Sending...' : 'Send Thank You Message'}
-                </Button>
-              </form>
-              
-              <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-4">
-                This form is for administrators to send appreciation messages to donors. All submissions are secure and private.
-              </p>
-            </CardContent>
-          </EnhancedCard>
+                <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-4">
+                  This form is for administrators to send appreciation messages to donors. All submissions are secure and private.
+                </p>
+              </CardContent>
+            </EnhancedCard>
+          )}
         </div>
       </div>
     </Layout>
