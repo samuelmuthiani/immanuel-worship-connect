@@ -6,11 +6,12 @@ import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { LogIn, ShieldCheck, User } from 'lucide-react';
+import { LogIn, ShieldCheck, User, Eye, EyeOff } from 'lucide-react';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -130,17 +131,17 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-        <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">Welcome Back</h2>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 transition-colors">
+      <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-md w-full max-w-md">
+        <h2 className="text-2xl font-bold mb-6 text-center text-gray-800 dark:text-white">Welcome Back</h2>
         
         <Tabs defaultValue="member" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-6">
-            <TabsTrigger value="member" className="flex items-center justify-center gap-2">
+          <TabsList className="grid w-full grid-cols-2 mb-6 bg-gray-100 dark:bg-gray-700">
+            <TabsTrigger value="member" className="flex items-center justify-center gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 text-gray-700 dark:text-gray-300">
               <User size={18} />
               <span>Member</span>
             </TabsTrigger>
-            <TabsTrigger value="admin" className="flex items-center justify-center gap-2">
+            <TabsTrigger value="admin" className="flex items-center justify-center gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 text-gray-700 dark:text-gray-300">
               <ShieldCheck size={18} />
               <span>Admin</span>
             </TabsTrigger>
@@ -148,10 +149,16 @@ const Login = () => {
           
           <TabsContent value="member">
             <form onSubmit={(e) => handleLogin(e, false)}>
-              {error && <div className="text-red-600 mb-4 p-2 bg-red-50 rounded">{error}</div>}
+              {error && (
+                <div className="text-red-600 dark:text-red-400 mb-4 p-2 bg-red-50 dark:bg-red-900/20 rounded border border-red-200 dark:border-red-800">
+                  {error}
+                </div>
+              )}
               
               <div className="mb-4">
-                <label htmlFor="member-email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <label htmlFor="member-email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Email
+                </label>
                 <Input
                   id="member-email"
                   type="email"
@@ -159,26 +166,41 @@ const Login = () => {
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   required
-                  className="w-full"
+                  className="w-full bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                 />
               </div>
               
               <div className="mb-6">
-                <label htmlFor="member-password" className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                <Input
-                  id="member-password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  required
-                  className="w-full"
-                />
+                <label htmlFor="member-password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Password
+                </label>
+                <div className="relative">
+                  <Input
+                    id="member-password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    required
+                    className="w-full pr-10 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
               </div>
               
               <Button
                 type="submit"
-                className="w-full bg-iwc-blue hover:bg-iwc-orange flex items-center justify-center gap-2"
+                className="w-full bg-iwc-blue hover:bg-iwc-orange text-white flex items-center justify-center gap-2"
                 disabled={loading}
               >
                 {loading ? 'Logging in...' : (
@@ -193,10 +215,16 @@ const Login = () => {
           
           <TabsContent value="admin">
             <form onSubmit={(e) => handleLogin(e, true)}>
-              {error && <div className="text-red-600 mb-4 p-2 bg-red-50 rounded">{error}</div>}
+              {error && (
+                <div className="text-red-600 dark:text-red-400 mb-4 p-2 bg-red-50 dark:bg-red-900/20 rounded border border-red-200 dark:border-red-800">
+                  {error}
+                </div>
+              )}
               
               <div className="mb-4">
-                <label htmlFor="admin-email" className="block text-sm font-medium text-gray-700 mb-1">Admin Email</label>
+                <label htmlFor="admin-email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Admin Email
+                </label>
                 <Input
                   id="admin-email"
                   type="email"
@@ -204,26 +232,41 @@ const Login = () => {
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   required
-                  className="w-full"
+                  className="w-full bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                 />
               </div>
               
               <div className="mb-6">
-                <label htmlFor="admin-password" className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                <Input
-                  id="admin-password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  required
-                  className="w-full"
-                />
+                <label htmlFor="admin-password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Password
+                </label>
+                <div className="relative">
+                  <Input
+                    id="admin-password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    required
+                    className="w-full pr-10 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
               </div>
               
               <Button
                 type="submit"
-                className="w-full bg-iwc-red hover:bg-iwc-orange flex items-center justify-center gap-2"
+                className="w-full bg-iwc-red hover:bg-iwc-orange text-white flex items-center justify-center gap-2"
                 disabled={loading}
               >
                 {loading ? 'Logging in...' : (
@@ -238,9 +281,11 @@ const Login = () => {
         </Tabs>
         
         <div className="mt-4 text-center">
-          <a href="/register" className="text-iwc-blue hover:underline">Don't have an account? Register</a>
+          <a href="/register" className="text-iwc-blue dark:text-iwc-orange hover:underline">
+            Don't have an account? Register
+          </a>
         </div>
-        <div className="mt-4 text-sm text-gray-600 text-center">
+        <div className="mt-4 text-sm text-gray-600 dark:text-gray-400 text-center">
           <strong>Note:</strong> Only confirmed email addresses can access the member area.
         </div>
       </div>

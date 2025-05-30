@@ -8,6 +8,8 @@ import { MemberProfile } from '@/components/member/MemberProfile';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
+import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { 
   User, 
   Calendar, 
@@ -20,54 +22,131 @@ import {
   Settings
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { getUserDonations } from '@/utils/storage';
+import { supabase } from '@/integrations/supabase/client';
 
 const MemberArea = () => {
   const { user } = useAuth();
-  const [donations, setDonations] = useState([]);
+  const [memberData, setMemberData] = useState({
+    donations: [],
+    eventRegistrations: [],
+    profileData: null
+  });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUserData = async () => {
-      const donationData = await getUserDonations();
-      setDonations(donationData);
-      setLoading(false);
+      if (!user) return;
+      
+      setLoading(true);
+      setError(null);
+      
+      try {
+        console.log('Fetching member data for user:', user.id);
+        
+        // Fetch user donations from site_content table
+        const { data: donationsData, error: donationsError } = await supabase
+          .from('site_content')
+          .select('content')
+          .like('section', 'donation_%');
+        
+        let userDonations = [];
+        if (donationsData && !donationsError) {
+          userDonations = donationsData
+            .map(item => {
+              try {
+                return JSON.parse(item.content);
+              } catch {
+                return null;
+              }
+            })
+            .filter(donation => donation && donation.user_id === user.id)
+            .sort((a, b) => new Date(b.donated_at || 0).getTime() - new Date(a.donated_at || 0).getTime());
+        }
+
+        // Fetch user event registrations
+        const { data: registrationsData, error: registrationsError } = await supabase
+          .from('event_registrations')
+          .select(`
+            *,
+            events(title, event_date, location)
+          `)
+          .eq('email', user.email)
+          .order('registered_at', { ascending: false });
+
+        // Fetch user profile from site_content
+        const { data: profileData, error: profileError } = await supabase
+          .from('site_content')
+          .select('content')
+          .eq('section', `profile_${user.id}`)
+          .maybeSingle();
+
+        let userProfile = null;
+        if (profileData && !profileError) {
+          try {
+            userProfile = JSON.parse(profileData.content);
+          } catch (error) {
+            console.error('Error parsing profile data:', error);
+          }
+        }
+
+        setMemberData({
+          donations: userDonations,
+          eventRegistrations: registrationsData || [],
+          profileData: userProfile
+        });
+
+        console.log('Fetched member data:', {
+          donations: userDonations.length,
+          registrations: registrationsData?.length || 0,
+          profile: !!userProfile
+        });
+
+      } catch (error) {
+        console.error('Error fetching member data:', error);
+        setError('Failed to load your data. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
     };
+
     fetchUserData();
-  }, []);
+  }, [user]);
 
   const memberStats = [
     {
-      title: 'Events Attended',
-      value: '12',
+      title: 'Events Registered',
+      value: memberData.eventRegistrations.length.toString(),
       icon: Calendar,
       color: 'text-iwc-blue',
       bgColor: 'bg-iwc-blue/10',
-      change: '+3 this month'
+      change: `${memberData.eventRegistrations.length} total`
     },
     {
       title: 'Total Donations',
-      value: '$450',
+      value: memberData.donations.length > 0 
+        ? `$${memberData.donations.reduce((sum, d) => sum + (d.amount || 0), 0)}`
+        : '$0',
       icon: Heart,
       color: 'text-iwc-orange',
       bgColor: 'bg-iwc-orange/10',
-      change: '$50 this month'
+      change: `${memberData.donations.length} donations`
     },
     {
       title: 'Resources Downloaded',
-      value: '8',
+      value: '0',
       icon: FileText,
       color: 'text-iwc-gold',
       bgColor: 'bg-iwc-gold/10',
-      change: '2 new this week'
+      change: 'Coming soon'
     },
     {
       title: 'Member Since',
-      value: '2023',
+      value: user?.created_at ? new Date(user.created_at).getFullYear().toString() : '2024',
       icon: Award,
       color: 'text-green-600',
       bgColor: 'bg-green-100',
-      change: '1 year'
+      change: 'Active member'
     }
   ];
 
@@ -78,7 +157,7 @@ const MemberArea = () => {
       date: '2024-01-07',
       time: '10:00 AM',
       location: 'Main Sanctuary',
-      status: 'registered'
+      status: 'available'
     },
     {
       id: '2',
@@ -122,16 +201,37 @@ const MemberArea = () => {
     }
   ];
 
+  if (loading) {
+    return (
+      <ProtectedRoute>
+        <Layout>
+          <PageContainer maxWidth="2xl">
+            <LoadingIndicator label="Loading your member dashboard..." />
+          </PageContainer>
+        </Layout>
+      </ProtectedRoute>
+    );
+  }
+
+  if (error) {
+    return (
+      <ProtectedRoute>
+        <Layout>
+          <PageContainer maxWidth="2xl">
+            <ErrorMessage 
+              message={error} 
+              onRetry={() => window.location.reload()}
+            />
+          </PageContainer>
+        </Layout>
+      </ProtectedRoute>
+    );
+  }
+
   return (
     <ProtectedRoute>
       <Layout>
-        <PageContainer
-          title="Member Area"
-          description="Welcome back! Manage your profile, view your activity, and access exclusive resources."
-          showBackButton={true}
-          backTo="/"
-          maxWidth="2xl"
-        >
+        <PageContainer maxWidth="2xl">
           <div className="space-y-8">
             {/* Welcome Section */}
             <EnhancedCard gradient={true} className="border-l-4 border-l-iwc-blue">
@@ -221,12 +321,10 @@ const MemberArea = () => {
                           <p className="text-sm text-gray-500 dark:text-gray-500">{event.location}</p>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <Badge variant={event.status === 'registered' ? 'default' : 'secondary'}>
-                            {event.status === 'registered' ? 'Registered' : 'Available'}
+                          <Badge variant="secondary">
+                            Available
                           </Badge>
-                          {event.status === 'available' && (
-                            <Button size="sm" variant="outline">Register</Button>
-                          )}
+                          <Button size="sm" variant="outline">Register</Button>
                         </div>
                       </div>
                     ))}
@@ -241,12 +339,37 @@ const MemberArea = () => {
               <TabsContent value="events" className="space-y-6">
                 <EnhancedCard>
                   <CardHeader>
-                    <CardTitle>Event Registrations</CardTitle>
+                    <CardTitle>My Event Registrations</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-gray-600 dark:text-gray-400 text-center py-8">
-                      Your event registrations will appear here.
-                    </p>
+                    {memberData.eventRegistrations.length > 0 ? (
+                      <div className="space-y-4">
+                        {memberData.eventRegistrations.map((registration: any) => (
+                          <div key={registration.id} className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <h4 className="font-medium text-gray-900 dark:text-white">
+                                  {registration.events?.title || 'Event'}
+                                </h4>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                  Registered: {new Date(registration.registered_at).toLocaleDateString()}
+                                </p>
+                                {registration.events?.event_date && (
+                                  <p className="text-sm text-gray-500 dark:text-gray-500">
+                                    Event Date: {new Date(registration.events.event_date).toLocaleDateString()}
+                                  </p>
+                                )}
+                              </div>
+                              <Badge variant="default">Registered</Badge>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-gray-600 dark:text-gray-400 text-center py-8">
+                        You haven't registered for any events yet.
+                      </p>
+                    )}
                   </CardContent>
                 </EnhancedCard>
               </TabsContent>
@@ -256,22 +379,29 @@ const MemberArea = () => {
                   <CardHeader>
                     <CardTitle className="flex items-center space-x-2">
                       <Heart className="h-5 w-5 text-iwc-orange" />
-                      <span>Giving History</span>
+                      <span>My Giving History</span>
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {loading ? (
-                      <p className="text-center py-8">Loading giving history...</p>
-                    ) : donations.length > 0 ? (
+                    {memberData.donations.length > 0 ? (
                       <div className="space-y-4">
-                        {donations.map((donation: any, index) => (
+                        {memberData.donations.map((donation: any, index) => (
                           <div key={index} className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                             <div className="flex justify-between items-center">
                               <div>
-                                <p className="font-medium">${donation.amount}</p>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">{donation.donation_type}</p>
+                                <p className="font-medium text-gray-900 dark:text-white">
+                                  ${donation.amount}
+                                </p>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                  {donation.donation_type || 'General Donation'}
+                                </p>
+                                {donation.notes && (
+                                  <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">
+                                    {donation.notes}
+                                  </p>
+                                )}
                               </div>
-                              <p className="text-sm text-gray-500">
+                              <p className="text-sm text-gray-500 dark:text-gray-500">
                                 {new Date(donation.donated_at).toLocaleDateString()}
                               </p>
                             </div>

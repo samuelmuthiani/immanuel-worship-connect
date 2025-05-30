@@ -12,7 +12,7 @@ type ThemeProviderProps = {
 type ThemeProviderState = {
   theme: Theme;
   setTheme: (theme: Theme) => void;
-  actualTheme: 'dark' | 'light'; // Add computed theme
+  actualTheme: 'dark' | 'light';
 };
 
 const initialState: ThemeProviderState = {
@@ -37,6 +37,7 @@ export function ThemeProvider({
   useEffect(() => {
     const root = window.document.documentElement;
 
+    // Remove existing theme classes
     root.classList.remove('light', 'dark');
 
     let resolvedTheme: 'dark' | 'light';
@@ -49,8 +50,22 @@ export function ThemeProvider({
       resolvedTheme = theme;
     }
 
+    // Apply theme class to root
     root.classList.add(resolvedTheme);
     setActualTheme(resolvedTheme);
+
+    // Set CSS variables for consistent theming
+    if (resolvedTheme === 'dark') {
+      root.style.setProperty('--background', '222.2 84% 4.9%');
+      root.style.setProperty('--foreground', '210 40% 98%');
+      root.style.setProperty('--primary', '210 40% 98%');
+      root.style.setProperty('--primary-foreground', '222.2 84% 4.9%');
+    } else {
+      root.style.setProperty('--background', '0 0% 100%');
+      root.style.setProperty('--foreground', '222.2 84% 4.9%');
+      root.style.setProperty('--primary', '222.2 47.4% 11.2%');
+      root.style.setProperty('--primary-foreground', '210 40% 98%');
+    }
 
     // Listen for system theme changes
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
@@ -60,6 +75,15 @@ export function ThemeProvider({
         root.classList.remove('light', 'dark');
         root.classList.add(newResolvedTheme);
         setActualTheme(newResolvedTheme);
+        
+        // Update CSS variables
+        if (newResolvedTheme === 'dark') {
+          root.style.setProperty('--background', '222.2 84% 4.9%');
+          root.style.setProperty('--foreground', '210 40% 98%');
+        } else {
+          root.style.setProperty('--background', '0 0% 100%');
+          root.style.setProperty('--foreground', '222.2 84% 4.9%');
+        }
       }
     };
 

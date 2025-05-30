@@ -19,11 +19,6 @@ const NewsletterSignup = () => {
     
     if (!email.trim()) {
       setError('Please enter a valid email address.');
-      toast({
-        title: 'Email Required',
-        description: 'Please enter a valid email address.',
-        variant: 'destructive'
-      });
       return;
     }
 
@@ -31,11 +26,6 @@ const NewsletterSignup = () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email.trim())) {
       setError('Please enter a valid email address.');
-      toast({
-        title: 'Invalid Email',
-        description: 'Please enter a valid email address.',
-        variant: 'destructive'
-      });
       return;
     }
 
@@ -44,7 +34,7 @@ const NewsletterSignup = () => {
     try {
       console.log('Attempting to save newsletter subscription:', email.trim());
       
-      // Direct Supabase call with detailed error handling
+      // Direct Supabase call with comprehensive error handling
       const { data, error: supabaseError } = await supabase
         .from('newsletter_subscribers')
         .insert([{
@@ -56,14 +46,19 @@ const NewsletterSignup = () => {
       console.log('Supabase response:', { data, error: supabaseError });
 
       if (supabaseError) {
-        console.error('Supabase error:', supabaseError);
+        console.error('Supabase error details:', {
+          code: supabaseError.code,
+          message: supabaseError.message,
+          details: supabaseError.details,
+          hint: supabaseError.hint
+        });
         
         // Handle duplicate email
         if (supabaseError.code === '23505') {
           throw new Error('This email is already subscribed to our newsletter.');
         }
         
-        throw new Error(supabaseError.message || 'Failed to subscribe');
+        throw new Error(supabaseError.message || 'Failed to subscribe to newsletter');
       }
 
       if (data && data.length > 0) {
@@ -78,7 +73,7 @@ const NewsletterSignup = () => {
         // Reset success state after 5 seconds
         setTimeout(() => setIsSubscribed(false), 5000);
       } else {
-        throw new Error('No data returned from subscription');
+        throw new Error('Subscription failed - no data returned');
       }
     } catch (error: any) {
       console.error('Newsletter subscription error:', error);
@@ -125,7 +120,7 @@ const NewsletterSignup = () => {
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
           <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
-            <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
+            <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400 flex-shrink-0" />
             <span className="text-sm text-red-700 dark:text-red-300">{error}</span>
           </div>
         )}

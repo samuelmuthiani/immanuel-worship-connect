@@ -12,15 +12,23 @@ export const saveContactSubmission = async (formData: {
   inquiry_type?: string;
 }) => {
   try {
-    const { error } = await supabase
+    console.log('Saving contact submission:', formData);
+    
+    const { data, error } = await supabase
       .from('contact_submissions')
       .insert([{
         ...formData,
         submitted_at: new Date().toISOString()
-      }]);
+      }])
+      .select();
     
-    if (error) throw error;
-    return { success: true };
+    if (error) {
+      console.error('Supabase error saving contact:', error);
+      throw error;
+    }
+    
+    console.log('Contact submission saved successfully:', data);
+    return { success: true, data };
   } catch (error) {
     console.error('Error saving contact submission:', error);
     return { success: false, error };
@@ -34,16 +42,24 @@ export const saveEventRSVP = async (eventId: string, rsvpData: {
   phone?: string;
 }) => {
   try {
-    const { error } = await supabase
+    console.log('Saving event RSVP:', { eventId, rsvpData });
+    
+    const { data, error } = await supabase
       .from('event_registrations')
       .insert([{
         event_id: eventId,
         ...rsvpData,
         registered_at: new Date().toISOString()
-      }]);
+      }])
+      .select();
     
-    if (error) throw error;
-    return { success: true };
+    if (error) {
+      console.error('Supabase error saving RSVP:', error);
+      throw error;
+    }
+    
+    console.log('RSVP saved successfully:', data);
+    return { success: true, data };
   } catch (error) {
     console.error('Error saving RSVP:', error);
     return { success: false, error };
@@ -53,15 +69,29 @@ export const saveEventRSVP = async (eventId: string, rsvpData: {
 // Newsletter subscription
 export const saveNewsletterSubscription = async (email: string) => {
   try {
-    const { error } = await supabase
+    console.log('Saving newsletter subscription:', email);
+    
+    const { data, error } = await supabase
       .from('newsletter_subscribers')
       .insert([{
-        email,
+        email: email.trim(),
         subscribed_at: new Date().toISOString()
-      }]);
+      }])
+      .select();
     
-    if (error) throw error;
-    return { success: true };
+    if (error) {
+      console.error('Supabase error saving newsletter subscription:', error);
+      
+      // Handle duplicate email
+      if (error.code === '23505') {
+        throw new Error('This email is already subscribed to our newsletter.');
+      }
+      
+      throw error;
+    }
+    
+    console.log('Newsletter subscription saved successfully:', data);
+    return { success: true, data };
   } catch (error) {
     console.error('Error saving newsletter subscription:', error);
     return { success: false, error };
@@ -71,12 +101,19 @@ export const saveNewsletterSubscription = async (email: string) => {
 // Admin functions
 export const getAllContactSubmissions = async () => {
   try {
+    console.log('Fetching all contact submissions...');
+    
     const { data, error } = await supabase
       .from('contact_submissions')
       .select('*')
       .order('submitted_at', { ascending: false });
     
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching contact submissions:', error);
+      throw error;
+    }
+    
+    console.log('Contact submissions fetched:', data?.length || 0);
     return data || [];
   } catch (error) {
     console.error('Error fetching contact submissions:', error);
@@ -86,6 +123,8 @@ export const getAllContactSubmissions = async () => {
 
 export const getAllEventRegistrations = async () => {
   try {
+    console.log('Fetching all event registrations...');
+    
     const { data, error } = await supabase
       .from('event_registrations')
       .select(`
@@ -94,7 +133,12 @@ export const getAllEventRegistrations = async () => {
       `)
       .order('registered_at', { ascending: false });
     
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching event registrations:', error);
+      throw error;
+    }
+    
+    console.log('Event registrations fetched:', data?.length || 0);
     return data || [];
   } catch (error) {
     console.error('Error fetching event registrations:', error);
@@ -104,12 +148,19 @@ export const getAllEventRegistrations = async () => {
 
 export const getAllNewsletterSubscribers = async () => {
   try {
+    console.log('Fetching all newsletter subscribers...');
+    
     const { data, error } = await supabase
       .from('newsletter_subscribers')
       .select('*')
       .order('subscribed_at', { ascending: false });
     
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching newsletter subscribers:', error);
+      throw error;
+    }
+    
+    console.log('Newsletter subscribers fetched:', data?.length || 0);
     return data || [];
   } catch (error) {
     console.error('Error fetching newsletter subscribers:', error);
@@ -123,14 +174,22 @@ export const getUserProfile = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
 
+    console.log('Fetching user profile for:', user.id);
+
     const { data, error } = await supabase
       .from('site_content')
       .select('content')
       .eq('section', `profile_${user.id}`)
       .maybeSingle();
     
-    if (error) throw error;
-    return data ? JSON.parse(data.content) : null;
+    if (error) {
+      console.error('Error fetching profile:', error);
+      throw error;
+    }
+    
+    const profile = data ? JSON.parse(data.content) : null;
+    console.log('User profile fetched:', !!profile);
+    return profile;
   } catch (error) {
     console.error('Error fetching profile:', error);
     return null;
@@ -150,7 +209,9 @@ export const updateUserProfile = async (profileData: {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Not authenticated');
 
-    const { error } = await supabase
+    console.log('Updating user profile for:', user.id, profileData);
+
+    const { data, error } = await supabase
       .from('site_content')
       .upsert([{
         section: `profile_${user.id}`,
@@ -159,10 +220,16 @@ export const updateUserProfile = async (profileData: {
           updated_at: new Date().toISOString()
         }),
         updated_at: new Date().toISOString()
-      }]);
+      }])
+      .select();
     
-    if (error) throw error;
-    return { success: true };
+    if (error) {
+      console.error('Error updating profile:', error);
+      throw error;
+    }
+    
+    console.log('Profile updated successfully:', data);
+    return { success: true, data };
   } catch (error) {
     console.error('Error updating profile:', error);
     return { success: false, error };

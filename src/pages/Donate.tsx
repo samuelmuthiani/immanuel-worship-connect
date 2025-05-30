@@ -69,7 +69,7 @@ const Donate = () => {
     {
       title: 'M-Pesa Mobile Money',
       icon: Smartphone,
-      color: 'text-green-600',
+      color: 'text-green-600 dark:text-green-400',
       bgColor: 'bg-green-50 dark:bg-green-900/20',
       borderColor: 'border-green-200 dark:border-green-800',
       details: [
@@ -81,22 +81,21 @@ const Donate = () => {
     {
       title: 'Bank Transfer',
       icon: Building2,
-      color: 'text-blue-600',
+      color: 'text-blue-600 dark:text-blue-400',
       bgColor: 'bg-blue-50 dark:bg-blue-900/20',
       borderColor: 'border-blue-200 dark:border-blue-800',
       details: [
         { label: 'Bank', value: 'Equity Bank' },
         { label: 'Branch', value: 'Nairobi West' },
         { label: 'Account Name', value: 'Immanuel Worship Centre' },
-        { label: 'Account Number', value: '1234567890' },
-        { label: 'SWIFT Code', value: 'EQBLKENA' }
+        { label: 'Account Number', value: '1234567890' }
       ],
       description: 'Traditional banking for larger donations'
     },
     {
       title: 'Online Card Payment',
       icon: CreditCard,
-      color: 'text-purple-600',
+      color: 'text-purple-600 dark:text-purple-400',
       bgColor: 'bg-purple-50 dark:bg-purple-900/20',
       borderColor: 'border-purple-200 dark:border-purple-800',
       details: [],
@@ -125,7 +124,7 @@ const Donate = () => {
                 <EnhancedCard key={stat.label} className="text-center bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm group hover:scale-105 transition-all duration-300">
                   <CardContent className="p-6">
                     <div className="flex justify-center mb-3">
-                      <stat.icon className="h-8 w-8 text-iwc-blue group-hover:text-iwc-orange transition-colors" />
+                      <stat.icon className="h-8 w-8 text-iwc-blue dark:text-iwc-orange group-hover:text-iwc-orange dark:group-hover:text-iwc-blue transition-colors" />
                     </div>
                     <div className="text-3xl font-bold text-gray-900 dark:text-white mb-1">{stat.number}</div>
                     <div className="text-sm text-gray-600 dark:text-gray-400 font-medium">{stat.label}</div>
@@ -166,7 +165,7 @@ const Donate = () => {
                           onClick={() => copyToClipboard(detail.value)}
                           className="h-8 w-8 p-0 hover:bg-white/50 dark:hover:bg-gray-700/50"
                         >
-                          <CheckCircle className="h-4 w-4" />
+                          <CheckCircle className="h-4 w-4 text-gray-600 dark:text-gray-400" />
                         </Button>
                       </div>
                     </div>
@@ -191,7 +190,7 @@ const Donate = () => {
           <EnhancedCard className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 border-green-200 dark:border-green-800 mb-12">
             <CardContent className="p-8 text-center">
               <div className="flex justify-center mb-4">
-                <Shield className="h-12 w-12 text-green-600" />
+                <Shield className="h-12 w-12 text-green-600 dark:text-green-400" />
               </div>
               <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Secure & Trusted Giving</h3>
               <p className="text-gray-700 dark:text-gray-300 mb-6 max-w-2xl mx-auto">
@@ -200,15 +199,15 @@ const Donate = () => {
               </p>
               <div className="flex justify-center items-center gap-6 text-sm text-gray-600 dark:text-gray-400">
                 <div className="flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
                   <span>SSL Encrypted</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
                   <span>Bank Grade Security</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
                   <span>100% Transparent</span>
                 </div>
               </div>
@@ -235,7 +234,7 @@ const Donate = () => {
                     value={thankYouForm.name}
                     onChange={(e) => setThankYouForm(prev => ({ ...prev, name: e.target.value }))}
                     placeholder="Enter donor's name"
-                    className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+                    className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                   />
                 </div>
                 
@@ -248,7 +247,7 @@ const Donate = () => {
                     value={thankYouForm.org}
                     onChange={(e) => setThankYouForm(prev => ({ ...prev, org: e.target.value }))}
                     placeholder="Organization or company name"
-                    className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+                    className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                   />
                 </div>
                 
@@ -262,7 +261,7 @@ const Donate = () => {
                     onChange={(e) => setThankYouForm(prev => ({ ...prev, message: e.target.value }))}
                     placeholder="Write a personalized thank you message..."
                     rows={4}
-                    className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+                    className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                   />
                 </div>
                 
