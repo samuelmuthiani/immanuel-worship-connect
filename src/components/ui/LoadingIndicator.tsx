@@ -1,13 +1,28 @@
-import React from 'react';
 
-export function LoadingIndicator({ label = 'Loading...' }: { label?: string }) {
+import React from 'react';
+import { Loader2 } from 'lucide-react';
+
+interface LoadingIndicatorProps {
+  label?: string;
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+export const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({ 
+  label = 'Loading...', 
+  size = 'md',
+  className = '' 
+}) => {
+  const sizeClasses = {
+    sm: 'h-4 w-4',
+    md: 'h-8 w-8',
+    lg: 'h-12 w-12'
+  };
+
   return (
-    <div role="status" aria-live="polite" className="flex items-center gap-2 py-4 justify-center">
-      <svg className="animate-spin h-5 w-5 text-gray-500" viewBox="0 0 24 24">
-        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-      </svg>
-      <span>{label}</span>
+    <div className={`flex flex-col items-center justify-center p-8 ${className}`}>
+      <Loader2 className={`${sizeClasses[size]} text-iwc-blue animate-spin mb-2`} />
+      <p className="text-sm text-gray-600 dark:text-gray-400">{label}</p>
     </div>
   );
-}
+};

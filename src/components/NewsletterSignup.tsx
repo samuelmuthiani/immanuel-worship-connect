@@ -2,20 +2,23 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Mail, Check, Send } from 'lucide-react';
+import { Mail, Check, Send, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { saveNewsletterSubscription } from '@/utils/storage';
+import { supabase } from '@/integrations/supabase/client';
 
 const NewsletterSignup = () => {
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     
     if (!email.trim()) {
+      setError('Please enter a valid email address.');
       toast({
         title: 'Email Required',
         description: 'Please enter a valid email address.',
@@ -27,6 +30,7 @@ const NewsletterSignup = () => {
     // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email.trim())) {
+      setError('Please enter a valid email address.');
       toast({
         title: 'Invalid Email',
         description: 'Please enter a valid email address.',
@@ -38,9 +42,32 @@ const NewsletterSignup = () => {
     setIsSubmitting(true);
 
     try {
-      const result = await saveNewsletterSubscription(email.trim());
+      console.log('Attempting to save newsletter subscription:', email.trim());
       
-      if (result.success) {
+      // Direct Supabase call with detailed error handling
+      const { data, error: supabaseError } = await supabase
+        .from('newsletter_subscribers')
+        .insert([{
+          email: email.trim(),
+          subscribed_at: new Date().toISOString()
+        }])
+        .select();
+
+      console.log('Supabase response:', { data, error: supabaseError });
+
+      if (supabaseError) {
+        console.error('Supabase error:', supabaseError);
+        
+        // Handle duplicate email
+        if (supabaseError.code === '23505') {
+          throw new Error('This email is already subscribed to our newsletter.');
+        }
+        
+        throw new Error(supabaseError.message || 'Failed to subscribe');
+      }
+
+      if (data && data.length > 0) {
+        console.log('Successfully subscribed:', data[0]);
         setIsSubscribed(true);
         setEmail('');
         toast({
@@ -51,13 +78,15 @@ const NewsletterSignup = () => {
         // Reset success state after 5 seconds
         setTimeout(() => setIsSubscribed(false), 5000);
       } else {
-        throw new Error('Failed to subscribe');
+        throw new Error('No data returned from subscription');
       }
-    } catch (error) {
-      console.error('Error subscribing to newsletter:', error);
+    } catch (error: any) {
+      console.error('Newsletter subscription error:', error);
+      const errorMessage = error.message || 'There was an error subscribing to our newsletter. Please try again.';
+      setError(errorMessage);
       toast({
         title: 'Subscription Failed',
-        description: 'There was an error subscribing to our newsletter. Please try again.',
+        description: errorMessage,
         variant: 'destructive'
       });
     } finally {
@@ -94,6 +123,13 @@ const NewsletterSignup = () => {
   return (
     <div className="w-full max-w-md mx-auto">
       <form onSubmit={handleSubmit} className="space-y-4">
+        {error && (
+          <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+            <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
+            <span className="text-sm text-red-700 dark:text-red-300">{error}</span>
+          </div>
+        )}
+        
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="flex-1 relative">
             <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-4 w-4" />
