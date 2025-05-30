@@ -12,6 +12,7 @@ import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import AdminAnalytics from '@/components/admin/AdminAnalytics';
 import { PageContainer } from '@/components/ui/page-container';
+import { logAudit } from '@/lib/audit';
 
 // Reusable confirmation dialog component
 interface ConfirmDialogProps {
