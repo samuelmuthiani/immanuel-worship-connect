@@ -7,6 +7,15 @@ type DonationInsert = Database['public']['Tables']['donations']['Insert'];
 export type Appreciation = Database['public']['Tables']['appreciations']['Row'];
 type AppreciationInsert = Database['public']['Tables']['appreciations']['Insert'];
 
+// Extended type for appreciation with donation details
+export type AppreciationWithDonation = Appreciation & {
+  donations?: {
+    amount: number;
+    donation_type: string | null;
+    created_at: string;
+  };
+};
+
 export const donationService = {
   // Create a new donation record
   async createDonation(donationData: Omit<DonationInsert, 'id' | 'created_at'>): Promise<Donation | null> {
@@ -46,6 +55,40 @@ export const donationService = {
       return data || [];
     } catch (error) {
       console.error('Failed to fetch user donations:', error);
+      return [];
+    }
+  },
+
+  // Get all donations with user emails (admin only)
+  async getAllDonationsWithUserInfo(): Promise<(Donation & { user_email?: string })[]> {
+    try {
+      const { data, error } = await supabase
+        .from('donations')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching all donations:', error);
+        throw error;
+      }
+
+      // Get user emails for each donation
+      const donationsWithEmails = await Promise.all(
+        (data || []).map(async (donation) => {
+          try {
+            const { data: userEmail } = await supabase.rpc('get_user_email', {
+              user_uuid: donation.user_id
+            });
+            return { ...donation, user_email: userEmail || 'Unknown' };
+          } catch {
+            return { ...donation, user_email: 'Unknown' };
+          }
+        })
+      );
+
+      return donationsWithEmails;
+    } catch (error) {
+      console.error('Failed to fetch all donations:', error);
       return [];
     }
   },
@@ -92,7 +135,7 @@ export const donationService = {
   },
 
   // Get appreciations for a user
-  async getUserAppreciations(userId: string): Promise<Appreciation[]> {
+  async getUserAppreciations(userId: string): Promise<AppreciationWithDonation[]> {
     try {
       const { data, error } = await supabase
         .from('appreciations')
@@ -191,12 +234,15 @@ export const getUserDonations = async (): Promise<Donation[]> => {
   return donationService.getUserDonations(user.id);
 };
 
-export const getAllDonations = async (): Promise<Donation[]> => {
-  return donationService.getAllDonations();
+export const getAllDonations = async (): Promise<(Donation & { user_email?: string })[]> => {
+  return donationService.getAllDonationsWithUserInfo();
 };
 
 export const sendAppreciation = async (donationId: string, message: string): Promise<{ success: boolean }> => {
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
     const { data: donation } = await supabase
       .from('donations')
       .select('user_id')
@@ -208,6 +254,7 @@ export const sendAppreciation = async (donationId: string, message: string): Pro
     const appreciation = await donationService.sendAppreciation({
       donation_id: donationId,
       recipient_id: donation.user_id,
+      sender_id: user.id,
       message,
     });
 
@@ -218,7 +265,7 @@ export const sendAppreciation = async (donationId: string, message: string): Pro
   }
 };
 
-export const getUserAppreciations = async (): Promise<Appreciation[]> => {
+export const getUserAppreciations = async (): Promise<AppreciationWithDonation[]> => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return [];
   return donationService.getUserAppreciations(user.id);
@@ -241,7 +288,6 @@ export const saveDonation = async (donationData: {
 
     const donation = await donationService.createDonation({
       user_id: user.id,
-      user_email: user.email || '',
       amount: donationData.amount,
       donation_type: donationData.donation_type,
       payment_method: donationData.payment_method,

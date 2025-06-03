@@ -4,10 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Heart, Calendar, DollarSign, Check } from 'lucide-react';
-import { getUserAppreciations, markAppreciationAsRead, type Appreciation } from '@/utils/donationUtils';
+import { getUserAppreciations, markAppreciationAsRead, type AppreciationWithDonation } from '@/utils/donationUtils';
 
 export function AppreciationNotifications() {
-  const [appreciations, setAppreciations] = useState<Appreciation[]>([]);
+  const [appreciations, setAppreciations] = useState<AppreciationWithDonation[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -118,17 +118,17 @@ export function AppreciationNotifications() {
                       {appreciation.message}
                     </p>
                     
-                    {appreciation.donation && (
+                    {appreciation.donations && (
                       <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-md mb-3">
                         <h5 className="text-sm font-medium mb-1">Related Donation:</h5>
                         <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
                           <div className="flex items-center gap-1">
                             <DollarSign className="h-3 w-3" />
-                            {formatCurrency(appreciation.donation.amount)}
+                            {formatCurrency(appreciation.donations.amount)}
                           </div>
                           <div className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
-                            {formatDate(appreciation.donation.created_at)}
+                            {formatDate(appreciation.donations.created_at)}
                           </div>
                         </div>
                       </div>
