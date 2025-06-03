@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { EnhancedNavigation } from '@/components/EnhancedNavigation';
+import EnhancedNavigation from '@/components/EnhancedNavigation';
 import { EnhancedFooter } from '@/components/EnhancedFooter';
 import { Toaster } from '@/components/ui/toaster';
 

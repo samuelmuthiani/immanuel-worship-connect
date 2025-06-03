@@ -11,17 +11,17 @@ interface AuthGuardProps {
 }
 
 const AuthGuard: React.FC<AuthGuardProps> = ({ children, requiredRole, adminOnly = false }) => {
-  const { user, loading, hasRole } = useAuth();
+  const { user, isLoading, hasRole } = useAuth();
   const location = useLocation();
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (!isLoading && !user) {
       // Store the attempted URL for redirection after login
       sessionStorage.setItem('redirectAfterLogin', location.pathname);
     }
-  }, [loading, user, location.pathname]);
+  }, [isLoading, user, location.pathname]);
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] p-8">
         <Loader2 className="h-12 w-12 text-iwc-blue animate-spin mb-4" />
