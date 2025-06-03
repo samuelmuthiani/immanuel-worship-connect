@@ -6,14 +6,14 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Heart, Send, DollarSign, Calendar, User, MessageSquare } from 'lucide-react';
-import { getAllDonations, sendAppreciation, type Donation } from '@/utils/donationUtils';
+import { getAllDonations, sendAppreciation, type DonationWithEmail } from '@/utils/donationUtils';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 export function DonationManagement() {
-  const [donations, setDonations] = useState<Donation[]>([]);
+  const [donations, setDonations] = useState<DonationWithEmail[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedDonation, setSelectedDonation] = useState<Donation | null>(null);
+  const [selectedDonation, setSelectedDonation] = useState<DonationWithEmail | null>(null);
   const [appreciationMessage, setAppreciationMessage] = useState('');
   const [sending, setSending] = useState(false);
   const { toast } = useToast();
@@ -114,7 +114,7 @@ export function DonationManagement() {
                       <div className="flex items-center gap-2">
                         <User className="h-4 w-4 text-gray-500" />
                         <span className="font-medium text-gray-900 dark:text-white">
-                          {donation.user_email}
+                          {donation.user_email || 'Unknown User'}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
@@ -162,7 +162,7 @@ export function DonationManagement() {
                         <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
                           <h4 className="font-medium mb-2">Donation Details:</h4>
                           <p className="text-sm text-gray-600 dark:text-gray-300">
-                            <strong>Donor:</strong> {donation.user_email}
+                            <strong>Donor:</strong> {donation.user_email || 'Unknown User'}
                           </p>
                           <p className="text-sm text-gray-600 dark:text-gray-300">
                             <strong>Amount:</strong> {formatCurrency(donation.amount)}

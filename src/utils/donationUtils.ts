@@ -7,6 +7,11 @@ type DonationInsert = Database['public']['Tables']['donations']['Insert'];
 export type Appreciation = Database['public']['Tables']['appreciations']['Row'];
 type AppreciationInsert = Database['public']['Tables']['appreciations']['Insert'];
 
+// Extended type for donation with user email
+export type DonationWithEmail = Donation & {
+  user_email?: string;
+};
+
 // Extended type for appreciation with donation details
 export type AppreciationWithDonation = Appreciation & {
   donations?: {
@@ -60,7 +65,7 @@ export const donationService = {
   },
 
   // Get all donations with user emails (admin only)
-  async getAllDonationsWithUserInfo(): Promise<(Donation & { user_email?: string })[]> {
+  async getAllDonationsWithUserInfo(): Promise<DonationWithEmail[]> {
     try {
       const { data, error } = await supabase
         .from('donations')
@@ -234,7 +239,7 @@ export const getUserDonations = async (): Promise<Donation[]> => {
   return donationService.getUserDonations(user.id);
 };
 
-export const getAllDonations = async (): Promise<(Donation & { user_email?: string })[]> => {
+export const getAllDonations = async (): Promise<DonationWithEmail[]> => {
   return donationService.getAllDonationsWithUserInfo();
 };
 
