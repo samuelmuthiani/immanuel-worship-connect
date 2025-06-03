@@ -1,7 +1,8 @@
-// Centralized Supabase storage utilities
+// Centralized Supabase storage utilities with enhanced security
 import { supabase } from '@/integrations/supabase/client';
+import { SecurityService } from './security';
 
-// Contact form submission
+// Contact form submission with validation
 export const saveContactSubmission = async (formData: {
   name: string;
   email: string;
@@ -11,12 +12,38 @@ export const saveContactSubmission = async (formData: {
   inquiry_type?: string;
 }) => {
   try {
-    console.log('Saving contact submission:', formData);
+    // Rate limiting check
+    const clientIP = 'browser-session'; // In a real app, you'd get the actual IP
+    if (SecurityService.isRateLimited(`contact-${clientIP}`, 3, 10 * 60 * 1000)) {
+      throw new Error('Too many contact submissions. Please wait before trying again.');
+    }
+
+    // Validate and sanitize inputs
+    const sanitizedData = {
+      name: SecurityService.sanitizeInput(formData.name),
+      email: SecurityService.sanitizeEmail(formData.email),
+      phone: formData.phone ? SecurityService.sanitizeInput(formData.phone) : null,
+      subject: formData.subject ? SecurityService.sanitizeInput(formData.subject) : null,
+      message: SecurityService.sanitizeInput(formData.message),
+      inquiry_type: formData.inquiry_type ? SecurityService.sanitizeInput(formData.inquiry_type) : null
+    };
+
+    // Validate email format
+    if (!SecurityService.validateEmail(sanitizedData.email)) {
+      throw new Error('Invalid email format');
+    }
+
+    // Validate required fields
+    if (!sanitizedData.name || !sanitizedData.message) {
+      throw new Error('Name and message are required');
+    }
+
+    console.log('Saving contact submission:', sanitizedData);
     
     const { data, error } = await supabase
       .from('contact_submissions')
       .insert([{
-        ...formData,
+        ...sanitizedData,
         submitted_at: new Date().toISOString()
       }])
       .select();
@@ -34,20 +61,52 @@ export const saveContactSubmission = async (formData: {
   }
 };
 
-// Event RSVP submission
+// Event RSVP submission with validation
 export const saveEventRSVP = async (eventId: string, rsvpData: {
   name: string;
   email: string;
   phone?: string;
 }) => {
   try {
-    console.log('Saving event RSVP:', { eventId, rsvpData });
+    // Rate limiting
+    const clientIP = 'browser-session';
+    if (SecurityService.isRateLimited(`rsvp-${clientIP}`, 5, 15 * 60 * 1000)) {
+      throw new Error('Too many RSVP submissions. Please wait before trying again.');
+    }
+
+    // Validate and sanitize
+    const sanitizedData = {
+      name: SecurityService.sanitizeInput(rsvpData.name),
+      email: SecurityService.sanitizeEmail(rsvpData.email),
+      phone: rsvpData.phone ? SecurityService.sanitizeInput(rsvpData.phone) : null
+    };
+
+    if (!SecurityService.validateEmail(sanitizedData.email)) {
+      throw new Error('Invalid email format');
+    }
+
+    if (!sanitizedData.name) {
+      throw new Error('Name is required');
+    }
+
+    // Validate event exists
+    const { data: event, error: eventError } = await supabase
+      .from('events')
+      .select('id')
+      .eq('id', eventId)
+      .single();
+
+    if (eventError || !event) {
+      throw new Error('Event not found');
+    }
+
+    console.log('Saving event RSVP:', { eventId, rsvpData: sanitizedData });
     
     const { data, error } = await supabase
       .from('event_registrations')
       .insert([{
         event_id: eventId,
-        ...rsvpData,
+        ...sanitizedData,
         registered_at: new Date().toISOString()
       }])
       .select();
@@ -65,15 +124,27 @@ export const saveEventRSVP = async (eventId: string, rsvpData: {
   }
 };
 
-// Newsletter subscription
+// Newsletter subscription with duplicate prevention
 export const saveNewsletterSubscription = async (email: string) => {
   try {
-    console.log('Saving newsletter subscription:', email);
+    // Rate limiting
+    const clientIP = 'browser-session';
+    if (SecurityService.isRateLimited(`newsletter-${clientIP}`, 3, 10 * 60 * 1000)) {
+      throw new Error('Too many subscription attempts. Please wait before trying again.');
+    }
+
+    const sanitizedEmail = SecurityService.sanitizeEmail(email);
+    
+    if (!SecurityService.validateEmail(sanitizedEmail)) {
+      throw new Error('Invalid email format');
+    }
+
+    console.log('Saving newsletter subscription:', sanitizedEmail);
     
     const { data, error } = await supabase
       .from('newsletter_subscribers')
       .insert([{
-        email: email.trim(),
+        email: sanitizedEmail,
         subscribed_at: new Date().toISOString()
       }])
       .select();
@@ -97,7 +168,7 @@ export const saveNewsletterSubscription = async (email: string) => {
   }
 };
 
-// Donation utilities (using the new donations table)
+// Secure donation utilities
 export const saveDonationToSupabase = async (donationData: {
   amount: number;
   donation_type: string;
@@ -107,15 +178,29 @@ export const saveDonationToSupabase = async (donationData: {
 }) => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Not authenticated');
+    if (!user) throw new Error('Authentication required');
 
-    console.log('Saving donation to Supabase:', donationData);
+    // Validate donation amount
+    if (typeof donationData.amount !== 'number' || donationData.amount <= 0 || donationData.amount > 1000000) {
+      throw new Error('Invalid donation amount');
+    }
+
+    // Sanitize inputs
+    const sanitizedData = {
+      amount: donationData.amount,
+      donation_type: SecurityService.sanitizeInput(donationData.donation_type),
+      payment_method: donationData.payment_method ? SecurityService.sanitizeInput(donationData.payment_method) : null,
+      transaction_reference: donationData.transaction_reference ? SecurityService.sanitizeInput(donationData.transaction_reference) : null,
+      notes: donationData.notes ? SecurityService.sanitizeInput(donationData.notes) : null
+    };
+
+    console.log('Saving donation to Supabase:', sanitizedData);
 
     const { data, error } = await supabase
       .from('donations')
       .insert([{
         user_id: user.id,
-        ...donationData,
+        ...sanitizedData,
       }])
       .select();
     
@@ -132,8 +217,29 @@ export const saveDonationToSupabase = async (donationData: {
   }
 };
 
+// Secure admin functions with proper access control
 export const getAllDonationsFromSupabase = async () => {
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Authentication required');
+
+    // Verify admin access
+    const adminEmails = ['admin@iwc.com', 'samuel.watho@gmail.com'];
+    let isAdmin = adminEmails.includes(user.email || '');
+
+    if (!isAdmin) {
+      const { data: roles } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id);
+      
+      isAdmin = roles?.some(r => r.role === 'admin') || false;
+    }
+
+    if (!isAdmin) {
+      throw new Error('Administrative access required');
+    }
+
     console.log('Fetching all donations from Supabase...');
     
     const { data, error } = await supabase
@@ -183,9 +289,29 @@ export const getUserDonationsFromSupabase = async () => {
   }
 };
 
-// Admin functions
+// Admin functions with proper access control
 export const getAllContactSubmissions = async () => {
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Authentication required');
+
+    // Verify admin access
+    const adminEmails = ['admin@iwc.com', 'samuel.watho@gmail.com'];
+    let isAdmin = adminEmails.includes(user.email || '');
+
+    if (!isAdmin) {
+      const { data: roles } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id);
+      
+      isAdmin = roles?.some(r => r.role === 'admin') || false;
+    }
+
+    if (!isAdmin) {
+      throw new Error('Administrative access required');
+    }
+
     console.log('Fetching all contact submissions...');
     
     const { data, error } = await supabase
@@ -208,6 +334,26 @@ export const getAllContactSubmissions = async () => {
 
 export const getAllEventRegistrations = async () => {
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Authentication required');
+
+    // Verify admin access
+    const adminEmails = ['admin@iwc.com', 'samuel.watho@gmail.com'];
+    let isAdmin = adminEmails.includes(user.email || '');
+
+    if (!isAdmin) {
+      const { data: roles } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id);
+      
+      isAdmin = roles?.some(r => r.role === 'admin') || false;
+    }
+
+    if (!isAdmin) {
+      throw new Error('Administrative access required');
+    }
+
     console.log('Fetching all event registrations...');
     
     const { data, error } = await supabase
@@ -233,6 +379,26 @@ export const getAllEventRegistrations = async () => {
 
 export const getAllNewsletterSubscribers = async () => {
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Authentication required');
+
+    // Verify admin access
+    const adminEmails = ['admin@iwc.com', 'samuel.watho@gmail.com'];
+    let isAdmin = adminEmails.includes(user.email || '');
+
+    if (!isAdmin) {
+      const { data: roles } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id);
+      
+      isAdmin = roles?.some(r => r.role === 'admin') || false;
+    }
+
+    if (!isAdmin) {
+      throw new Error('Administrative access required');
+    }
+
     console.log('Fetching all newsletter subscribers...');
     
     const { data, error } = await supabase
@@ -253,7 +419,7 @@ export const getAllNewsletterSubscribers = async () => {
   }
 };
 
-// User profile management
+// User profile management with security
 export const getUserProfile = async () => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
@@ -292,16 +458,27 @@ export const updateUserProfile = async (profileData: {
 }) => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Not authenticated');
+    if (!user) throw new Error('Authentication required');
 
-    console.log('Updating user profile for:', user.id, profileData);
+    // Sanitize all string inputs
+    const sanitizedData = {
+      first_name: profileData.first_name ? SecurityService.sanitizeInput(profileData.first_name) : '',
+      last_name: profileData.last_name ? SecurityService.sanitizeInput(profileData.last_name) : '',
+      phone: profileData.phone ? SecurityService.sanitizeInput(profileData.phone) : '',
+      date_of_birth: profileData.date_of_birth,
+      address: profileData.address ? SecurityService.sanitizeInput(profileData.address) : '',
+      avatar_url: profileData.avatar_url,
+      bio: profileData.bio ? SecurityService.sanitizeInput(profileData.bio) : ''
+    };
+
+    console.log('Updating user profile for:', user.id, sanitizedData);
 
     const { data, error } = await supabase
       .from('site_content')
       .upsert([{
         section: `profile_${user.id}`,
         content: JSON.stringify({
-          ...profileData,
+          ...sanitizedData,
           updated_at: new Date().toISOString()
         }),
         updated_at: new Date().toISOString()
