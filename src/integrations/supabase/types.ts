@@ -153,9 +153,6 @@ export type Database = {
           payment_method: string | null
           transaction_reference: string | null
           user_id: string
-          status: 'pending' | 'verified' | 'rejected' | null
-          verified_by: string | null
-          verified_at: string | null
         }
         Insert: {
           amount: number
@@ -166,9 +163,6 @@ export type Database = {
           payment_method?: string | null
           transaction_reference?: string | null
           user_id: string
-          status?: 'pending' | 'verified' | 'rejected' | null
-          verified_by?: string | null
-          verified_at?: string | null
         }
         Update: {
           amount?: number
@@ -179,9 +173,6 @@ export type Database = {
           payment_method?: string | null
           transaction_reference?: string | null
           user_id?: string
-          status?: 'pending' | 'verified' | 'rejected' | null
-          verified_by?: string | null
-          verified_at?: string | null
         }
         Relationships: []
       }
@@ -409,7 +400,7 @@ export type Tables<
   }
     ? keyof (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never,
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
   ? (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
       Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
