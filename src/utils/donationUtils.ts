@@ -7,12 +7,10 @@ type DonationInsert = Database['public']['Tables']['donations']['Insert'];
 export type Appreciation = Database['public']['Tables']['appreciations']['Row'];
 type AppreciationInsert = Database['public']['Tables']['appreciations']['Insert'];
 
-// Extended type for donation with user email
 export type DonationWithEmail = Donation & {
   user_email?: string;
 };
 
-// Extended type for appreciation with donation details
 export type AppreciationWithDonation = Appreciation & {
   donations?: {
     amount: number;
@@ -22,7 +20,6 @@ export type AppreciationWithDonation = Appreciation & {
 };
 
 export const donationService = {
-  // Create a new donation record
   async createDonation(donationData: Omit<DonationInsert, 'id' | 'created_at'>): Promise<Donation | null> {
     try {
       const { data, error } = await supabase
@@ -43,7 +40,6 @@ export const donationService = {
     }
   },
 
-  // Get all donations for a specific user
   async getUserDonations(userId: string): Promise<Donation[]> {
     try {
       const { data, error } = await supabase
@@ -64,7 +60,6 @@ export const donationService = {
     }
   },
 
-  // Get all donations with user emails (admin only)
   async getAllDonationsWithUserInfo(): Promise<DonationWithEmail[]> {
     try {
       const { data, error } = await supabase
@@ -77,7 +72,6 @@ export const donationService = {
         throw error;
       }
 
-      // Get user emails for each donation
       const donationsWithEmails = await Promise.all(
         (data || []).map(async (donation) => {
           try {
@@ -98,7 +92,6 @@ export const donationService = {
     }
   },
 
-  // Get all donations (admin only)
   async getAllDonations(): Promise<Donation[]> {
     try {
       const { data, error } = await supabase
@@ -118,7 +111,6 @@ export const donationService = {
     }
   },
 
-  // Send appreciation message for a donation
   async sendAppreciation(appreciationData: Omit<AppreciationInsert, 'id' | 'sent_at'>): Promise<Appreciation | null> {
     try {
       const { data, error } = await supabase
@@ -139,7 +131,6 @@ export const donationService = {
     }
   },
 
-  // Get appreciations for a user
   async getUserAppreciations(userId: string): Promise<AppreciationWithDonation[]> {
     try {
       const { data, error } = await supabase
@@ -167,7 +158,6 @@ export const donationService = {
     }
   },
 
-  // Mark appreciation as read
   async markAppreciationAsRead(appreciationId: string): Promise<boolean> {
     try {
       const { error } = await supabase
@@ -187,7 +177,6 @@ export const donationService = {
     }
   },
 
-  // Get donation statistics
   async getDonationStats(): Promise<{
     totalAmount: number;
     totalDonations: number;
@@ -210,7 +199,6 @@ export const donationService = {
       const totalAmount = data.reduce((sum, donation) => sum + (donation.amount || 0), 0);
       const totalDonations = data.length;
 
-      // Calculate monthly total (current month)
       const currentMonth = new Date().getMonth();
       const currentYear = new Date().getFullYear();
       const monthlyTotal = data
@@ -232,7 +220,6 @@ export const donationService = {
   },
 };
 
-// Individual function exports for easier importing
 export const getUserDonations = async (): Promise<Donation[]> => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return [];
@@ -306,15 +293,13 @@ export const saveDonation = async (donationData: {
   }
 };
 
-// Helper function to format currency
 export const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat('en-US', {
+  return new Intl.NumberFormat('en-KE', {
     style: 'currency',
-    currency: 'USD',
+    currency: 'KES',
   }).format(amount);
 };
 
-// Helper function to get donation type display name
 export const getDonationTypeDisplayName = (type: string): string => {
   const typeMap: Record<string, string> = {
     general: 'General Donation',

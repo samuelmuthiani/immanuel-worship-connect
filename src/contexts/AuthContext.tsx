@@ -30,7 +30,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  // Special admin emails
   const adminEmails = ['admin@iwc.com', 'samuel.watho@gmail.com'];
 
   const fetchUserRoles = async (userId: string) => {
@@ -55,7 +54,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
-    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, currentSession) => {
         if (!mounted) return;
@@ -64,7 +62,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(currentSession?.user ?? null);
         
         if (currentSession?.user) {
-          // Defer role fetching to avoid potential deadlock
           setTimeout(async () => {
             if (mounted) {
               const roles = await fetchUserRoles(currentSession.user.id);
@@ -79,7 +76,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    // Check for existing session
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
       if (!mounted) return;
       
@@ -112,15 +108,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       if (data.user) {
         toast({
-          title: 'Signed in successfully',
-          description: `Welcome back, ${data.user.email}!`,
+          title: 'Welcome back!',
+          description: `Successfully signed in as ${data.user.email}`,
         });
         return { success: true };
       }
       
-      return { success: false, error: 'Unknown error occurred' };
+      return { success: false, error: 'Authentication failed' };
     } catch (error: any) {
-      const errorMessage = error.message || 'An unexpected error occurred';
+      const errorMessage = error.message || 'Sign in failed';
       toast({
         title: 'Sign in failed',
         description: errorMessage,
@@ -145,13 +141,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) throw error;
       
       toast({
-        title: 'Sign up successful',
+        title: 'Account created!',
         description: 'Please check your email for confirmation instructions.',
       });
       
       return { success: true };
     } catch (error: any) {
-      const errorMessage = error.message || 'An unexpected error occurred';
+      const errorMessage = error.message || 'Sign up failed';
       toast({
         title: 'Sign up failed',
         description: errorMessage,
@@ -165,10 +161,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await supabase.auth.signOut();
       toast({
-        title: 'Signed out successfully',
+        title: 'Signed out',
+        description: 'You have been successfully signed out.',
       });
     } catch (error) {
       console.error('Sign out error:', error);
+      toast({
+        title: 'Sign out failed',
+        description: 'There was an error signing out.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -191,7 +193,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const hasRole = (role: string) => {
     if (!user) return false;
     
-    // Check special admin emails
     if (adminEmails.includes(user.email || '') && role === 'admin') {
       return true;
     }

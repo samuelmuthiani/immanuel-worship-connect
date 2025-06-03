@@ -1,145 +1,124 @@
-import React, { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
-import { useToast } from '@/hooks/use-toast';
-import { Input } from '@/components/ui/input';
+
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Eye, EyeOff, UserPlus, Mail, Lock, CheckCircle } from 'lucide-react';
+import { FloatingInput } from '@/components/ui/FloatingInput';
+import { PasswordStrength } from '@/components/ui/PasswordStrength';
+import { UserPlus, AlertCircle, CheckCircle } from 'lucide-react';
 import iwcLogo from '/iwc-logo.png';
-import './Login.css'; // Use the same custom styles as Login
+import './Login.css';
+
+interface FormErrors {
+  email?: string;
+  password?: string;
+  confirmPassword?: string;
+  general?: string;
+}
 
 const Register = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [passwordStrength, setPasswordStrength] = useState('');
-  const [confetti, setConfetti] = useState(false);
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
-  const [registered, setRegistered] = useState(false);
+  const [success, setSuccess] = useState(false);
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const { signUp, user } = useAuth();
+
+  useEffect(() => {
+    if (user) {
+      navigate('/', { replace: true });
+    }
+  }, [user, navigate]);
 
   const validateForm = () => {
+    const newErrors: FormErrors = {};
+    
     if (!email.trim()) {
-      setError('Email is required');
-      return false;
+      newErrors.email = 'Email address is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      newErrors.email = 'Please enter a valid email address';
     }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      setError('Please enter a valid email address');
-      return false;
-    }
-
+    
     if (!password) {
-      setError('Password is required');
-      return false;
+      newErrors.password = 'Password is required';
+    } else if (password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
     }
 
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters long');
-      return false;
+    if (!confirmPassword) {
+      newErrors.confirmPassword = 'Please confirm your password';
+    } else if (password !== confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
     }
 
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      return false;
-    }
-
-    return true;
-  };
-
-  const getPasswordStrength = (pwd: string) => {
-    if (!pwd) return '';
-    if (pwd.length < 6) return 'weak';
-    if (/^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*]).{8,}$/.test(pwd)) return 'strong';
-    if (pwd.length >= 8) return 'medium';
-    return 'weak';
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-
-    if (!validateForm()) {
-      return;
-    }
-
+    setErrors({});
+    
+    if (!validateForm()) return;
+    
     setLoading(true);
     
     try {
-      const { data, error } = await supabase.auth.signUp({ 
-        email: email.trim(), 
-        password 
-      });
+      const result = await signUp(email.trim(), password);
       
-      if (error) throw error;
-
-      if (data?.user?.id) {
-        // Assign default role in user_roles table
-        const { error: roleError } = await supabase
-          .from('user_roles')
-          .insert([{ user_id: data.user.id, role: 'member' }]);
-
-        if (roleError) {
-          console.error('Error assigning default role:', roleError);
-        }
+      if (result.success) {
+        setSuccess(true);
+      } else {
+        setErrors({ general: result.error || 'Registration failed' });
       }
-
-      setRegistered(true);
-      setConfetti(true);
-      toast({
-        title: 'Registration Successful!',
-        description: 'Please check your email to confirm your account before logging in.',
-      });
-
-    } catch (error: any) {
+    } catch (error) {
       console.error('Registration error:', error);
-      const errorMessage = error.message || 'Failed to register. Please try again.';
-      setError(errorMessage);
-      toast({
-        title: 'Registration Failed',
-        description: errorMessage,
-        variant: 'destructive'
-      });
+      setErrors({ general: 'An unexpected error occurred. Please try again.' });
     } finally {
       setLoading(false);
     }
   };
 
-  if (registered) {
+  const clearFieldError = (field: keyof FormErrors) => {
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: undefined }));
+    }
+  };
+
+  if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-iwc-blue/90 via-iwc-orange/60 to-iwc-gold/80 dark:from-gray-900 dark:via-gray-900 dark:to-iwc-blue/80 animate-bg-glow">
+      <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-iwc-blue/90 via-iwc-orange/60 to-iwc-gold/80 dark:from-gray-900 dark:via-gray-900 dark:to-iwc-blue/80">
         <div className="absolute inset-0 pointer-events-none z-0">
           <div className="absolute top-1/4 left-1/2 w-[600px] h-[600px] bg-iwc-orange/20 rounded-full blur-3xl opacity-60 animate-pulse-glow" style={{transform:'translate(-50%, -50%)'}} />
           <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-iwc-blue/30 rounded-full blur-2xl opacity-40 animate-pulse-glow" />
         </div>
-        <div className="relative z-10 w-full max-w-md">
-          <div className="flex flex-col items-center mb-4">
-            <div className="glossy-logo rounded-full p-2 bg-white/60 dark:bg-gray-900/60 shadow-xl animate-float">
-              <img src={iwcLogo} alt="Immanuel Worship Centre Logo" className="h-14 w-14 drop-shadow-lg" />
+        
+        <div className="relative z-10 w-full max-w-md px-4">
+          <div className="flex flex-col items-center mb-8">
+            <div className="glossy-logo rounded-full p-3 bg-white/70 dark:bg-gray-900/70 shadow-xl animate-float">
+              <img src={iwcLogo} alt="Immanuel Worship Centre Logo" className="h-16 w-16 drop-shadow-lg" />
             </div>
           </div>
-          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-2xl rounded-3xl shadow-2xl p-8 border-2 border-transparent hover:border-iwc-orange/60 transition-all duration-300 animate-fade-in-up glossy-card">
+
+          <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-2xl rounded-3xl shadow-2xl p-8 border border-white/20 dark:border-gray-700/50 glossy-card animate-fade-in-up">
             <div className="text-center">
-              <div className="flex justify-center mb-4">
-                <CheckCircle className="h-16 w-16 text-green-600 dark:text-green-400" />
+              <div className="flex justify-center mb-6">
+                <CheckCircle className="h-16 w-16 text-green-600 dark:text-green-400 animate-bounce-once" />
               </div>
               <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">
-                Registration Successful!
+                Check Your Email
               </h2>
               <p className="text-gray-600 dark:text-gray-400 mb-6">
-                We've sent a confirmation email to <strong>{email}</strong>.<br/>
-                Please check your inbox and click the confirmation link to activate your account.
+                We've sent a confirmation link to <strong>{email}</strong>. 
+                Please check your email and click the link to activate your account.
               </p>
-              <Button
-                onClick={() => navigate('/login')}
-                className="w-full glossy-btn bg-gradient-to-r from-iwc-blue to-iwc-orange hover:from-iwc-orange hover:to-iwc-blue text-white font-bold py-3 rounded-xl shadow-lg transition-all duration-300 animate-bounce-once"
+              <Button 
+                onClick={() => navigate('/login')} 
+                className="w-full bg-gradient-to-r from-iwc-blue to-iwc-orange hover:from-iwc-orange hover:to-iwc-blue text-white font-semibold py-3 rounded-xl shadow-lg transition-all duration-300"
               >
-                Go to Login
+                Back to Login
               </Button>
             </div>
           </div>
@@ -149,123 +128,120 @@ const Register = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-iwc-blue/90 via-iwc-orange/60 to-iwc-gold/80 dark:from-gray-900 dark:via-gray-900 dark:to-iwc-blue/80 animate-bg-glow">
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-iwc-blue/90 via-iwc-orange/60 to-iwc-gold/80 dark:from-gray-900 dark:via-gray-900 dark:to-iwc-blue/80">
       <div className="absolute inset-0 pointer-events-none z-0">
         <div className="absolute top-1/4 left-1/2 w-[600px] h-[600px] bg-iwc-orange/20 rounded-full blur-3xl opacity-60 animate-pulse-glow" style={{transform:'translate(-50%, -50%)'}} />
         <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-iwc-blue/30 rounded-full blur-2xl opacity-40 animate-pulse-glow" />
       </div>
-      <div className="relative z-10 w-full max-w-md">
-        <div className="flex flex-col items-center mb-4">
-          <div className="glossy-logo rounded-full p-2 bg-white/60 dark:bg-gray-900/60 shadow-xl animate-float">
-            <img src={iwcLogo} alt="Immanuel Worship Centre Logo" className="h-14 w-14 drop-shadow-lg" />
+      
+      <div className="relative z-10 w-full max-w-md px-4">
+        <div className="flex flex-col items-center mb-8">
+          <div className="glossy-logo rounded-full p-3 bg-white/70 dark:bg-gray-900/70 shadow-xl animate-float">
+            <img src={iwcLogo} alt="Immanuel Worship Centre Logo" className="h-16 w-16 drop-shadow-lg" />
           </div>
         </div>
-        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-2xl rounded-3xl shadow-2xl p-8 border-2 border-transparent hover:border-iwc-orange/60 transition-all duration-300 animate-fade-in-up glossy-card">
-          <h2 className="text-2xl font-extrabold mb-2 text-center text-iwc-blue dark:text-iwc-orange tracking-tight animate-fade-in">Create Account</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400 text-center mb-6 animate-fade-in-slow">Join IWC and experience excellence in community.</p>
-          <form onSubmit={handleRegister} className="space-y-6">
-            {error && (
-              <div className="text-red-600 dark:text-red-400 mb-2 p-2 bg-red-50 dark:bg-red-900/20 rounded border border-red-200 dark:border-red-800 animate-shake">
-                {error}
+
+        <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-2xl rounded-3xl shadow-2xl p-8 border border-white/20 dark:border-gray-700/50 glossy-card animate-fade-in-up">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-iwc-blue dark:text-iwc-orange mb-2">
+              Join Our Community
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400">
+              Create your account to get started
+            </p>
+          </div>
+
+          {errors.general && (
+            <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl animate-shake">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400 flex-shrink-0" />
+                <p className="text-red-700 dark:text-red-300 text-sm font-medium">
+                  {errors.general}
+                </p>
               </div>
-            )}
-            <div className="relative mb-6 group">
-              <Input
-                id="email"
-                type="email"
-                autoComplete="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                required
-                className="floating-input peer"
-                placeholder=" "
-                aria-label="Email"
-              />
-              <label htmlFor="email" className={`floating-label${email ? ' floating-label--active' : ''}`}>Email</label>
             </div>
-            <div className="relative mb-6 group">
-              <Input
-                id="password"
-                type={showPassword ? "text" : "password"}
-                autoComplete="new-password"
+          )}
+
+          <form onSubmit={handleRegister} className="space-y-6">
+            <FloatingInput
+              id="register-email"
+              type="email"
+              label="Email Address"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                clearFieldError('email');
+              }}
+              error={errors.email}
+              disabled={loading}
+              autoComplete="email"
+              autoFocus
+            />
+
+            <div className="space-y-3">
+              <FloatingInput
+                id="register-password"
+                type="password"
+                label="Password"
                 value={password}
-                onChange={e => {
+                onChange={(e) => {
                   setPassword(e.target.value);
-                  setPasswordStrength(getPasswordStrength(e.target.value));
+                  clearFieldError('password');
                 }}
-                required
-                className="floating-input peer"
-                placeholder=" "
-                aria-label="Password"
-              />
-              <label htmlFor="password" className={`floating-label${password ? ' floating-label--active' : ''}`}>Password</label>
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 bg-transparent border-none outline-none text-gray-400 dark:text-gray-500 hover:text-iwc-orange transition-colors focus:ring-2 focus:ring-iwc-orange rounded-full"
-                tabIndex={0}
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
-              >
-                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-              </button>
-              {password && (
-                <div className="password-strength mt-2">
-                  <div className={`password-strength-bar password-strength-${passwordStrength}`}></div>
-                </div>
-              )}
-            </div>
-            <div className="relative mb-6 group">
-              <Input
-                id="confirmPassword"
-                type={showConfirmPassword ? "text" : "password"}
+                error={errors.password}
+                showPasswordToggle
+                disabled={loading}
                 autoComplete="new-password"
-                value={confirmPassword}
-                onChange={e => setConfirmPassword(e.target.value)}
-                required
-                className="floating-input peer"
-                placeholder=" "
-                aria-label="Confirm Password"
               />
-              <label htmlFor="confirmPassword" className={`floating-label${confirmPassword ? ' floating-label--active' : ''}`}>Confirm Password</label>
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 bg-transparent border-none outline-none text-gray-400 dark:text-gray-500 hover:text-iwc-orange transition-colors focus:ring-2 focus:ring-iwc-orange rounded-full"
-                tabIndex={0}
-                aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
-              >
-                {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-              </button>
+              {password && <PasswordStrength password={password} />}
             </div>
+
+            <FloatingInput
+              id="confirm-password"
+              type="password"
+              label="Confirm Password"
+              value={confirmPassword}
+              onChange={(e) => {
+                setConfirmPassword(e.target.value);
+                clearFieldError('confirmPassword');
+              }}
+              error={errors.confirmPassword}
+              showPasswordToggle
+              disabled={loading}
+              autoComplete="new-password"
+            />
+
             <Button
               type="submit"
-              className="w-full glossy-btn bg-gradient-to-r from-iwc-blue to-iwc-orange hover:from-iwc-orange hover:to-iwc-blue text-white font-bold py-3 rounded-xl shadow-lg transition-all duration-300 animate-bounce-once"
               disabled={loading}
+              className="w-full bg-gradient-to-r from-iwc-blue to-iwc-orange hover:from-iwc-orange hover:to-iwc-blue text-white font-semibold py-3 rounded-xl shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Creating Account...' : <><UserPlus size={18} /><span>Register</span></>}
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Creating Account...
+                </>
+              ) : (
+                <>
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Create Account
+                </>
+              )}
             </Button>
-            <div className="flex justify-between mt-2 text-xs text-gray-500 dark:text-gray-400">
-              <a href="/login" className="hover:text-iwc-orange transition-colors">Already have an account?</a>
-              <a href="/reset-password" className="hover:text-iwc-orange transition-colors">Forgot password?</a>
-            </div>
           </form>
+
+          <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+            <div className="text-center">
+              <Link 
+                to="/login" 
+                className="text-iwc-blue dark:text-iwc-orange hover:underline font-medium transition-colors text-sm"
+              >
+                Already have an account? Sign in
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
-      {registered && confetti && (
-        <>
-          {[...Array(30)].map((_, i) => (
-            <div
-              key={i}
-              className="confetti-piece"
-              style={{
-                left: `${Math.random() * 100}%`,
-                background: `linear-gradient(135deg, #f6e7c1, #f59e42, #2563eb)`,
-                animationDelay: `${Math.random()}s`,
-              }}
-            />
-          ))}
-        </>
-      )}
     </div>
   );
 };
