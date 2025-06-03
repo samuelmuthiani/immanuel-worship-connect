@@ -9,41 +9,39 @@ export class APIError extends Error {
   }
 }
 
-// Base API service with security checks
-class BaseAPIService {
-  protected static async getCurrentUser() {
-    const { data: { user }, error } = await supabase.auth.getUser();
-    if (error) throw new APIError(error.message);
-    if (!user) throw new APIError('User not authenticated');
-    return user;
-  }
+// Utility functions for common API operations
+const getCurrentUser = async () => {
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error) throw new APIError(error.message);
+  if (!user) throw new APIError('User not authenticated');
+  return user;
+};
 
-  protected static async validateUserOwnership(resourceUserId: string) {
-    const user = await this.getCurrentUser();
-    if (!SecurityService.validateUserOwnership(user.id, resourceUserId)) {
-      throw new APIError('Unauthorized access to resource');
-    }
-    return user;
+const validateUserOwnership = async (resourceUserId: string) => {
+  const user = await getCurrentUser();
+  if (!SecurityService.validateUserOwnership(user.id, resourceUserId)) {
+    throw new APIError('Unauthorized access to resource');
   }
+  return user;
+};
 
-  protected static validateInput(input: any, rules: Record<string, (value: any) => boolean>) {
-    for (const [field, validator] of Object.entries(rules)) {
-      if (!validator(input[field])) {
-        throw new APIError(`Invalid ${field}`);
-      }
+const validateInput = (input: any, rules: Record<string, (value: any) => boolean>) => {
+  for (const [field, validator] of Object.entries(rules)) {
+    if (!validator(input[field])) {
+      throw new APIError(`Invalid ${field}`);
     }
   }
-}
+};
 
 // User-related API calls with enhanced security
 export const userAPI = {
   async getCurrentUser() {
-    return BaseAPIService.getCurrentUser();
+    return getCurrentUser();
   },
 
   async getUserRoles(userId: string) {
     // Validate user can access these roles
-    const currentUser = await BaseAPIService.getCurrentUser();
+    const currentUser = await getCurrentUser();
     
     // Users can only see their own roles unless they're admin
     if (currentUser.id !== userId) {
@@ -69,7 +67,7 @@ export const userAPI = {
 
   async getUserProfile(userId: string) {
     // Validate ownership
-    await BaseAPIService.validateUserOwnership(userId);
+    await validateUserOwnership(userId);
 
     const { data, error } = await supabase
       .from('site_content')
@@ -83,7 +81,7 @@ export const userAPI = {
 
   async updateUserProfile(userId: string, profileData: any) {
     // Validate ownership
-    const user = await BaseAPIService.validateUserOwnership(userId);
+    const user = await validateUserOwnership(userId);
 
     // Sanitize input data
     const sanitizedData = {
@@ -122,10 +120,10 @@ export const donationAPI = {
     transaction_reference?: string;
     notes?: string;
   }) {
-    const user = await BaseAPIService.getCurrentUser();
+    const user = await getCurrentUser();
 
     // Validate donation data
-    BaseAPIService.validateInput(donationData, {
+    validateInput(donationData, {
       amount: (value) => typeof value === 'number' && value > 0 && value <= 1000000,
       donation_type: (value) => typeof value === 'string' && value.length > 0 && value.length <= 50,
       notes: (value) => !value || (typeof value === 'string' && value.length <= 500)
@@ -153,7 +151,7 @@ export const donationAPI = {
   },
 
   async getUserDonations() {
-    const user = await BaseAPIService.getCurrentUser();
+    const user = await getCurrentUser();
 
     const { data, error } = await supabase
       .from('donations')
@@ -166,7 +164,7 @@ export const donationAPI = {
   },
 
   async getAllDonations() {
-    const user = await BaseAPIService.getCurrentUser();
+    const user = await getCurrentUser();
     
     // Check admin privileges
     const { data: roles } = await supabase
@@ -197,10 +195,10 @@ export const donationAPI = {
 // Appreciation-related API calls with security
 export const appreciationAPI = {
   async sendAppreciation(donationId: string, recipientId: string, message: string) {
-    const user = await BaseAPIService.getCurrentUser();
+    const user = await getCurrentUser();
 
     // Validate inputs
-    BaseAPIService.validateInput({ donationId, recipientId, message }, {
+    validateInput({ donationId, recipientId, message }, {
       donationId: (value) => typeof value === 'string' && value.length > 0,
       recipientId: (value) => typeof value === 'string' && value.length > 0,
       message: (value) => typeof value === 'string' && value.length > 0 && value.length <= 1000
@@ -223,7 +221,7 @@ export const appreciationAPI = {
   },
 
   async getUserAppreciations() {
-    const user = await BaseAPIService.getCurrentUser();
+    const user = await getCurrentUser();
 
     const { data, error } = await supabase
       .from('appreciations')
@@ -239,7 +237,7 @@ export const appreciationAPI = {
   },
 
   async markAppreciationAsRead(appreciationId: string) {
-    const user = await BaseAPIService.getCurrentUser();
+    const user = await getCurrentUser();
 
     // Verify ownership of the appreciation
     const { data: appreciation, error: fetchError } = await supabase
@@ -265,7 +263,7 @@ export const appreciationAPI = {
 // Admin-related API calls with enhanced security
 export const adminAPI = {
   async verifyAdminAccess() {
-    const user = await BaseAPIService.getCurrentUser();
+    const user = await getCurrentUser();
     
     const adminEmails = ['admin@iwc.com', 'samuel.watho@gmail.com'];
     if (adminEmails.includes(user.email || '')) {
