@@ -1,19 +1,66 @@
-
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Layout from '@/components/Layout';
 import { useAuth } from '@/hooks/useAuth';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
-import { AdminAnalytics } from '@/components/admin/AdminAnalytics';
-import { EnhancedDataTable } from '@/components/admin/EnhancedDataTable';
+import AdminAnalytics from '@/components/admin/AdminAnalytics';
+import EnhancedDataTable from '@/components/admin/EnhancedDataTable';
 import { DonationManagement } from '@/components/admin/DonationManagement';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Shield, Users, Mail, Heart, BarChart3, Database } from 'lucide-react';
+import {
+  getAllContactSubmissions,
+  getAllNewsletterSubscribers,
+  getAllRSVPs
+} from '@/utils/storage';
 
 const AdminDashboard = () => {
   const { user, isAdmin } = useAuth();
 
+  // Contact Submissions
+  const [contactSubmissions, setContactSubmissions] = useState([]);
+  const contactColumns = [
+    { key: 'name', label: 'Name' },
+    { key: 'email', label: 'Email' },
+    { key: 'phone', label: 'Phone' },
+    { key: 'subject', label: 'Subject' },
+    { key: 'inquiry_type', label: 'Type' },
+    { key: 'message', label: 'Message' },
+    { key: 'submitted_at', label: 'Submitted At' }
+  ];
+  const fetchContactSubmissions = async () => {
+    setContactSubmissions(await getAllContactSubmissions());
+  };
+
+  // Newsletter Subscribers
+  const [newsletterSubscribers, setNewsletterSubscribers] = useState([]);
+  const newsletterColumns = [
+    { key: 'email', label: 'Email' },
+    { key: 'subscribed_at', label: 'Subscribed At' }
+  ];
+  const fetchNewsletterSubscribers = async () => {
+    setNewsletterSubscribers(await getAllNewsletterSubscribers());
+  };
+
+  // Event Registrations
+  const [eventRegistrations, setEventRegistrations] = useState([]);
+  const eventColumns = [
+    { key: 'name', label: 'Name' },
+    { key: 'email', label: 'Email' },
+    { key: 'event_id', label: 'Event ID' },
+    { key: 'registered_at', label: 'Registered At' }
+  ];
+  const fetchEventRegistrations = async () => {
+    setEventRegistrations(await getAllRSVPs());
+  };
+
+  useEffect(() => {
+    fetchContactSubmissions();
+    fetchNewsletterSubscribers();
+    fetchEventRegistrations();
+  }, []);
+
   return (
-    <ProtectedRoute requiredRole="admin">
+    <ProtectedRoute adminOnly>
       <Layout>
         <div className="container mx-auto px-4 py-8">
           <div className="mb-8">
@@ -56,24 +103,30 @@ const AdminDashboard = () => {
 
             <TabsContent value="users" className="space-y-6">
               <div className="grid gap-6">
-                <EnhancedDataTable 
-                  title="Contact Submissions" 
-                  type="contacts"
-                  icon={Mail}
+                <EnhancedDataTable
+                  title="Contact Submissions"
+                  data={contactSubmissions}
+                  columns={contactColumns}
+                  tableName="contact_submissions"
+                  onRefresh={fetchContactSubmissions}
                 />
-                <EnhancedDataTable 
-                  title="Newsletter Subscribers" 
-                  type="newsletter"
-                  icon={Mail}
+                <EnhancedDataTable
+                  title="Newsletter Subscribers"
+                  data={newsletterSubscribers}
+                  columns={newsletterColumns}
+                  tableName="newsletter_subscribers"
+                  onRefresh={fetchNewsletterSubscribers}
                 />
               </div>
             </TabsContent>
 
             <TabsContent value="data" className="space-y-6">
-              <EnhancedDataTable 
-                title="Event Registrations" 
-                type="events"
-                icon={Users}
+              <EnhancedDataTable
+                title="Event Registrations"
+                data={eventRegistrations}
+                columns={eventColumns}
+                tableName="event_registrations"
+                onRefresh={fetchEventRegistrations}
               />
             </TabsContent>
           </Tabs>

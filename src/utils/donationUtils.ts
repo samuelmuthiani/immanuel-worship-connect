@@ -1,5 +1,5 @@
-
 import { supabase } from '@/integrations/supabase/client';
+import { sendEmail } from './sendEmail';
 
 export interface Donation {
   id: string;
@@ -11,6 +11,9 @@ export interface Donation {
   notes?: string;
   created_at: string;
   user_email?: string;
+  status?: 'pending' | 'verified' | 'rejected';
+  verified_by?: string | null;
+  verified_at?: string | null;
 }
 
 export interface Appreciation {
@@ -93,7 +96,7 @@ export const sendAppreciation = async (donationId: string, message: string) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Not authenticated');
 
-    // Get the donation to find the recipient
+    // 1. Get the donation to find the recipient user_id
     const { data: donation, error: donationError } = await supabase
       .from('donations')
       .select('user_id')
@@ -101,6 +104,15 @@ export const sendAppreciation = async (donationId: string, message: string) => {
       .single();
 
     if (donationError) throw donationError;
+
+    // 2. Get the recipient's email from auth.users
+    let recipientEmail = null;
+    const { data: userData, error: userError } = await supabase.auth.admin.getUserById(donation.user_id);
+    if (userError) {
+      console.error('Could not fetch recipient email:', userError);
+    } else {
+      recipientEmail = userData?.user?.email;
+    }
 
     const { data, error } = await supabase
       .from('appreciations')
@@ -113,6 +125,21 @@ export const sendAppreciation = async (donationId: string, message: string) => {
       .select();
 
     if (error) throw error;
+
+    // Send email notification to donor
+    if (recipientEmail) {
+      try {
+        await sendEmail({
+          to: recipientEmail,
+          subject: 'Thank You for Your Donation',
+          html: `<p>Dear friend,</p><p>Thank you for your generous donation! Here is a message from our team:</p><blockquote>${message}</blockquote><p>Blessings,<br/>Immanuel Worship Connect</p>`
+        });
+      } catch (emailError) {
+        // Log but do not fail the appreciation if email fails
+        console.error('Failed to send appreciation email:', emailError);
+      }
+    }
+
     return { success: true, data };
   } catch (error) {
     console.error('Error sending appreciation:', error);
@@ -151,6 +178,30 @@ export const markAppreciationAsRead = async (appreciationId: string) => {
     return { success: true };
   } catch (error) {
     console.error('Error marking appreciation as read:', error);
+    return { success: false, error };
+  }
+};
+
+// Admin: Update donation status
+export const updateDonationStatus = async (
+  donationId: string,
+  status: 'pending' | 'verified' | 'rejected',
+  adminUserId: string
+) => {
+  try {
+    const { data, error } = await supabase
+      .from('donations')
+      .update({
+        status,
+        verified_by: status === 'verified' ? adminUserId : null,
+        verified_at: status === 'verified' ? new Date().toISOString() : null,
+      })
+      .eq('id', donationId)
+      .select();
+    if (error) throw error;
+    return { success: true, data };
+  } catch (error) {
+    console.error('Error updating donation status:', error);
     return { success: false, error };
   }
 };

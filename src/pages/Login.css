@@ -1,0 +1,242 @@
+/* Glassy, animated, and floating label styles for Login/Register */
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes fade-in-slow {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(32px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.5; filter: blur(32px); }
+  50% { opacity: 0.8; filter: blur(48px); }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+@keyframes bounce-once {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.08); }
+  60% { transform: scale(0.97); }
+  100% { transform: scale(1); }
+}
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+
+.animate-fade-in { animation: fade-in 0.7s cubic-bezier(.4,0,.2,1) both; }
+.animate-fade-in-slow { animation: fade-in-slow 1.2s 0.2s both; }
+.animate-fade-in-up { animation: fade-in-up 0.8s cubic-bezier(.4,0,.2,1) both; }
+.animate-pulse-glow { animation: pulse-glow 3s ease-in-out infinite; }
+.animate-float { animation: float 3s ease-in-out infinite; }
+.animate-bounce-once { animation: bounce-once 0.5s cubic-bezier(.4,0,.2,1) 1; }
+.animate-shake { animation: shake 0.4s cubic-bezier(.4,0,.2,1) 1; }
+
+.glossy-card {
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.18);
+  border-radius: 1.5rem;
+  border: 1.5px solid rgba(255,255,255,0.18);
+  backdrop-filter: blur(16px);
+}
+.glossy-logo {
+  box-shadow: 0 4px 24px 0 rgba(31, 38, 135, 0.18);
+  background: linear-gradient(135deg, #fff8, #f3f3f3cc 60%, #f6e7c1cc 100%);
+}
+.glossy-btn {
+  box-shadow: 0 2px 12px 0 rgba(31, 38, 135, 0.10);
+  background-blend-mode: overlay;
+}
+
+/* Floating label input */
+.floating-input {
+  border: 1.5px solid #e5e7eb;
+  border-radius: 0.75rem;
+  padding: 1.1rem 2.5rem 0.5rem 1rem;
+  font-size: 1rem;
+  color: #222;
+  outline: none;
+  width: 100%;
+  transition: border 0.2s, box-shadow 0.2s;
+  background: transparent;
+}
+.dark .floating-input {
+  border-color: #374151;
+  color: #fff;
+  background: transparent;
+}
+.floating-label {
+  position: absolute;
+  left: 1.1rem;
+  top: 1.1rem;
+  font-size: 1rem;
+  color: #888;
+  pointer-events: none;
+  background: transparent;
+  transition: all 0.18s cubic-bezier(.4,0,.2,1);
+  z-index: 2;
+}
+.floating-input:focus + .floating-label,
+.floating-input:not(:placeholder-shown) + .floating-label,
+.floating-label--active {
+  top: -0.7rem;
+  left: 0.9rem;
+  font-size: 0.85rem;
+  color: #2563eb;
+  background: #fff8;
+  padding: 0 0.3rem;
+  border-radius: 0.3rem;
+  z-index: 3;
+}
+.dark .floating-input:focus + .floating-label,
+.dark .floating-input:not(:placeholder-shown) + .floating-label,
+.dark .floating-label--active {
+  color: #f59e42;
+  background: #1e293b88;
+}
+
+/* --- Enhanced Auth Form Polish --- */
+
+/* Input focus/hover states */
+.floating-input:focus {
+  border-color: #f59e42;
+  box-shadow: 0 0 0 2px #f59e4233;
+}
+.dark .floating-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px #2563eb33;
+}
+.floating-input:hover {
+  border-color: #f59e42;
+}
+.dark .floating-input:hover {
+  border-color: #2563eb;
+}
+
+/* Error and success feedback */
+.auth-error {
+  color: #dc2626;
+  background: #fee2e2cc;
+  border: 1.5px solid #fecaca;
+  border-radius: 0.75rem;
+  padding: 0.7rem 1rem;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  animation: shake 0.4s cubic-bezier(.4,0,.2,1) 1;
+}
+.dark .auth-error {
+  color: #fca5a5;
+  background: #7f1d1dcc;
+  border-color: #fca5a5;
+}
+.auth-success {
+  color: #16a34a;
+  background: #dcfce7cc;
+  border: 1.5px solid #bbf7d0;
+  border-radius: 0.75rem;
+  padding: 0.7rem 1rem;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  animation: bounce-once 0.5s cubic-bezier(.4,0,.2,1) 1;
+}
+.dark .auth-success {
+  color: #bbf7d0;
+  background: #166534cc;
+  border-color: #bbf7d0;
+}
+
+/* Eye icon button */
+input ~ button[aria-label] {
+  background: transparent;
+  border: none;
+  outline: none;
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 4;
+  padding: 0.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+input ~ button[aria-label]:focus {
+  outline: 2px solid #f59e42;
+}
+.dark input ~ button[aria-label]:focus {
+  outline: 2px solid #2563eb;
+}
+
+/* Password strength meter */
+.password-strength {
+  height: 5px;
+  border-radius: 3px;
+  margin-top: 0.2rem;
+  margin-bottom: 0.5rem;
+  background: #e5e7eb;
+  overflow: hidden;
+  transition: background 0.2s;
+}
+.password-strength-bar {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s, background 0.3s;
+}
+.password-strength-weak { width: 33%; background: #f59e42; }
+.password-strength-medium { width: 66%; background: linear-gradient(90deg, #f59e42, #2563eb); }
+.password-strength-strong { width: 100%; background: linear-gradient(90deg, #f6e7c1, #f59e42, #2563eb); }
+
+/* Confetti animation for success */
+@keyframes confetti {
+  0% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(80px) scale(0.7); }
+}
+.confetti-piece {
+  position: absolute;
+  width: 8px;
+  height: 16px;
+  border-radius: 2px;
+  opacity: 0.85;
+  animation: confetti 1.2s ease-out forwards;
+  background: linear-gradient(135deg, #f6e7c1, #f59e42, #2563eb);
+}
+
+/* Button polish */
+.glossy-btn:active {
+  filter: brightness(0.98) saturate(1.2);
+  transform: scale(0.98);
+}
+.glossy-btn:focus {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+.dark .glossy-btn:focus {
+  outline: 2px solid #f59e42;
+}
+
+/* Subtle card hover for auth */
+.glossy-card:hover {
+  box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.22);
+  border-color: #f59e42cc;
+}
+
+/* Responsive tweaks */
+@media (max-width: 480px) {
+  .glossy-card, .glossy-logo {
+    border-radius: 1rem;
+    padding: 1.2rem;
+  }
+  .floating-label {
+    left: 0.8rem;
+    font-size: 0.95rem;
+  }
+}
+
+/* ...end polish... */

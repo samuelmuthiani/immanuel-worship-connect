@@ -1,4 +1,3 @@
-
 import React from 'react';
 import Layout from '@/components/Layout';
 import { useAuth } from '@/hooks/useAuth';
@@ -7,6 +6,7 @@ import { MemberProfile } from '@/components/member/MemberProfile';
 import { AppreciationNotifications } from '@/components/member/AppreciationNotifications';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { User, Heart, Settings, Activity } from 'lucide-react';
+import { MemberDonationHistory } from '@/components/member/MemberDonationHistory';
 
 const MemberArea = () => {
   const { user } = useAuth();
@@ -50,12 +50,7 @@ const MemberArea = () => {
             </TabsContent>
 
             <TabsContent value="activity" className="space-y-6">
-              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-                <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Activity Overview</h3>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Your activity and engagement history will be displayed here.
-                </p>
-              </div>
+              <MemberDonationHistory />
             </TabsContent>
           </Tabs>
         </div>

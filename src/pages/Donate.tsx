@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Layout from '@/components/Layout';
 import { Heart, Shield, Users, Globe, Award, CreditCard, Smartphone, Building2, CheckCircle, ArrowRight } from 'lucide-react';
@@ -9,6 +8,7 @@ import { EnhancedCard, CardContent, CardHeader, CardTitle } from '@/components/u
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { saveDonation } from '@/utils/donationUtils';
+import { MemberDonationHistory } from '@/components/member/MemberDonationHistory';
 
 const Donate = () => {
   const [donationForm, setDonationForm] = useState({
@@ -18,6 +18,7 @@ const Donate = () => {
     notes: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [donationHistoryRefresh, setDonationHistoryRefresh] = useState(0);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -47,6 +48,7 @@ const Donate = () => {
           description: 'Thank you for your generous contribution. Your donation has been recorded.',
         });
         setDonationForm({ amount: '', donationType: 'general', paymentMethod: '', notes: '' });
+        setDonationHistoryRefresh((r) => r + 1); // trigger refresh
       } else {
         throw new Error('Failed to record donation');
       }
@@ -291,6 +293,13 @@ const Donate = () => {
                 </form>
               </CardContent>
             </EnhancedCard>
+          )}
+
+          {/* Optionally, show donation history after form */}
+          {user && (
+            <div className="max-w-2xl mx-auto mb-12">
+              <MemberDonationHistory refreshSignal={donationHistoryRefresh} />
+            </div>
           )}
 
           {/* Trust and Security */}

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -7,11 +6,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { LogIn, ShieldCheck, User, Eye, EyeOff } from 'lucide-react';
+import iwcLogo from '/iwc-logo.png';
+import './Login.css'; // Add this import for custom styles
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -130,163 +132,156 @@ const Login = () => {
     }
   };
 
+  const getPasswordStrength = (pwd: string) => {
+    if (!pwd) return '';
+    if (pwd.length < 6) return 'weak';
+    if (/^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*]).{8,}$/.test(pwd)) return 'strong';
+    if (pwd.length >= 8) return 'medium';
+    return 'weak';
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 transition-colors">
-      <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-md w-full max-w-md">
-        <h2 className="text-2xl font-bold mb-6 text-center text-gray-800 dark:text-white">Welcome Back</h2>
-        
-        <Tabs defaultValue="member" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-6 bg-gray-100 dark:bg-gray-700">
-            <TabsTrigger value="member" className="flex items-center justify-center gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 text-gray-700 dark:text-gray-300">
-              <User size={18} />
-              <span>Member</span>
-            </TabsTrigger>
-            <TabsTrigger value="admin" className="flex items-center justify-center gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 text-gray-700 dark:text-gray-300">
-              <ShieldCheck size={18} />
-              <span>Admin</span>
-            </TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="member">
-            <form onSubmit={(e) => handleLogin(e, false)}>
-              {error && (
-                <div className="text-red-600 dark:text-red-400 mb-4 p-2 bg-red-50 dark:bg-red-900/20 rounded border border-red-200 dark:border-red-800">
-                  {error}
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-iwc-blue/90 via-iwc-orange/60 to-iwc-gold/80 dark:from-gray-900 dark:via-gray-900 dark:to-iwc-blue/80 animate-bg-glow">
+      {/* Animated background gloss */}
+      <div className="absolute inset-0 pointer-events-none z-0">
+        <div className="absolute top-1/4 left-1/2 w-[600px] h-[600px] bg-iwc-orange/20 rounded-full blur-3xl opacity-60 animate-pulse-glow" style={{transform:'translate(-50%, -50%)'}} />
+        <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-iwc-blue/30 rounded-full blur-2xl opacity-40 animate-pulse-glow" />
+      </div>
+      <div className="relative z-10 w-full max-w-md">
+        <div className="flex flex-col items-center mb-4">
+          <div className="glossy-logo rounded-full p-2 bg-white/60 dark:bg-gray-900/60 shadow-xl animate-float">
+            <img src={iwcLogo} alt="Immanuel Worship Centre Logo" className="h-14 w-14 drop-shadow-lg" />
+          </div>
+        </div>
+        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-2xl rounded-3xl shadow-2xl p-8 border-2 border-transparent hover:border-iwc-orange/60 transition-all duration-300 animate-fade-in-up glossy-card">
+          <h2 className="text-2xl font-extrabold mb-2 text-center text-iwc-blue dark:text-iwc-orange tracking-tight animate-fade-in">Sign In</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 text-center mb-6 animate-fade-in-slow">Welcome back to IWC. Excellence in every detail.</p>
+          <Tabs defaultValue="member" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-6 bg-gray-100 dark:bg-gray-700 rounded-xl">
+              <TabsTrigger value="member" className="tab-btn">
+                <User size={18} />
+                <span>Member</span>
+              </TabsTrigger>
+              <TabsTrigger value="admin" className="tab-btn">
+                <ShieldCheck size={18} />
+                <span>Admin</span>
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="member">
+              <form onSubmit={(e) => handleLogin(e, false)} className="space-y-6">
+                {error && (
+                  <div className="text-red-600 dark:text-red-400 mb-2 p-2 bg-red-50 dark:bg-red-900/20 rounded border border-red-200 dark:border-red-800 animate-shake">
+                    {error}
+                  </div>
+                )}
+                <div className="relative mb-4 group">
+                  <Input
+                    id="member-email"
+                    type="email"
+                    placeholder=" "
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    required
+                    className="floating-input peer"
+                  />
+                  <label htmlFor="member-email" className="floating-label">Email</label>
                 </div>
-              )}
-              
-              <div className="mb-4">
-                <label htmlFor="member-email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Email
-                </label>
-                <Input
-                  id="member-email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  required
-                  className="w-full bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-                />
-              </div>
-              
-              <div className="mb-6">
-                <label htmlFor="member-password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Password
-                </label>
-                <div className="relative">
+                <div className="relative mb-4 group">
                   <Input
                     id="member-password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
+                    placeholder=" "
                     value={password}
-                    onChange={e => setPassword(e.target.value)}
+                    onChange={e => {
+                      setPassword(e.target.value);
+                      setPasswordStrength(getPasswordStrength(e.target.value));
+                    }}
                     required
-                    className="w-full pr-10 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                    className="floating-input peer"
                   />
+                  <label htmlFor="member-password" className="floating-label">Password</label>
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-iwc-orange transition-colors"
+                    tabIndex={-1}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
                   >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
+                  {password && (
+                    <div className="password-strength mt-2">
+                      <div className={`password-strength-bar password-strength-${passwordStrength}`}></div>
+                    </div>
+                  )}
                 </div>
-              </div>
-              
-              <Button
-                type="submit"
-                className="w-full bg-iwc-blue hover:bg-iwc-orange text-white flex items-center justify-center gap-2"
-                disabled={loading}
-              >
-                {loading ? 'Logging in...' : (
-                  <>
-                    <LogIn size={18} />
-                    <span>Login as Member</span>
-                  </>
+                <Button
+                  type="submit"
+                  className="w-full glossy-btn bg-gradient-to-r from-iwc-blue to-iwc-orange hover:from-iwc-orange hover:to-iwc-blue text-white font-bold py-3 rounded-xl shadow-lg transition-all duration-300 animate-bounce-once"
+                  disabled={loading}
+                >
+                  {loading ? 'Logging in...' : <><LogIn size={18} /><span>Login</span></>}
+                </Button>
+                <div className="flex justify-between mt-2 text-xs text-gray-500 dark:text-gray-400">
+                  <a href="/register" className="hover:text-iwc-orange transition-colors">Create account</a>
+                  <a href="/reset-password" className="hover:text-iwc-orange transition-colors">Forgot password?</a>
+                </div>
+              </form>
+            </TabsContent>
+            <TabsContent value="admin">
+              <form onSubmit={(e) => handleLogin(e, true)} className="space-y-6">
+                {error && (
+                  <div className="text-red-600 dark:text-red-400 mb-2 p-2 bg-red-50 dark:bg-red-900/20 rounded border border-red-200 dark:border-red-800 animate-shake">
+                    {error}
+                  </div>
                 )}
-              </Button>
-            </form>
-          </TabsContent>
-          
-          <TabsContent value="admin">
-            <form onSubmit={(e) => handleLogin(e, true)}>
-              {error && (
-                <div className="text-red-600 dark:text-red-400 mb-4 p-2 bg-red-50 dark:bg-red-900/20 rounded border border-red-200 dark:border-red-800">
-                  {error}
+                <div className="relative mb-4 group">
+                  <Input
+                    id="admin-email"
+                    type="email"
+                    placeholder=" "
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    required
+                    className="floating-input peer"
+                  />
+                  <label htmlFor="admin-email" className="floating-label">Admin Email</label>
                 </div>
-              )}
-              
-              <div className="mb-4">
-                <label htmlFor="admin-email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Admin Email
-                </label>
-                <Input
-                  id="admin-email"
-                  type="email"
-                  placeholder="admin@example.com"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  required
-                  className="w-full bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-                />
-              </div>
-              
-              <div className="mb-6">
-                <label htmlFor="admin-password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Password
-                </label>
-                <div className="relative">
+                <div className="relative mb-4 group">
                   <Input
                     id="admin-password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
+                    placeholder=" "
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                     required
-                    className="w-full pr-10 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                    className="floating-input peer"
                   />
+                  <label htmlFor="admin-password" className="floating-label">Password</label>
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-iwc-orange transition-colors"
+                    tabIndex={-1}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
                   >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
-              </div>
-              
-              <Button
-                type="submit"
-                className="w-full bg-iwc-red hover:bg-iwc-orange text-white flex items-center justify-center gap-2"
-                disabled={loading}
-              >
-                {loading ? 'Logging in...' : (
-                  <>
-                    <ShieldCheck size={18} />
-                    <span>Login as Administrator</span>
-                  </>
-                )}
-              </Button>
-            </form>
-          </TabsContent>
-        </Tabs>
-        
-        <div className="mt-4 text-center">
-          <a href="/register" className="text-iwc-blue dark:text-iwc-orange hover:underline">
-            Don't have an account? Register
-          </a>
-        </div>
-        <div className="mt-4 text-sm text-gray-600 dark:text-gray-400 text-center">
-          <strong>Note:</strong> Only confirmed email addresses can access the member area.
+                <Button
+                  type="submit"
+                  className="w-full glossy-btn bg-gradient-to-r from-iwc-red to-iwc-orange hover:from-iwc-orange hover:to-iwc-red text-white font-bold py-3 rounded-xl shadow-lg transition-all duration-300 animate-bounce-once"
+                  disabled={loading}
+                >
+                  {loading ? 'Logging in...' : <><ShieldCheck size={18} /><span>Admin Login</span></>}
+                </Button>
+                <div className="flex justify-between mt-2 text-xs text-gray-500 dark:text-gray-400">
+                  <a href="/register" className="hover:text-iwc-orange transition-colors">Create account</a>
+                  <a href="/reset-password" className="hover:text-iwc-orange transition-colors">Forgot password?</a>
+                </div>
+              </form>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </div>
