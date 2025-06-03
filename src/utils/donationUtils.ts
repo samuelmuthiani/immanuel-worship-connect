@@ -2,9 +2,9 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
 
-type Donation = Database['public']['Tables']['donations']['Row'];
+export type Donation = Database['public']['Tables']['donations']['Row'];
 type DonationInsert = Database['public']['Tables']['donations']['Insert'];
-type Appreciation = Database['public']['Tables']['appreciations']['Row'];
+export type Appreciation = Database['public']['Tables']['appreciations']['Row'];
 type AppreciationInsert = Database['public']['Tables']['appreciations']['Insert'];
 
 export const donationService = {
@@ -182,6 +182,77 @@ export const donationService = {
       return { totalAmount: 0, totalDonations: 0, monthlyTotal: 0 };
     }
   },
+};
+
+// Individual function exports for easier importing
+export const getUserDonations = async (): Promise<Donation[]> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+  return donationService.getUserDonations(user.id);
+};
+
+export const getAllDonations = async (): Promise<Donation[]> => {
+  return donationService.getAllDonations();
+};
+
+export const sendAppreciation = async (donationId: string, message: string): Promise<{ success: boolean }> => {
+  try {
+    const { data: donation } = await supabase
+      .from('donations')
+      .select('user_id')
+      .eq('id', donationId)
+      .single();
+
+    if (!donation) throw new Error('Donation not found');
+
+    const appreciation = await donationService.sendAppreciation({
+      donation_id: donationId,
+      recipient_id: donation.user_id,
+      message,
+    });
+
+    return { success: !!appreciation };
+  } catch (error) {
+    console.error('Error sending appreciation:', error);
+    return { success: false };
+  }
+};
+
+export const getUserAppreciations = async (): Promise<Appreciation[]> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+  return donationService.getUserAppreciations(user.id);
+};
+
+export const markAppreciationAsRead = async (appreciationId: string): Promise<{ success: boolean }> => {
+  const success = await donationService.markAppreciationAsRead(appreciationId);
+  return { success };
+};
+
+export const saveDonation = async (donationData: {
+  amount: number;
+  donation_type: string;
+  payment_method: string;
+  notes: string;
+}): Promise<{ success: boolean }> => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const donation = await donationService.createDonation({
+      user_id: user.id,
+      user_email: user.email || '',
+      amount: donationData.amount,
+      donation_type: donationData.donation_type,
+      payment_method: donationData.payment_method,
+      notes: donationData.notes,
+    });
+
+    return { success: !!donation };
+  } catch (error) {
+    console.error('Error saving donation:', error);
+    return { success: false };
+  }
 };
 
 // Helper function to format currency
