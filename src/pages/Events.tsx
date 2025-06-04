@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import Layout from '@/components/Layout';
-import { Calendar, MapPin, Clock, Users, Filter, Search, X } from 'lucide-react';
+import { Calendar, MapPin, Clock, Users, Filter, Search, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { EnhancedCard, CardContent, CardHeader, CardTitle } from '@/components/ui/enhanced-card';
 import { BackButton } from '@/components/ui/back-button';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { saveRSVP } from '@/utils/storage';
 
 interface Event {
   id: string;
@@ -24,29 +23,12 @@ interface Event {
   updated_at?: string;
 }
 
-interface RegistrationForm {
-  name: string;
-  email: string;
-  phone: string;
-}
-
 const Events = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [loading, setLoading] = useState(true);
-  const [registrationModal, setRegistrationModal] = useState<{open: boolean, event: Event | null}>({
-    open: false,
-    event: null
-  });
-  const [registrationForm, setRegistrationForm] = useState<RegistrationForm>({
-    name: '',
-    email: '',
-    phone: ''
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { user } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -162,79 +144,6 @@ const Events = () => {
     }
 
     setFilteredEvents(filtered);
-  };
-
-  const handleRegister = (event: Event) => {
-    if (!user) {
-      toast({
-        title: 'Login Required',
-        description: 'Please log in to register for events.',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    if (event.registration_required) {
-      setRegistrationModal({ open: true, event });
-      setRegistrationForm({
-        name: '',
-        email: user.email || '',
-        phone: ''
-      });
-    } else {
-      toast({
-        title: 'No Registration Required',
-        description: 'Just show up! This event doesn\'t require advance registration.',
-      });
-    }
-  };
-
-  const handleSubmitRegistration = async () => {
-    if (!registrationModal.event || !user) return;
-
-    if (!registrationForm.name.trim() || !registrationForm.email.trim()) {
-      toast({
-        title: 'Missing Information',
-        description: 'Please fill in your name and email address.',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      const result = await saveRSVP(registrationModal.event.id, {
-        name: registrationForm.name.trim(),
-        email: registrationForm.email.trim(),
-        phone: registrationForm.phone.trim()
-      });
-
-      if (result.success) {
-        toast({
-          title: 'Registration Successful!',
-          description: `You're registered for "${registrationModal.event.title}". We'll send you a confirmation email.`,
-        });
-        setRegistrationModal({ open: false, event: null });
-        setRegistrationForm({ name: '', email: '', phone: '' });
-      } else {
-        throw new Error('Registration failed');
-      }
-    } catch (error) {
-      console.error('Error registering for event:', error);
-      toast({
-        title: 'Registration Failed',
-        description: 'There was an error registering for this event. Please try again.',
-        variant: 'destructive'
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const closeModal = () => {
-    setRegistrationModal({ open: false, event: null });
-    setRegistrationForm({ name: '', email: '', phone: '' });
   };
 
   const categories = Array.from(new Set(events.map(e => e.category).filter(Boolean)));
@@ -358,112 +267,18 @@ const Events = () => {
                       )}
                     </div>
                     
-                    <Button
-                      onClick={() => handleRegister(event)}
-                      className="w-full bg-iwc-blue hover:bg-iwc-orange text-white font-semibold"
-                    >
-                      {event.registration_required ? 'Register Now' : 'Learn More'}
-                    </Button>
+                    <Link to={`/events/${event.id}`}>
+                      <Button className="w-full bg-iwc-blue hover:bg-iwc-orange text-white font-semibold group">
+                        View Details
+                        <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                      </Button>
+                    </Link>
                   </CardContent>
                 </EnhancedCard>
               ))
             )}
           </div>
         </div>
-
-        {/* Registration Modal */}
-        {registrationModal.open && registrationModal.event && (
-          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Register for Event
-                </h3>
-                <Button
-                  onClick={closeModal}
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-              
-              <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
-                <h4 className="font-medium text-gray-900 dark:text-white">
-                  {registrationModal.event.title}
-                </h4>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {new Date(registrationModal.event.event_date).toLocaleDateString('en-US', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
-                </p>
-              </div>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Full Name *
-                  </label>
-                  <Input
-                    value={registrationForm.name}
-                    onChange={(e) => setRegistrationForm(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="Enter your full name"
-                    className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Email Address *
-                  </label>
-                  <Input
-                    type="email"
-                    value={registrationForm.email}
-                    onChange={(e) => setRegistrationForm(prev => ({ ...prev, email: e.target.value }))}
-                    placeholder="Enter your email"
-                    className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Phone Number (Optional)
-                  </label>
-                  <Input
-                    type="tel"
-                    value={registrationForm.phone}
-                    onChange={(e) => setRegistrationForm(prev => ({ ...prev, phone: e.target.value }))}
-                    placeholder="(555) 123-4567"
-                    className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
-                  />
-                </div>
-              </div>
-              
-              <div className="flex gap-3 mt-6">
-                <Button
-                  onClick={closeModal}
-                  variant="outline"
-                  className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleSubmitRegistration}
-                  disabled={isSubmitting}
-                  className="flex-1 bg-iwc-blue hover:bg-iwc-orange text-white"
-                >
-                  {isSubmitting ? 'Registering...' : 'Register'}
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </Layout>
   );

@@ -9,7 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import Layout from '@/components/Layout';
 
-const Register = () => {
+const SignUp = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -34,20 +34,12 @@ const Register = () => {
 
     setIsLoading(true);
     try {
-      const result = await signUp(email, password);
-      if (result.success) {
-        toast({
-          title: "Account created!",
-          description: "Please check your email to verify your account.",
-        });
-        navigate('/login');
-      } else {
-        toast({
-          title: "Sign up failed",
-          description: result.error?.message || "Failed to create account",
-          variant: "destructive",
-        });
-      }
+      await signUp(email, password);
+      toast({
+        title: "Account created!",
+        description: "Please check your email to verify your account.",
+      });
+      navigate('/login');
     } catch (error: any) {
       toast({
         title: "Sign up failed",
@@ -142,4 +134,4 @@ const Register = () => {
   );
 };
 
-export default Register;
+export default SignUp;
