@@ -19,7 +19,7 @@ export {
 } from './adminUtils';
 
 // Legacy function name for backward compatibility
-export const getAllRSVPs = getAllEventRegistrations;
+export { getAllEventRegistrations as getAllRSVPs } from './supabaseStorage';
 
 // Keep legacy localStorage functions for backward compatibility
 export const saveToLocalStorage = (key: string, value: any): void => {
