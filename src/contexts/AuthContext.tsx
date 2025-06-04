@@ -2,7 +2,6 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { updateLastLogin } from '@/services/profileAPI';
 
 interface AuthContextType {
   user: User | null;
@@ -23,7 +22,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   const signUp = async (email: string, password: string) => {
-    setIsLoading(true);
     try {
       const { data, error } = await supabase.auth.signUp({
         email: email,
@@ -38,13 +36,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error: any) {
       console.error('Signup error:', error.message);
       return { success: false, error };
-    } finally {
-      setIsLoading(false);
     }
   };
 
   const signIn = async (email: string, password: string) => {
-    setIsLoading(true);
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email,
@@ -56,21 +51,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error: any) {
       console.error('Signin error:', error.message);
       return { success: false, error };
-    } finally {
-      setIsLoading(false);
     }
   };
 
   const signOut = async () => {
-    setIsLoading(true);
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       console.log('Signout successful');
     } catch (error: any) {
       console.error('Signout error:', error.message);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -97,9 +87,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     let mounted = true;
+    let timeoutId: NodeJS.Timeout;
 
     const initializeAuth = async () => {
       try {
+        console.log('Initializing auth...');
+        
         // Set up the auth state listener first
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
           async (event, session) => {
@@ -107,38 +100,61 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             
             if (!mounted) return;
 
+            // Update state immediately - don't wait for async operations
             if (session?.user) {
               setUser(session.user);
               setSession(session);
               
-              // Update last login timestamp when user signs in
+              // Defer last login update to avoid blocking the auth flow
               if (event === 'SIGNED_IN') {
-                setTimeout(() => {
-                  updateLastLogin().catch(console.error);
-                }, 0);
+                setTimeout(async () => {
+                  try {
+                    const { updateLastLogin } = await import('@/services/profileAPI');
+                    await updateLastLogin();
+                  } catch (error) {
+                    console.error('Failed to update last login:', error);
+                    // Don't let this error break the auth flow
+                  }
+                }, 100);
               }
             } else {
               setUser(null);
               setSession(null);
             }
             
+            // Always set loading to false after auth state is processed
             setIsLoading(false);
           }
         );
 
+        // Set a timeout to ensure loading state is cleared even if auth fails
+        timeoutId = setTimeout(() => {
+          if (mounted) {
+            console.log('Auth timeout - clearing loading state');
+            setIsLoading(false);
+          }
+        }, 5000);
+
         // Then check for existing session
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error('Error getting session:', error);
+        }
+        
         if (mounted) {
           if (session?.user) {
             setUser(session.user);
             setSession(session);
           }
+          // Clear the timeout since we got a response
+          clearTimeout(timeoutId);
           setIsLoading(false);
         }
 
         return () => {
           mounted = false;
           subscription.unsubscribe();
+          clearTimeout(timeoutId);
         };
       } catch (error) {
         console.error('Auth initialization error:', error);
@@ -148,10 +164,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     };
 
-    initializeAuth();
+    const cleanup = initializeAuth();
 
     return () => {
       mounted = false;
+      clearTimeout(timeoutId);
+      cleanup?.then(cleanupFn => cleanupFn?.());
     };
   }, []);
 

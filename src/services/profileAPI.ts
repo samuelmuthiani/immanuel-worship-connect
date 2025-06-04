@@ -9,9 +9,16 @@ export class ProfileAPIError extends Error {
   }
 }
 
-// Get current authenticated user
+// Get current authenticated user with timeout
 const getCurrentUser = async () => {
-  const { data: { user }, error } = await supabase.auth.getUser();
+  const timeoutPromise = new Promise((_, reject) => {
+    setTimeout(() => reject(new Error('Auth timeout')), 5000);
+  });
+
+  const authPromise = supabase.auth.getUser();
+  
+  const { data: { user }, error } = await Promise.race([authPromise, timeoutPromise]) as any;
+  
   if (error) throw new ProfileAPIError(error.message);
   if (!user) throw new ProfileAPIError('User not authenticated');
   return user;
@@ -127,7 +134,7 @@ export const getAllProfiles = async () => {
   }
 };
 
-// Update last login timestamp
+// Update last login timestamp with error handling
 export const updateLastLogin = async () => {
   try {
     const user = await getCurrentUser();
@@ -137,6 +144,8 @@ export const updateLastLogin = async () => {
     
     const updatedProfile = {
       ...existingProfile,
+      id: user.id,
+      email: user.email,
       last_login: new Date().toISOString()
     };
 
@@ -148,7 +157,12 @@ export const updateLastLogin = async () => {
         updated_at: new Date().toISOString()
       }]);
 
-    if (error) throw new ProfileAPIError(error.message);
+    if (error) {
+      console.error('Error updating last login:', error);
+      return { success: false };
+    }
+    
+    console.log('Last login updated successfully');
     return { success: true };
   } catch (error) {
     console.error('Error updating last login:', error);
