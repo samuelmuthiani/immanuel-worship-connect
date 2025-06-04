@@ -1,8 +1,7 @@
+
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { SecurityService } from '@/utils/security';
-
 import { updateLastLogin } from '@/services/profileAPI';
 
 interface AuthContextType {
@@ -23,20 +22,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    // Validate session integrity
-    if (session?.access_token && !SecurityService.validateSessionToken(session.access_token)) {
-      console.warn('Invalid session token detected in AuthContext');
-      // Consider logging out the user or refreshing the session
-    }
-  }, [session]);
-
   const signUp = async (email: string, password: string) => {
     setIsLoading(true);
     try {
       const { data, error } = await supabase.auth.signUp({
         email: email,
         password: password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`
+        }
       });
       if (error) throw error;
       console.log('Signup successful:', data);
@@ -85,9 +79,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (adminEmails.includes(user.email || '')) {
       return true;
     }
-
-    // Check if the user has the specified role
-    return SecurityService.hasRole(user.id, role);
+    // For now, return false - will be implemented when user_roles table is used
+    return false;
   };
 
   const isAdmin = (): boolean => {
@@ -168,7 +161,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signIn,
     signOut,
     hasRole,
-    isAdmin
+    isAdmin: isAdmin()
   };
 
   return (

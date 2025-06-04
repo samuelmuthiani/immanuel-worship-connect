@@ -1,11 +1,13 @@
+
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import { ThemeProvider } from './components/theme-provider';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ThemeProvider } from '@/components/ui/theme-provider';
 import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ErrorBoundary } from 'react-error-boundary';
 import ErrorFallback from '@/components/ErrorFallback';
-import GlobalLoadingScreen from '@/components/GlobalLoading';
+import GlobalLoadingScreen from '@/components/GlobalLoadingScreen';
 import Home from '@/pages/Home';
 import About from '@/pages/About';
 import Contact from '@/pages/Contact';
@@ -19,13 +21,19 @@ import SignUp from '@/pages/SignUp';
 import Terms from '@/pages/Terms';
 import Privacy from '@/pages/Privacy';
 import RSVPAdminTable from '@/pages/RSVPAdminTable';
-import { QueryClient } from '@tanstack/react-query';
-
 import EventDetails from '@/pages/EventDetails';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+    },
+  },
+});
 
 function App() {
   return (
-    <QueryClient>
+    <QueryClientProvider client={queryClient}>
       <Router>
         <ThemeProvider defaultTheme="system" storageKey="iwc-theme">
           <Toaster />
@@ -52,7 +60,7 @@ function App() {
           </ErrorBoundary>
         </ThemeProvider>
       </Router>
-    </QueryClient>
+    </QueryClientProvider>
   );
 }
 
