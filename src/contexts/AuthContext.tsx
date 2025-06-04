@@ -1,14 +1,16 @@
-
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { SecurityService } from '@/utils/security';
+
+import { updateLastLogin } from '@/services/profileAPI';
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   isLoading: boolean;
-  signUp: (email: string, password: string) => Promise<{ success: boolean; error?: any }>;
-  signIn: (email: string, password: string) => Promise<{ success: boolean; error?: any }>;
+  signUp: (email: string, password: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   hasRole: (role: string) => boolean;
   isAdmin: boolean;
@@ -21,25 +23,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  useEffect(() => {
+    // Validate session integrity
+    if (session?.access_token && !SecurityService.validateSessionToken(session.access_token)) {
+      console.warn('Invalid session token detected in AuthContext');
+      // Consider logging out the user or refreshing the session
+    }
+  }, [session]);
+
   const signUp = async (email: string, password: string) => {
+    setIsLoading(true);
     try {
       const { data, error } = await supabase.auth.signUp({
         email: email,
         password: password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`
-        }
       });
       if (error) throw error;
       console.log('Signup successful:', data);
-      return { success: true };
     } catch (error: any) {
       console.error('Signup error:', error.message);
-      return { success: false, error };
+      throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const signIn = async (email: string, password: string) => {
+    setIsLoading(true);
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email,
@@ -47,20 +57,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       if (error) throw error;
       console.log('Signin successful:', data);
-      return { success: true };
     } catch (error: any) {
       console.error('Signin error:', error.message);
-      return { success: false, error };
+      throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const signOut = async () => {
+    setIsLoading(true);
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       console.log('Signout successful');
     } catch (error: any) {
       console.error('Signout error:', error.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -71,8 +85,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (adminEmails.includes(user.email || '')) {
       return true;
     }
-    // For now, return false - will be implemented when user_roles table is used
-    return false;
+
+    // Check if the user has the specified role
+    return SecurityService.hasRole(user.id, role);
   };
 
   const isAdmin = (): boolean => {
@@ -87,12 +102,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     let mounted = true;
-    let timeoutId: NodeJS.Timeout;
 
     const initializeAuth = async () => {
       try {
-        console.log('Initializing auth...');
-        
         // Set up the auth state listener first
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
           async (event, session) => {
@@ -100,61 +112,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             
             if (!mounted) return;
 
-            // Update state immediately - don't wait for async operations
             if (session?.user) {
               setUser(session.user);
               setSession(session);
               
-              // Defer last login update to avoid blocking the auth flow
+              // Update last login timestamp when user signs in
               if (event === 'SIGNED_IN') {
-                setTimeout(async () => {
-                  try {
-                    const { updateLastLogin } = await import('@/services/profileAPI');
-                    await updateLastLogin();
-                  } catch (error) {
-                    console.error('Failed to update last login:', error);
-                    // Don't let this error break the auth flow
-                  }
-                }, 100);
+                setTimeout(() => {
+                  updateLastLogin().catch(console.error);
+                }, 0);
               }
             } else {
               setUser(null);
               setSession(null);
             }
             
-            // Always set loading to false after auth state is processed
             setIsLoading(false);
           }
         );
 
-        // Set a timeout to ensure loading state is cleared even if auth fails
-        timeoutId = setTimeout(() => {
-          if (mounted) {
-            console.log('Auth timeout - clearing loading state');
-            setIsLoading(false);
-          }
-        }, 5000);
-
         // Then check for existing session
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) {
-          console.error('Error getting session:', error);
-        }
-        
+        const { data: { session } } = await supabase.auth.getSession();
         if (mounted) {
           if (session?.user) {
             setUser(session.user);
             setSession(session);
           }
-          // Clear the timeout since we got a response
-          clearTimeout(timeoutId);
           setIsLoading(false);
         }
 
         return () => {
           mounted = false;
           subscription.unsubscribe();
-          clearTimeout(timeoutId);
         };
       } catch (error) {
         console.error('Auth initialization error:', error);
@@ -164,12 +153,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     };
 
-    const cleanup = initializeAuth();
+    initializeAuth();
 
     return () => {
       mounted = false;
-      clearTimeout(timeoutId);
-      cleanup?.then(cleanupFn => cleanupFn?.());
     };
   }, []);
 
@@ -181,7 +168,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signIn,
     signOut,
     hasRole,
-    isAdmin: isAdmin()
+    isAdmin
   };
 
   return (

@@ -9,22 +9,15 @@ export class ProfileAPIError extends Error {
   }
 }
 
-// Get current authenticated user with timeout
+// Get current authenticated user
 const getCurrentUser = async () => {
-  const timeoutPromise = new Promise((_, reject) => {
-    setTimeout(() => reject(new Error('Auth timeout')), 5000);
-  });
-
-  const authPromise = supabase.auth.getUser();
-  
-  const { data: { user }, error } = await Promise.race([authPromise, timeoutPromise]) as any;
-  
+  const { data: { user }, error } = await supabase.auth.getUser();
   if (error) throw new ProfileAPIError(error.message);
   if (!user) throw new ProfileAPIError('User not authenticated');
   return user;
 };
 
-// Create or update user profile using site_content as fallback until profiles table is recognized
+// Create or update user profile
 export const upsertUserProfile = async (profileData: {
   first_name?: string;
   last_name?: string;
@@ -51,14 +44,9 @@ export const upsertUserProfile = async (profileData: {
       updated_at: new Date().toISOString()
     };
 
-    // Use site_content table as fallback until profiles table types are updated
     const { data, error } = await supabase
-      .from('site_content')
-      .upsert([{
-        section: `profile_${user.id}`,
-        content: JSON.stringify(sanitizedData),
-        updated_at: new Date().toISOString()
-      }])
+      .from('profiles')
+      .upsert([sanitizedData])
       .select();
 
     if (error) throw new ProfileAPIError(error.message);
@@ -75,20 +63,20 @@ export const getUserProfile = async () => {
     const user = await getCurrentUser();
 
     const { data, error } = await supabase
-      .from('site_content')
+      .from('profiles')
       .select('*')
-      .eq('section', `profile_${user.id}`)
+      .eq('id', user.id)
       .maybeSingle();
 
     if (error) throw new ProfileAPIError(error.message);
-    return data ? JSON.parse(data.content) : null;
+    return data;
   } catch (error) {
     console.error('Error fetching profile:', error);
     return null;
   }
 };
 
-// Get all profiles (admin only) - using site_content for now
+// Get all profiles (admin only)
 export const getAllProfiles = async () => {
   try {
     const user = await getCurrentUser();
@@ -111,58 +99,29 @@ export const getAllProfiles = async () => {
     }
 
     const { data, error } = await supabase
-      .from('site_content')
+      .from('profiles')
       .select('*')
-      .like('section', 'profile_%')
-      .order('updated_at', { ascending: false });
+      .order('created_at', { ascending: false });
 
     if (error) throw new ProfileAPIError(error.message);
-    
-    // Parse the JSON content for each profile
-    const profiles = data?.map(item => {
-      try {
-        return JSON.parse(item.content);
-      } catch {
-        return null;
-      }
-    }).filter(Boolean) || [];
-
-    return profiles;
+    return data || [];
   } catch (error) {
     console.error('Error fetching all profiles:', error);
     return [];
   }
 };
 
-// Update last login timestamp with error handling
+// Update last login timestamp
 export const updateLastLogin = async () => {
   try {
     const user = await getCurrentUser();
 
-    // Get existing profile first
-    const existingProfile = await getUserProfile();
-    
-    const updatedProfile = {
-      ...existingProfile,
-      id: user.id,
-      email: user.email,
-      last_login: new Date().toISOString()
-    };
-
     const { error } = await supabase
-      .from('site_content')
-      .upsert([{
-        section: `profile_${user.id}`,
-        content: JSON.stringify(updatedProfile),
-        updated_at: new Date().toISOString()
-      }]);
+      .from('profiles')
+      .update({ last_login: new Date().toISOString() })
+      .eq('id', user.id);
 
-    if (error) {
-      console.error('Error updating last login:', error);
-      return { success: false };
-    }
-    
-    console.log('Last login updated successfully');
+    if (error) throw new ProfileAPIError(error.message);
     return { success: true };
   } catch (error) {
     console.error('Error updating last login:', error);

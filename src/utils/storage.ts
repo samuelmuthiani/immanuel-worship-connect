@@ -6,7 +6,7 @@ export {
   getUserProfile,
   updateUserProfile,
   getAllContactSubmissions,
-  getAllEventRegistrations,
+  getAllEventRegistrations as getAllRSVPs,
   getAllNewsletterSubscribers
 } from './supabaseStorage';
 
@@ -17,9 +17,6 @@ export {
   updateUserRole,
   logAuditAction
 } from './adminUtils';
-
-// Legacy function name for backward compatibility
-export { getAllEventRegistrations as getAllRSVPs } from './supabaseStorage';
 
 // Keep legacy localStorage functions for backward compatibility
 export const saveToLocalStorage = (key: string, value: any): void => {
