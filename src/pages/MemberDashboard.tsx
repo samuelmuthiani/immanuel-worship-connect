@@ -3,9 +3,9 @@ import React from 'react';
 import Layout from '@/components/Layout';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { useAuth } from '@/contexts/AuthContext';
-import MemberProfile from '@/components/member/MemberProfile';
-import MemberDonationHistory from '@/components/member/MemberDonationHistory';
-import AppreciationNotifications from '@/components/member/AppreciationNotifications';
+import { MemberProfile } from '@/components/member/MemberProfile';
+import { MemberDonationHistory } from '@/components/member/MemberDonationHistory';
+import { AppreciationNotifications } from '@/components/member/AppreciationNotifications';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { User, Heart, Bell } from 'lucide-react';
 

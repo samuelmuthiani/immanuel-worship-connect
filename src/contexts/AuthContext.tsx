@@ -8,8 +8,8 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   isLoading: boolean;
-  signUp: (email: string, password: string) => Promise<void>;
-  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string) => Promise<{ success: boolean; error?: any }>;
+  signIn: (email: string, password: string) => Promise<{ success: boolean; error?: any }>;
   signOut: () => Promise<void>;
   hasRole: (role: string) => boolean;
   isAdmin: boolean;
@@ -34,9 +34,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       if (error) throw error;
       console.log('Signup successful:', data);
+      return { success: true };
     } catch (error: any) {
       console.error('Signup error:', error.message);
-      throw error;
+      return { success: false, error };
     } finally {
       setIsLoading(false);
     }
@@ -51,9 +52,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       if (error) throw error;
       console.log('Signin successful:', data);
+      return { success: true };
     } catch (error: any) {
       console.error('Signin error:', error.message);
-      throw error;
+      return { success: false, error };
     } finally {
       setIsLoading(false);
     }
