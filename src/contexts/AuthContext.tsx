@@ -1,357 +1,187 @@
-
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { User, Session } from '@supabase/supabase-js';
+import React, { createContext, useState, useEffect, useContext } from 'react';
+import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { SecurityService } from '@/utils/security';
 
-interface UserRole {
-  role: string;
-}
+import { updateLastLogin } from '@/services/profileAPI';
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
-  userRoles: string[];
   isLoading: boolean;
-  isAdmin: boolean;
-  hasRole: (role: string) => boolean;
-  signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  signUp: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  signUp: (email: string, password: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
-  refreshSession: () => Promise<void>;
-  requestPasswordReset: (email: string) => Promise<{ success: boolean; error?: string }>;
-  updatePassword: (password: string) => Promise<{ success: boolean; error?: string }>;
+  hasRole: (role: string) => boolean;
+  isAdmin: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [userRoles, setUserRoles] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
 
-  const adminEmails = ['admin@iwc.com', 'samuel.watho@gmail.com'];
-
-  const fetchUserRoles = async (userId: string) => {
-    try {
-      const { data: roles, error } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId);
-
-      if (error) {
-        console.error('Error fetching user roles:', error);
-        return [];
-      }
-
-      return roles?.map((r: UserRole) => r.role) || [];
-    } catch (error) {
-      console.error('Error in fetchUserRoles:', error);
-      return [];
+  useEffect(() => {
+    // Validate session integrity
+    if (session?.access_token && !SecurityService.validateSessionToken(session.access_token)) {
+      console.warn('Invalid session token detected in AuthContext');
+      // Consider logging out the user or refreshing the session
     }
+  }, [session]);
+
+  const signUp = async (email: string, password: string) => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: email,
+        password: password,
+      });
+      if (error) throw error;
+      console.log('Signup successful:', data);
+    } catch (error: any) {
+      console.error('Signup error:', error.message);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const signIn = async (email: string, password: string) => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email,
+        password: password,
+      });
+      if (error) throw error;
+      console.log('Signin successful:', data);
+    } catch (error: any) {
+      console.error('Signin error:', error.message);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const signOut = async () => {
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      console.log('Signout successful');
+    } catch (error: any) {
+      console.error('Signout error:', error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const hasRole = (role: string): boolean => {
+    if (!user) return false;
+    // Check if the user's email is in the admin list
+    const adminEmails = ['admin@iwc.com', 'samuel.watho@gmail.com'];
+    if (adminEmails.includes(user.email || '')) {
+      return true;
+    }
+
+    // Check if the user has the specified role
+    return SecurityService.hasRole(user.id, role);
+  };
+
+  const isAdmin = (): boolean => {
+    if (!user) return false;
+    // Check if the user's email is in the admin list
+    const adminEmails = ['admin@iwc.com', 'samuel.watho@gmail.com'];
+    if (adminEmails.includes(user.email || '')) {
+      return true;
+    }
+    return hasRole('admin');
   };
 
   useEffect(() => {
     let mounted = true;
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, currentSession) => {
-        if (!mounted) return;
+    const initializeAuth = async () => {
+      try {
+        // Set up the auth state listener first
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          async (event, session) => {
+            console.log('Auth state changed:', event, session?.user?.email);
+            
+            if (!mounted) return;
 
-        console.log('Auth state change:', event, !!currentSession);
-
-        // Handle session expiry and invalid sessions
-        if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
-          if (!currentSession) {
-            setSession(null);
-            setUser(null);
-            setUserRoles([]);
-            setIsLoading(false);
-            return;
-          }
-        }
-
-        setSession(currentSession);
-        setUser(currentSession?.user ?? null);
-        
-        if (currentSession?.user) {
-          // Fetch roles with retry logic
-          setTimeout(async () => {
-            if (mounted) {
-              try {
-                const roles = await fetchUserRoles(currentSession.user.id);
-                setUserRoles(roles);
-              } catch (error) {
-                console.error('Failed to fetch user roles:', error);
-                setUserRoles([]);
+            if (session?.user) {
+              setUser(session.user);
+              setSession(session);
+              
+              // Update last login timestamp when user signs in
+              if (event === 'SIGNED_IN') {
+                setTimeout(() => {
+                  updateLastLogin().catch(console.error);
+                }, 0);
               }
+            } else {
+              setUser(null);
+              setSession(null);
             }
-          }, 100);
-        } else {
-          setUserRoles([]);
-        }
-        
-        setIsLoading(false);
-      }
-    );
+            
+            setIsLoading(false);
+          }
+        );
 
-    // Initial session check
-    supabase.auth.getSession().then(({ data: { session: currentSession }, error }) => {
-      if (!mounted) return;
-      
-      if (error) {
-        console.error('Error getting session:', error);
-        setIsLoading(false);
-        return;
+        // Then check for existing session
+        const { data: { session } } = await supabase.auth.getSession();
+        if (mounted) {
+          if (session?.user) {
+            setUser(session.user);
+            setSession(session);
+          }
+          setIsLoading(false);
+        }
+
+        return () => {
+          mounted = false;
+          subscription.unsubscribe();
+        };
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+        if (mounted) {
+          setIsLoading(false);
+        }
       }
-      
-      setSession(currentSession);
-      setUser(currentSession?.user ?? null);
-      
-      if (currentSession?.user) {
-        fetchUserRoles(currentSession.user.id).then(roles => {
-          if (mounted) setUserRoles(roles);
-        });
-      }
-      
-      setIsLoading(false);
-    });
+    };
+
+    initializeAuth();
 
     return () => {
       mounted = false;
-      subscription.unsubscribe();
     };
   }, []);
 
-  const signIn = async (email: string, password: string) => {
-    try {
-      // Sanitize email input
-      const sanitizedEmail = email.trim().toLowerCase();
-      
-      if (!sanitizedEmail || !password) {
-        return { success: false, error: 'Email and password are required' };
-      }
-
-      const { data, error } = await supabase.auth.signInWithPassword({ 
-        email: sanitizedEmail, 
-        password 
-      });
-      
-      if (error) {
-        // Don't expose internal error details
-        let userMessage = 'Invalid email or password';
-        if (error.message.includes('Email not confirmed')) {
-          userMessage = 'Please check your email and confirm your account before signing in';
-        }
-        
-        toast({
-          title: 'Sign in failed',
-          description: userMessage,
-          variant: 'destructive',
-        });
-        return { success: false, error: userMessage };
-      }
-      
-      if (data.user) {
-        toast({
-          title: 'Welcome back!',
-          description: `Successfully signed in as ${data.user.email}`,
-        });
-        return { success: true };
-      }
-      
-      return { success: false, error: 'Authentication failed' };
-    } catch (error: any) {
-      console.error('Login error:', error);
-      const errorMessage = 'An unexpected error occurred. Please try again.';
-      toast({
-        title: 'Sign in failed',
-        description: errorMessage,
-        variant: 'destructive',
-      });
-      return { success: false, error: errorMessage };
-    }
-  };
-
-  const signUp = async (email: string, password: string) => {
-    try {
-      // Sanitize and validate inputs
-      const sanitizedEmail = email.trim().toLowerCase();
-      
-      if (!sanitizedEmail || !password) {
-        return { success: false, error: 'Email and password are required' };
-      }
-
-      // Password strength validation
-      if (password.length < 8) {
-        return { success: false, error: 'Password must be at least 8 characters long' };
-      }
-
-      const redirectUrl = `${window.location.origin}/`;
-      
-      const { data, error } = await supabase.auth.signUp({ 
-        email: sanitizedEmail, 
-        password,
-        options: {
-          emailRedirectTo: redirectUrl
-        }
-      });
-      
-      if (error) {
-        let userMessage = error.message;
-        if (error.message.includes('already registered')) {
-          userMessage = 'An account with this email already exists. Please sign in instead.';
-        }
-        
-        toast({
-          title: 'Sign up failed',
-          description: userMessage,
-          variant: 'destructive',
-        });
-        return { success: false, error: userMessage };
-      }
-      
-      toast({
-        title: 'Account created!',
-        description: 'Please check your email for confirmation instructions.',
-      });
-      
-      return { success: true };
-    } catch (error: any) {
-      console.error('Signup error:', error);
-      const errorMessage = 'An unexpected error occurred. Please try again.';
-      toast({
-        title: 'Sign up failed',
-        description: errorMessage,
-        variant: 'destructive',
-      });
-      return { success: false, error: errorMessage };
-    }
-  };
-
-  const signOut = async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      
-      // Clear local state
-      setSession(null);
-      setUser(null);
-      setUserRoles([]);
-      
-      toast({
-        title: 'Signed out',
-        description: 'You have been successfully signed out.',
-      });
-    } catch (error) {
-      console.error('Sign out error:', error);
-      toast({
-        title: 'Sign out failed',
-        description: 'There was an error signing out.',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const refreshSession = async () => {
-    try {
-      const { data, error } = await supabase.auth.refreshSession();
-      if (error) throw error;
-      
-      if (data.session) {
-        setSession(data.session);
-        setUser(data.session.user);
-        const roles = await fetchUserRoles(data.session.user.id);
-        setUserRoles(roles);
-      }
-    } catch (error) {
-      console.error('Session refresh error:', error);
-      // Force sign out on refresh failure
-      await signOut();
-    }
-  };
-
-  const requestPasswordReset = async (email: string) => {
-    try {
-      const sanitizedEmail = email.trim().toLowerCase();
-      
-      if (!sanitizedEmail) {
-        return { success: false, error: 'Email is required' };
-      }
-
-      const { error } = await supabase.auth.resetPasswordForEmail(sanitizedEmail, {
-        redirectTo: `${window.location.origin}/update-password`,
-      });
-      
-      if (error) {
-        // Don't reveal whether email exists or not
-        console.error('Password reset error:', error);
-      }
-      
-      // Always return success to prevent email enumeration
-      return { success: true };
-    } catch (error) {
-      console.error('Password reset error:', error);
-      return { success: true }; // Still return success
-    }
-  };
-
-  const updatePassword = async (password: string) => {
-    try {
-      if (password.length < 8) {
-        return { success: false, error: 'Password must be at least 8 characters long' };
-      }
-
-      const { error } = await supabase.auth.updateUser({ password });
-      if (error) throw error;
-      
-      // Refresh session after password change
-      await refreshSession();
-      
-      return { success: true };
-    } catch (error: any) {
-      console.error('Password update error:', error);
-      return { success: false, error: error.message || 'Failed to update password' };
-    }
-  };
-
-  const hasRole = (role: string) => {
-    if (!user) return false;
-    
-    // Check hardcoded admin emails
-    if (adminEmails.includes(user.email || '') && role === 'admin') {
-      return true;
-    }
-    
-    return userRoles.includes(role) || userRoles.includes('admin');
-  };
-
-  const isAdmin = hasRole('admin');
-
-  const value = {
+  const value: AuthContextType = {
     user,
     session,
-    userRoles,
     isLoading,
-    isAdmin,
-    hasRole,
-    signIn,
     signUp,
+    signIn,
     signOut,
-    refreshSession,
-    requestPasswordReset,
-    updatePassword,
+    hasRole,
+    isAdmin
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
 
-export function useAuth() {
+export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
-}
+};
