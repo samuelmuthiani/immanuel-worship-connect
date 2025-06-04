@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import Layout from '@/components/Layout';
 import { useAuth } from '@/hooks/useAuth';
@@ -7,44 +6,24 @@ import AdminAnalytics from '@/components/admin/AdminAnalytics';
 import EnhancedDataTable from '@/components/admin/EnhancedDataTable';
 import { DonationManagement } from '@/components/admin/DonationManagement';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shield, Users, Mail, Heart, BarChart3, Database, UserCheck } from 'lucide-react';
-import { getAllProfiles } from '@/services/profileAPI';
-import { getEventsWithRegistrations } from '@/services/eventAPI';
+import { Shield, Users, Mail, Heart, BarChart3, Database } from 'lucide-react';
 import {
   getAllContactSubmissions,
   getAllNewsletterSubscribers,
-  getAllEventRegistrations
+  getAllRSVPs
 } from '@/utils/storage';
 
 const AdminDashboard = () => {
-  const { user } = useAuth();
-
-  // Member Profiles
-  const [memberProfiles, setMemberProfiles] = useState([]);
-  const memberColumns = [
-    { key: 'first_name', label: 'First Name' },
-    { key: 'last_name', label: 'Last Name' },
-    { key: 'email', label: 'Email' },
-    { key: 'phone', label: 'Phone' },
-    { key: 'last_login', label: 'Last Login' },
-    { key: 'created_at', label: 'Joined' }
-  ];
-  const fetchMemberProfiles = async () => {
-    try {
-      const profiles = await getAllProfiles();
-      setMemberProfiles(profiles);
-    } catch (error) {
-      console.error('Error fetching member profiles:', error);
-      setMemberProfiles([]);
-    }
-  };
+  const { user, isAdmin } = useAuth();
 
   // Contact Submissions
   const [contactSubmissions, setContactSubmissions] = useState([]);
   const contactColumns = [
     { key: 'name', label: 'Name' },
     { key: 'email', label: 'Email' },
+    { key: 'phone', label: 'Phone' },
     { key: 'subject', label: 'Subject' },
+    { key: 'inquiry_type', label: 'Type' },
     { key: 'message', label: 'Message' },
     { key: 'submitted_at', label: 'Submitted At' }
   ];
@@ -67,16 +46,14 @@ const AdminDashboard = () => {
   const eventColumns = [
     { key: 'name', label: 'Name' },
     { key: 'email', label: 'Email' },
-    { key: 'phone', label: 'Phone' },
     { key: 'event_id', label: 'Event ID' },
     { key: 'registered_at', label: 'Registered At' }
   ];
   const fetchEventRegistrations = async () => {
-    setEventRegistrations(await getAllEventRegistrations());
+    setEventRegistrations(await getAllRSVPs());
   };
 
   useEffect(() => {
-    fetchMemberProfiles();
     fetchContactSubmissions();
     fetchNewsletterSubscribers();
     fetchEventRegistrations();
@@ -97,26 +74,22 @@ const AdminDashboard = () => {
           </div>
 
           <Tabs defaultValue="analytics" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+            <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
               <TabsTrigger value="analytics" className="flex items-center gap-2">
                 <BarChart3 className="h-4 w-4" />
                 Analytics
-              </TabsTrigger>
-              <TabsTrigger value="members" className="flex items-center gap-2">
-                <UserCheck className="h-4 w-4" />
-                Members
               </TabsTrigger>
               <TabsTrigger value="donations" className="flex items-center gap-2">
                 <Heart className="h-4 w-4" />
                 Donations
               </TabsTrigger>
-              <TabsTrigger value="communications" className="flex items-center gap-2">
-                <Mail className="h-4 w-4" />
-                Communications
+              <TabsTrigger value="users" className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Users
               </TabsTrigger>
-              <TabsTrigger value="events" className="flex items-center gap-2">
+              <TabsTrigger value="data" className="flex items-center gap-2">
                 <Database className="h-4 w-4" />
-                Events
+                Data Management
               </TabsTrigger>
             </TabsList>
 
@@ -124,21 +97,11 @@ const AdminDashboard = () => {
               <AdminAnalytics />
             </TabsContent>
 
-            <TabsContent value="members" className="space-y-6">
-              <EnhancedDataTable
-                title="Registered Members"
-                data={memberProfiles}
-                columns={memberColumns}
-                tableName="profiles"
-                onRefresh={fetchMemberProfiles}
-              />
-            </TabsContent>
-
             <TabsContent value="donations" className="space-y-6">
               <DonationManagement />
             </TabsContent>
 
-            <TabsContent value="communications" className="space-y-6">
+            <TabsContent value="users" className="space-y-6">
               <div className="grid gap-6">
                 <EnhancedDataTable
                   title="Contact Submissions"
@@ -157,7 +120,7 @@ const AdminDashboard = () => {
               </div>
             </TabsContent>
 
-            <TabsContent value="events" className="space-y-6">
+            <TabsContent value="data" className="space-y-6">
               <EnhancedDataTable
                 title="Event Registrations"
                 data={eventRegistrations}
