@@ -1,174 +1,107 @@
 
-import React, { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { format } from 'date-fns';
-import { CalendarDays, ArrowRight } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import type { Database } from '@/integrations/supabase/types';
-import { getSectionContent } from '@/utils/siteContent';
-
-type Event = Database['public']['Tables']['events']['Row'];
+import React, { useState, useEffect } from 'react';
+import { Calendar, ArrowRight, MapPin } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { EventCard } from '@/components/EventCard';
+import { getAllEvents, Event } from '@/utils/eventUtils';
+import { useNavigate } from 'react-router-dom';
 
 const EventsPreviewSection = () => {
-  const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
+  const navigate = useNavigate();
+  const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
-  const [cmsContent, setCmsContent] = useState<string | null>(null);
-  const sectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const fetchEvents = async () => {
-      try {
-        setLoading(true);
-        const { data, error } = await supabase
-          .from('events')
-          .select('*')
-          .order('event_date', { ascending: true })
-          .limit(3);
-          
-        if (error) {
-          throw error;
-        }
-        
-        setUpcomingEvents(data || []);
-      } catch (error) {
-        console.error('Error fetching events:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchEvents();
   }, []);
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('opacity-100');
-          entry.target.classList.remove('opacity-0', 'translate-y-10');
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
+  const fetchEvents = async () => {
+    try {
+      const eventsData = await getAllEvents();
+      // Show only next 3 upcoming events
+      const upcomingEvents = eventsData
+        .filter(event => new Date(event.event_date) >= new Date())
+        .slice(0, 3);
+      setEvents(upcomingEvents);
+    } catch (error) {
+      console.error('Error fetching events:', error);
+    } finally {
+      setLoading(false);
     }
+  };
 
-    return () => {
-      if (sectionRef.current) {
-        observer.unobserve(sectionRef.current);
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    // Fetch CMS override content if available
-    const fetchContent = async () => {
-      const content = await getSectionContent('events');
-      if (content) setCmsContent(content);
-    };
-    
-    fetchContent();
-  }, []);
+  if (loading) {
+    return (
+      <section className="py-16 bg-gray-50 dark:bg-gray-900">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+              Upcoming Events
+            </h2>
+            <div className="animate-pulse flex space-x-4">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="bg-gray-200 dark:bg-gray-700 h-48 rounded-lg flex-1"></div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
-    <section className="py-16 bg-gradient-to-b from-white to-indigo-50 dark:from-gray-900 dark:to-indigo-950">
-      <h2 className="text-3xl md:text-4xl font-bold text-center mb-8 text-indigo-700 dark:text-indigo-300 animate-fade-in">
-        Upcoming Events
-      </h2>
-      <div 
-        ref={sectionRef}
-        className="container mx-auto px-4 transition-all duration-1000 opacity-0 translate-y-10"
-      >
-        {cmsContent ? (
-          <div className="prose mx-auto max-w-4xl" dangerouslySetInnerHTML={{ __html: cmsContent }} />
-        ) : (
+    <section className="py-16 bg-gray-50 dark:bg-gray-900">
+      <div className="container mx-auto px-4">
+        <div className="text-center mb-12">
+          <Calendar className="h-12 w-12 text-iwc-blue mx-auto mb-4" />
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+            Upcoming Events
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+            Join us for our upcoming church events and activities. Experience fellowship, 
+            worship, and community together.
+          </p>
+        </div>
+
+        {events.length > 0 ? (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {loading ? (
-                <div className="flex justify-center py-12 col-span-3">
-                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-iwc-blue"></div>
-                </div>
-              ) : upcomingEvents.length === 0 ? (
-                <div className="text-center py-12 col-span-3">
-                  <p className="text-lg text-gray-600">No upcoming events at this time.</p>
-                </div>
-              ) : (
-                upcomingEvents.map((event) => (
-                  <div 
-                    key={event.id}
-                    className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all border border-gray-100"
-                    role="region"
-                    aria-label={`Event: ${event.title}`}
-                    tabIndex={0}
-                  >
-                    {/* Optional image - only render if exists */}
-                    {event.category && (
-                      <div className="h-48 bg-gray-200 flex items-center justify-center">
-                        <span className="text-2xl">{getCategoryEmoji(event.category)}</span>
-                      </div>
-                    )}
-                    <div className="p-6">
-                      <h3 className="text-xl font-semibold mb-2 text-gray-900">{event.title}</h3>
-                      <div className="flex items-center text-gray-600 mb-4">
-                        <CalendarDays className="h-4 w-4 mr-2 text-iwc-orange" />
-                        <span>
-                          {format(new Date(event.event_date), 'EEEE, MMMM d - h:mm a')}
-                        </span>
-                      </div>
-                      {event.location && (
-                        <div className="text-sm text-gray-500 mb-2" aria-label="Event location">
-                          <span className="font-medium">Location:</span> {event.location}
-                        </div>
-                      )}
-                      <p className="text-gray-600 mb-4 line-clamp-2">
-                        {event.description}
-                      </p>
-                      <Link 
-                        to="/events" 
-                        className="text-iwc-blue hover:text-iwc-orange transition-colors flex items-center font-medium"
-                        aria-label={`View details for ${event.title}`}
-                      >
-                        View Details
-                        <ArrowRight className="h-4 w-4 ml-1" />
-                      </Link>
-                    </div>
-                  </div>
-                ))
-              )}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+              {events.map((event) => (
+                <EventCard key={event.id} event={event} showRegistration={true} />
+              ))}
             </div>
-            
-            <div className="text-center mt-12">
-              <Link 
-                to="/events" 
-                className="bg-iwc-blue hover:bg-iwc-orange text-white font-bold py-3 px-8 rounded-md transition-colors inline-flex items-center"
+
+            <div className="text-center">
+              <Button
+                onClick={() => navigate('/events')}
+                className="bg-iwc-blue hover:bg-iwc-orange text-white px-8 py-3 text-lg"
               >
                 View All Events
-                <ArrowRight className="h-4 w-4 ml-2" />
-              </Link>
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
             </div>
           </>
+        ) : (
+          <div className="text-center py-12">
+            <Calendar className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+              No Upcoming Events
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              Check back soon for new events and activities.
+            </p>
+            <Button
+              onClick={() => navigate('/events')}
+              variant="outline"
+              className="border-iwc-blue text-iwc-blue hover:bg-iwc-blue hover:text-white"
+            >
+              View All Events
+            </Button>
+          </div>
         )}
       </div>
     </section>
   );
 };
-
-// Helper function to get emoji for event category
-function getCategoryEmoji(category: string): string {
-  const categoryMap: Record<string, string> = {
-    'Worship': '🙏',
-    'Study': '📚',
-    'Youth': '👨‍👩‍👧‍👦',
-    'Service': '🤝',
-    'Prayer': '✝️',
-    'Fellowship': '❤️',
-    'Music': '🎵',
-    'Outreach': '🌍'
-  };
-  
-  return categoryMap[category] || '📅';
-}
 
 export default EventsPreviewSection;

@@ -4,34 +4,29 @@ import { User, Edit, Save, X, Upload, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { EnhancedCard, CardContent, CardHeader, CardTitle } from '@/components/ui/enhanced-card';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { getUserProfile, updateUserProfile } from '@/utils/storage';
-
-interface ProfileData {
-  first_name?: string;
-  last_name?: string;
-  phone?: string;
-  date_of_birth?: string;
-  address?: string;
-  avatar_url?: string;
-  bio?: string;
-}
+import { getUserProfile, updateUserProfile, UserProfile } from '@/utils/profileUtils';
 
 export function MemberProfile() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [profileData, setProfileData] = useState<ProfileData>({
+  const [profileData, setProfileData] = useState<UserProfile>({
+    id: '',
     first_name: '',
     last_name: '',
     phone: '',
     date_of_birth: '',
     address: '',
     avatar_url: '',
-    bio: ''
+    bio: '',
+    ministry: '',
+    gender: '',
+    age: undefined
   });
 
   useEffect(() => {
@@ -46,6 +41,13 @@ export function MemberProfile() {
       const profile = await getUserProfile();
       if (profile) {
         setProfileData(profile);
+      } else {
+        // Set default values if no profile exists
+        setProfileData(prev => ({
+          ...prev,
+          id: user?.id || '',
+          email: user?.email || ''
+        }));
       }
     } catch (error) {
       console.error('Error loading profile:', error);
@@ -64,6 +66,10 @@ export function MemberProfile() {
     setProfileData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleSelectChange = (name: string, value: string) => {
+    setProfileData(prev => ({ ...prev, [name]: value }));
+  };
+
   const handleSave = async () => {
     if (!user) return;
 
@@ -77,14 +83,16 @@ export function MemberProfile() {
           title: 'Success',
           description: 'Profile updated successfully!',
         });
+        // Reload profile to get updated data
+        await loadProfile();
       } else {
-        throw new Error('Failed to update profile');
+        throw new Error(result.error?.message || 'Failed to update profile');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating profile:', error);
       toast({
         title: 'Error',
-        description: 'Failed to update profile. Please try again.',
+        description: error.message || 'Failed to update profile. Please try again.',
         variant: 'destructive'
       });
     } finally {
@@ -279,6 +287,56 @@ export function MemberProfile() {
               </p>
             )}
           </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Gender
+            </label>
+            {isEditing ? (
+              <Select value={profileData.gender || ''} onValueChange={(value) => handleSelectChange('gender', value)}>
+                <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600">
+                  <SelectValue placeholder="Select gender" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="male">Male</SelectItem>
+                  <SelectItem value="female">Female</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                  <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
+                </SelectContent>
+              </Select>
+            ) : (
+              <p className="text-gray-900 dark:text-white py-2 px-3 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-700">
+                {profileData.gender || 'Not provided'}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Ministry
+            </label>
+            {isEditing ? (
+              <Select value={profileData.ministry || ''} onValueChange={(value) => handleSelectChange('ministry', value)}>
+                <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600">
+                  <SelectValue placeholder="Select ministry" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="worship">Worship Ministry</SelectItem>
+                  <SelectItem value="youth">Youth Ministry</SelectItem>
+                  <SelectItem value="children">Children's Ministry</SelectItem>
+                  <SelectItem value="evangelism">Evangelism</SelectItem>
+                  <SelectItem value="prayer">Prayer Ministry</SelectItem>
+                  <SelectItem value="media">Media Ministry</SelectItem>
+                  <SelectItem value="hospitality">Hospitality</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            ) : (
+              <p className="text-gray-900 dark:text-white py-2 px-3 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-700">
+                {profileData.ministry || 'Not provided'}
+              </p>
+            )}
+          </div>
         </div>
 
         <div>
@@ -339,9 +397,11 @@ export function MemberProfile() {
                 Member Since
               </label>
               <p className="text-gray-900 dark:text-white py-2 px-3 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-700">
-                {user.created_at 
-                  ? new Date(user.created_at).toLocaleDateString()
-                  : 'Not available'
+                {profileData.created_at 
+                  ? new Date(profileData.created_at).toLocaleDateString()
+                  : user.created_at 
+                    ? new Date(user.created_at).toLocaleDateString()
+                    : 'Not available'
                 }
               </p>
             </div>

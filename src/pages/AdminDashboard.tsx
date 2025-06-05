@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import Layout from '@/components/Layout';
 import { useAuth } from '@/hooks/useAuth';
@@ -10,11 +11,27 @@ import { Shield, Users, Mail, Heart, BarChart3, Database } from 'lucide-react';
 import {
   getAllContactSubmissions,
   getAllNewsletterSubscribers,
-  getAllRSVPs
 } from '@/utils/storage';
+import { getAllProfiles } from '@/utils/profileUtils';
+import { getAllEventRegistrations } from '@/utils/eventUtils';
 
 const AdminDashboard = () => {
   const { user, isAdmin } = useAuth();
+
+  // User Profiles
+  const [userProfiles, setUserProfiles] = useState([]);
+  const profileColumns = [
+    { key: 'first_name', label: 'First Name' },
+    { key: 'last_name', label: 'Last Name' },
+    { key: 'email', label: 'Email' },
+    { key: 'phone', label: 'Phone' },
+    { key: 'ministry', label: 'Ministry' },
+    { key: 'gender', label: 'Gender' },
+    { key: 'created_at', label: 'Member Since' }
+  ];
+  const fetchUserProfiles = async () => {
+    setUserProfiles(await getAllProfiles());
+  };
 
   // Contact Submissions
   const [contactSubmissions, setContactSubmissions] = useState([]);
@@ -50,10 +67,11 @@ const AdminDashboard = () => {
     { key: 'registered_at', label: 'Registered At' }
   ];
   const fetchEventRegistrations = async () => {
-    setEventRegistrations(await getAllRSVPs());
+    setEventRegistrations(await getAllEventRegistrations());
   };
 
   useEffect(() => {
+    fetchUserProfiles();
     fetchContactSubmissions();
     fetchNewsletterSubscribers();
     fetchEventRegistrations();
@@ -79,13 +97,13 @@ const AdminDashboard = () => {
                 <BarChart3 className="h-4 w-4" />
                 Analytics
               </TabsTrigger>
+              <TabsTrigger value="members" className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Members
+              </TabsTrigger>
               <TabsTrigger value="donations" className="flex items-center gap-2">
                 <Heart className="h-4 w-4" />
                 Donations
-              </TabsTrigger>
-              <TabsTrigger value="users" className="flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                Users
               </TabsTrigger>
               <TabsTrigger value="data" className="flex items-center gap-2">
                 <Database className="h-4 w-4" />
@@ -97,11 +115,30 @@ const AdminDashboard = () => {
               <AdminAnalytics />
             </TabsContent>
 
+            <TabsContent value="members" className="space-y-6">
+              <div className="grid gap-6">
+                <EnhancedDataTable
+                  title="Member Profiles"
+                  data={userProfiles}
+                  columns={profileColumns}
+                  tableName="profiles"
+                  onRefresh={fetchUserProfiles}
+                />
+                <EnhancedDataTable
+                  title="Event Registrations"
+                  data={eventRegistrations}
+                  columns={eventColumns}
+                  tableName="event_registrations"
+                  onRefresh={fetchEventRegistrations}
+                />
+              </div>
+            </TabsContent>
+
             <TabsContent value="donations" className="space-y-6">
               <DonationManagement />
             </TabsContent>
 
-            <TabsContent value="users" className="space-y-6">
+            <TabsContent value="data" className="space-y-6">
               <div className="grid gap-6">
                 <EnhancedDataTable
                   title="Contact Submissions"
@@ -118,16 +155,6 @@ const AdminDashboard = () => {
                   onRefresh={fetchNewsletterSubscribers}
                 />
               </div>
-            </TabsContent>
-
-            <TabsContent value="data" className="space-y-6">
-              <EnhancedDataTable
-                title="Event Registrations"
-                data={eventRegistrations}
-                columns={eventColumns}
-                tableName="event_registrations"
-                onRefresh={fetchEventRegistrations}
-              />
             </TabsContent>
           </Tabs>
         </div>

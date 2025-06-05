@@ -3,8 +3,6 @@ export {
   saveContactSubmission,
   saveEventRSVP as saveRSVP,
   saveNewsletterSubscription,
-  getUserProfile,
-  updateUserProfile,
   getAllContactSubmissions,
   getAllEventRegistrations as getAllRSVPs,
   getAllNewsletterSubscribers
@@ -17,6 +15,21 @@ export {
   updateUserRole,
   logAuditAction
 } from './adminUtils';
+
+// Re-export new profile utilities
+export {
+  getUserProfile,
+  updateUserProfile,
+  getAllProfiles
+} from './profileUtils';
+
+// Re-export event utilities
+export {
+  registerForEvent,
+  isUserRegistered,
+  getAllEvents,
+  getAllEventRegistrations
+} from './eventUtils';
 
 // Keep legacy localStorage functions for backward compatibility
 export const saveToLocalStorage = (key: string, value: any): void => {

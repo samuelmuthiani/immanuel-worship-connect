@@ -120,24 +120,30 @@ export type Database = {
         Row: {
           email: string
           id: string
+          inquiry_type: string | null
           message: string
           name: string
+          phone: string | null
           subject: string | null
           submitted_at: string | null
         }
         Insert: {
           email: string
           id?: string
+          inquiry_type?: string | null
           message: string
           name: string
+          phone?: string | null
           subject?: string | null
           submitted_at?: string | null
         }
         Update: {
           email?: string
           id?: string
+          inquiry_type?: string | null
           message?: string
           name?: string
+          phone?: string | null
           subject?: string | null
           submitted_at?: string | null
         }
@@ -207,6 +213,7 @@ export type Database = {
           id: string
           name: string
           registered_at: string | null
+          user_id: string | null
         }
         Insert: {
           email: string
@@ -214,6 +221,7 @@ export type Database = {
           id?: string
           name: string
           registered_at?: string | null
+          user_id?: string | null
         }
         Update: {
           email?: string
@@ -221,6 +229,7 @@ export type Database = {
           id?: string
           name?: string
           registered_at?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -334,6 +343,60 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          address: string | null
+          age: number | null
+          avatar_url: string | null
+          bio: string | null
+          created_at: string | null
+          date_of_birth: string | null
+          email: string | null
+          first_name: string | null
+          gender: string | null
+          id: string
+          last_login: string | null
+          last_name: string | null
+          ministry: string | null
+          phone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          age?: number | null
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          date_of_birth?: string | null
+          email?: string | null
+          first_name?: string | null
+          gender?: string | null
+          id: string
+          last_login?: string | null
+          last_name?: string | null
+          ministry?: string | null
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          age?: number | null
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          date_of_birth?: string | null
+          email?: string | null
+          first_name?: string | null
+          gender?: string | null
+          id?: string
+          last_login?: string | null
+          last_name?: string | null
+          ministry?: string | null
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       rate_limits: {
         Row: {
           action: string
@@ -399,7 +462,17 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      dashboard_analytics: {
+        Row: {
+          contacts_month: number | null
+          new_users_month: number | null
+          registrations_month: number | null
+          total_contacts: number | null
+          total_registrations: number | null
+          total_users: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       cleanup_old_audit_logs: {
@@ -411,7 +484,7 @@ export type Database = {
         Returns: string
       }
       is_admin: {
-        Args: { user_id: string }
+        Args: Record<PropertyKey, never> | { user_id: string }
         Returns: boolean
       }
     }
