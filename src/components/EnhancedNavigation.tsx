@@ -55,7 +55,6 @@ const EnhancedNavigation = () => {
     <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
-          {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
             <img src={iwcLogo} alt="IWC" className="h-8 w-8" />
             <span className="font-bold text-xl bg-gradient-to-r from-iwc-blue to-iwc-orange bg-clip-text text-transparent">
@@ -63,7 +62,6 @@ const EnhancedNavigation = () => {
             </span>
           </Link>
 
-          {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center space-x-1">
             {navigationItems.map((item) => (
               <Link
@@ -80,7 +78,6 @@ const EnhancedNavigation = () => {
             ))}
           </div>
 
-          {/* Right side items */}
           <div className="flex items-center space-x-4">
             <ModeToggle />
             
@@ -104,7 +101,6 @@ const EnhancedNavigation = () => {
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuGroup>
-                    {/* Show appropriate dashboard link based on current location and role */}
                     {isAdmin && !isCurrentlyOnAdmin && (
                       <DropdownMenuItem onClick={() => navigate('/admin')}>
                         <Shield className="mr-2 h-4 w-4" />
@@ -119,7 +115,6 @@ const EnhancedNavigation = () => {
                       </DropdownMenuItem>
                     )}
                     
-                    {/* If admin is on admin page, show member area. If on member page and admin, show admin dashboard */}
                     {isAdmin && isCurrentlyOnAdmin && (
                       <DropdownMenuItem onClick={() => navigate('/member')}>
                         <Settings className="mr-2 h-4 w-4" />
@@ -152,7 +147,6 @@ const EnhancedNavigation = () => {
               </div>
             )}
 
-            {/* Mobile menu button */}
             <div className="lg:hidden">
               <Button
                 variant="ghost"
@@ -166,7 +160,6 @@ const EnhancedNavigation = () => {
         </div>
       </div>
 
-      {/* Mobile Menu */}
       <MobileMenu 
         isOpen={isMobileMenuOpen} 
         onClose={() => setIsMobileMenuOpen(false)}

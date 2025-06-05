@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { SecurityService } from '@/utils/security';
 
 interface UserRole {
   role: string;
@@ -62,7 +63,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         console.log('Auth state change:', event, !!currentSession);
 
-        // Handle session expiry and invalid sessions
         if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
           if (!currentSession) {
             setSession(null);
@@ -77,7 +77,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(currentSession?.user ?? null);
         
         if (currentSession?.user) {
-          // Fetch roles with retry logic
           setTimeout(async () => {
             if (mounted) {
               try {
@@ -97,7 +96,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    // Initial session check
     supabase.auth.getSession().then(({ data: { session: currentSession }, error }) => {
       if (!mounted) return;
       
@@ -127,11 +125,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      // Sanitize email input
-      const sanitizedEmail = email.trim().toLowerCase();
+      const sanitizedEmail = SecurityService.sanitizeEmail(email);
       
-      if (!sanitizedEmail || !password) {
-        return { success: false, error: 'Email and password are required' };
+      if (!SecurityService.validateEmail(sanitizedEmail)) {
+        return { success: false, error: 'Please enter a valid email address' };
+      }
+
+      if (!password) {
+        return { success: false, error: 'Password is required' };
+      }
+
+      // Rate limiting check
+      const clientIP = 'browser-session';
+      if (SecurityService.isRateLimited(`signin-${clientIP}`, 5, 15 * 60 * 1000)) {
+        return { success: false, error: 'Too many login attempts. Please wait before trying again.' };
       }
 
       const { data, error } = await supabase.auth.signInWithPassword({ 
@@ -140,7 +147,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       
       if (error) {
-        // Don't expose internal error details
         let userMessage = 'Invalid email or password';
         if (error.message.includes('Email not confirmed')) {
           userMessage = 'Please check your email and confirm your account before signing in';
@@ -155,6 +161,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       
       if (data.user) {
+        SecurityService.clearRateLimit(`signin-${clientIP}`);
         toast({
           title: 'Welcome back!',
           description: `Successfully signed in as ${data.user.email}`,
@@ -177,16 +184,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = async (email: string, password: string) => {
     try {
-      // Sanitize and validate inputs
-      const sanitizedEmail = email.trim().toLowerCase();
+      const sanitizedEmail = SecurityService.sanitizeEmail(email);
       
-      if (!sanitizedEmail || !password) {
-        return { success: false, error: 'Email and password are required' };
+      if (!SecurityService.validateEmail(sanitizedEmail)) {
+        return { success: false, error: 'Please enter a valid email address' };
       }
 
-      // Password strength validation
-      if (password.length < 8) {
-        return { success: false, error: 'Password must be at least 8 characters long' };
+      const passwordValidation = SecurityService.validatePassword(password);
+      if (!passwordValidation.isValid) {
+        return { success: false, error: passwordValidation.errors[0] };
+      }
+
+      // Rate limiting check
+      const clientIP = 'browser-session';
+      if (SecurityService.isRateLimited(`signup-${clientIP}`, 3, 15 * 60 * 1000)) {
+        return { success: false, error: 'Too many signup attempts. Please wait before trying again.' };
       }
 
       const redirectUrl = `${window.location.origin}/`;
@@ -213,6 +225,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { success: false, error: userMessage };
       }
       
+      SecurityService.clearRateLimit(`signup-${clientIP}`);
       toast({
         title: 'Account created!',
         description: 'Please check your email for confirmation instructions.',
@@ -236,7 +249,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       
-      // Clear local state
       setSession(null);
       setUser(null);
       setUserRoles([]);
@@ -268,17 +280,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     } catch (error) {
       console.error('Session refresh error:', error);
-      // Force sign out on refresh failure
       await signOut();
     }
   };
 
   const requestPasswordReset = async (email: string) => {
     try {
-      const sanitizedEmail = email.trim().toLowerCase();
+      const sanitizedEmail = SecurityService.sanitizeEmail(email);
       
-      if (!sanitizedEmail) {
-        return { success: false, error: 'Email is required' };
+      if (!SecurityService.validateEmail(sanitizedEmail)) {
+        return { success: false, error: 'Please enter a valid email address' };
       }
 
       const { error } = await supabase.auth.resetPasswordForEmail(sanitizedEmail, {
@@ -286,28 +297,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       
       if (error) {
-        // Don't reveal whether email exists or not
         console.error('Password reset error:', error);
       }
       
-      // Always return success to prevent email enumeration
       return { success: true };
     } catch (error) {
       console.error('Password reset error:', error);
-      return { success: true }; // Still return success
+      return { success: true };
     }
   };
 
   const updatePassword = async (password: string) => {
     try {
-      if (password.length < 8) {
-        return { success: false, error: 'Password must be at least 8 characters long' };
+      const passwordValidation = SecurityService.validatePassword(password);
+      if (!passwordValidation.isValid) {
+        return { success: false, error: passwordValidation.errors[0] };
       }
 
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
       
-      // Refresh session after password change
       await refreshSession();
       
       return { success: true };
@@ -320,7 +329,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const hasRole = (role: string) => {
     if (!user) return false;
     
-    // Check hardcoded admin emails
     if (adminEmails.includes(user.email || '') && role === 'admin') {
       return true;
     }
