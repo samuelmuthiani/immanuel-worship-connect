@@ -81,20 +81,18 @@ export function MemberProfile() {
   if (!user) {
     return (
       <ErrorMessage 
-        title="Authentication Required"
         message="Please log in to view your profile."
       />
     );
   }
 
   if (isLoading) {
-    return <LoadingIndicator message="Loading your profile..." />;
+    return <LoadingIndicator label="Loading your profile..." />;
   }
 
   if (error) {
     return (
       <ErrorMessage 
-        title="Error Loading Profile"
         message={error}
         onRetry={loadProfile}
       />

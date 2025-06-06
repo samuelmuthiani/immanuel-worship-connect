@@ -1,10 +1,24 @@
-
 // Security utilities for input validation and sanitization
 export class SecurityService {
   // Email validation with proper regex
   static validateEmail(email: string): boolean {
     const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
     return emailRegex.test(email) && email.length <= 320; // RFC 5321 limit
+  }
+
+  // Phone number validation
+  static validatePhoneNumber(phone: string): boolean {
+    // Remove all non-digit characters for validation
+    const digitsOnly = phone.replace(/\D/g, '');
+    
+    // Check if it's a valid length (10-15 digits)
+    if (digitsOnly.length < 10 || digitsOnly.length > 15) {
+      return false;
+    }
+    
+    // Basic phone number regex that accepts various formats
+    const phoneRegex = /^[\+]?[1-9]?[\d\s\-\(\)]{9,20}$/;
+    return phoneRegex.test(phone);
   }
 
   // Password strength validation
