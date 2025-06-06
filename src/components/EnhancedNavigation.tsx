@@ -54,20 +54,22 @@ const EnhancedNavigation = () => {
   return (
     <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto px-4">
-        <div className="flex h-16 items-center justify-between">
-          <Link to="/" className="flex items-center space-x-2">
-            <img src={iwcLogo} alt="IWC" className="h-8 w-8" />
-            <span className="font-bold text-xl bg-gradient-to-r from-iwc-blue to-iwc-orange bg-clip-text text-transparent">
+        <div className="flex h-14 sm:h-16 items-center justify-between">
+          {/* Logo */}
+          <Link to="/" className="flex items-center space-x-2 flex-shrink-0">
+            <img src={iwcLogo} alt="IWC" className="h-6 w-6 sm:h-8 sm:w-8" />
+            <span className="font-bold text-lg sm:text-xl bg-gradient-to-r from-iwc-blue to-iwc-orange bg-clip-text text-transparent">
               IWC
             </span>
           </Link>
 
-          <div className="hidden lg:flex items-center space-x-1">
+          {/* Desktop Navigation */}
+          <div className="hidden lg:flex items-center space-x-1 flex-1 justify-center max-w-4xl mx-8">
             {navigationItems.map((item) => (
               <Link
                 key={item.name}
                 to={item.path}
-                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
                   isActive(item.path)
                     ? 'bg-accent text-accent-foreground'
                     : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
@@ -78,8 +80,12 @@ const EnhancedNavigation = () => {
             ))}
           </div>
 
-          <div className="flex items-center space-x-4">
-            <ModeToggle />
+          {/* Right side actions */}
+          <div className="flex items-center space-x-2 sm:space-x-4">
+            {/* Mode toggle - hidden on small screens */}
+            <div className="hidden sm:block">
+              <ModeToggle />
+            </div>
             
             {user ? (
               <DropdownMenu>
@@ -91,7 +97,7 @@ const EnhancedNavigation = () => {
                 <DropdownMenuContent className="w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700" align="end" forceMount>
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none text-gray-900 dark:text-white">
+                      <p className="text-sm font-medium leading-none text-gray-900 dark:text-white truncate">
                         {user.email}
                       </p>
                       <p className="text-xs leading-none text-gray-500 dark:text-gray-400">
@@ -137,21 +143,23 @@ const EnhancedNavigation = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <div className="hidden lg:flex items-center space-x-2">
-                <Button variant="ghost" asChild>
+              <div className="hidden sm:flex items-center space-x-2">
+                <Button variant="ghost" size="sm" asChild>
                   <Link to="/login">Sign In</Link>
                 </Button>
-                <Button asChild>
+                <Button size="sm" asChild>
                   <Link to="/register">Sign Up</Link>
                 </Button>
               </div>
             )}
 
+            {/* Mobile menu button */}
             <div className="lg:hidden">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="h-8 w-8 p-0"
               >
                 <Menu className="h-5 w-5" />
               </Button>

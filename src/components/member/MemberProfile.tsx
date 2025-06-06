@@ -5,8 +5,9 @@ import { useToast } from '@/hooks/use-toast';
 import { getUserProfile, UserProfile } from '@/utils/profileUtils';
 import { ProfileDisplay } from './ProfileDisplay';
 import { EnhancedProfileForm } from './EnhancedProfileForm';
-import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
+import { SkeletonLoader } from '@/components/ui/SkeletonLoader';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
+import { ResponsiveContainer } from '@/components/ui/ResponsiveContainer';
 
 export function MemberProfile() {
   const { user } = useAuth();
@@ -80,27 +81,35 @@ export function MemberProfile() {
 
   if (!user) {
     return (
-      <ErrorMessage 
-        message="Please log in to view your profile."
-      />
+      <ResponsiveContainer>
+        <ErrorMessage 
+          message="Please log in to view your profile."
+        />
+      </ResponsiveContainer>
     );
   }
 
   if (isLoading) {
-    return <LoadingIndicator label="Loading your profile..." />;
+    return (
+      <ResponsiveContainer>
+        <SkeletonLoader variant="profile" />
+      </ResponsiveContainer>
+    );
   }
 
   if (error) {
     return (
-      <ErrorMessage 
-        message={error}
-        onRetry={loadProfile}
-      />
+      <ResponsiveContainer>
+        <ErrorMessage 
+          message={error}
+          onRetry={loadProfile}
+        />
+      </ResponsiveContainer>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <ResponsiveContainer className="space-y-6">
       {isEditing ? (
         <EnhancedProfileForm
           profileData={profileData}
@@ -117,6 +126,6 @@ export function MemberProfile() {
           onEdit={() => setIsEditing(true)}
         />
       )}
-    </div>
+    </ResponsiveContainer>
   );
 }
