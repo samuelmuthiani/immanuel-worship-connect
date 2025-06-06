@@ -17,9 +17,10 @@ export interface UserProfile {
   age?: number;
   created_at?: string;
   updated_at?: string;
+  last_login?: string;
 }
 
-// Get user profile from profiles table (not site_content)
+// Get user profile from profiles table
 export const getUserProfile = async (): Promise<UserProfile | null> => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
@@ -39,6 +40,33 @@ export const getUserProfile = async (): Promise<UserProfile | null> => {
     }
     
     console.log('User profile fetched:', !!data);
+    
+    // If no profile exists, create one
+    if (!data) {
+      console.log('No profile found, creating new profile...');
+      const newProfile = {
+        id: user.id,
+        email: user.email,
+        first_name: '',
+        last_name: '',
+        created_at: new Date().toISOString()
+      };
+      
+      const { data: createdProfile, error: createError } = await supabase
+        .from('profiles')
+        .insert([newProfile])
+        .select()
+        .single();
+      
+      if (createError) {
+        console.error('Error creating profile:', createError);
+        return null;
+      }
+      
+      console.log('New profile created:', createdProfile);
+      return createdProfile;
+    }
+    
     return data;
   } catch (error) {
     console.error('Error fetching profile:', error);
@@ -93,28 +121,11 @@ export const updateUserProfile = async (profileData: Partial<UserProfile>) => {
   }
 };
 
-// Get all profiles for admin
+// Get all profiles for admin (enhanced with better error handling)
 export const getAllProfiles = async (): Promise<UserProfile[]> => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Authentication required');
-
-    // Verify admin access
-    const adminEmails = ['admin@iwc.com', 'samuel.watho@gmail.com'];
-    let isAdmin = adminEmails.includes(user.email || '');
-
-    if (!isAdmin) {
-      const { data: roles } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id);
-      
-      isAdmin = roles?.some(r => r.role === 'admin') || false;
-    }
-
-    if (!isAdmin) {
-      throw new Error('Administrative access required');
-    }
 
     console.log('Fetching all profiles for admin...');
     

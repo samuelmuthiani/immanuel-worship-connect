@@ -7,16 +7,18 @@ import AdminAnalytics from '@/components/admin/AdminAnalytics';
 import EnhancedDataTable from '@/components/admin/EnhancedDataTable';
 import { DonationManagement } from '@/components/admin/DonationManagement';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shield, Users, Mail, Heart, BarChart3, Database } from 'lucide-react';
-import {
-  getAllContactSubmissions,
-  getAllNewsletterSubscribers,
-} from '@/utils/storage';
-import { getAllProfiles } from '@/utils/profileUtils';
-import { getAllEventRegistrations } from '@/utils/eventUtils';
+import { ResponsiveContainer } from '@/components/ui/ResponsiveContainer';
+import { Shield, Users, Mail, Heart, BarChart3, Database, AlertCircle } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const AdminDashboard = () => {
   const { user, isAdmin } = useAuth();
+  const { toast } = useToast();
+  
+  // Loading states
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // User Profiles
   const [userProfiles, setUserProfiles] = useState([]);
@@ -29,9 +31,6 @@ const AdminDashboard = () => {
     { key: 'gender', label: 'Gender' },
     { key: 'created_at', label: 'Member Since' }
   ];
-  const fetchUserProfiles = async () => {
-    setUserProfiles(await getAllProfiles());
-  };
 
   // Contact Submissions
   const [contactSubmissions, setContactSubmissions] = useState([]);
@@ -44,9 +43,6 @@ const AdminDashboard = () => {
     { key: 'message', label: 'Message' },
     { key: 'submitted_at', label: 'Submitted At' }
   ];
-  const fetchContactSubmissions = async () => {
-    setContactSubmissions(await getAllContactSubmissions());
-  };
 
   // Newsletter Subscribers
   const [newsletterSubscribers, setNewsletterSubscribers] = useState([]);
@@ -54,9 +50,6 @@ const AdminDashboard = () => {
     { key: 'email', label: 'Email' },
     { key: 'subscribed_at', label: 'Subscribed At' }
   ];
-  const fetchNewsletterSubscribers = async () => {
-    setNewsletterSubscribers(await getAllNewsletterSubscribers());
-  };
 
   // Event Registrations
   const [eventRegistrations, setEventRegistrations] = useState([]);
@@ -66,48 +59,214 @@ const AdminDashboard = () => {
     { key: 'event_id', label: 'Event ID' },
     { key: 'registered_at', label: 'Registered At' }
   ];
+
+  const fetchUserProfiles = async () => {
+    try {
+      console.log('Fetching user profiles...');
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('Error fetching profiles:', error);
+        throw error;
+      }
+      
+      console.log('User profiles fetched:', data?.length || 0, data);
+      setUserProfiles(data || []);
+    } catch (error: any) {
+      console.error('Error fetching user profiles:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch user profiles',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const fetchContactSubmissions = async () => {
+    try {
+      console.log('Fetching contact submissions...');
+      
+      const { data, error } = await supabase
+        .from('contact_submissions')
+        .select('*')
+        .order('submitted_at', { ascending: false });
+      
+      if (error) {
+        console.error('Error fetching contact submissions:', error);
+        throw error;
+      }
+      
+      console.log('Contact submissions fetched:', data?.length || 0, data);
+      setContactSubmissions(data || []);
+    } catch (error: any) {
+      console.error('Error fetching contact submissions:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch contact submissions',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const fetchNewsletterSubscribers = async () => {
+    try {
+      console.log('Fetching newsletter subscribers...');
+      
+      const { data, error } = await supabase
+        .from('newsletter_subscribers')
+        .select('*')
+        .order('subscribed_at', { ascending: false });
+      
+      if (error) {
+        console.error('Error fetching newsletter subscribers:', error);
+        throw error;
+      }
+      
+      console.log('Newsletter subscribers fetched:', data?.length || 0, data);
+      setNewsletterSubscribers(data || []);
+    } catch (error: any) {
+      console.error('Error fetching newsletter subscribers:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch newsletter subscribers',
+        variant: 'destructive'
+      });
+    }
+  };
+
   const fetchEventRegistrations = async () => {
-    setEventRegistrations(await getAllEventRegistrations());
+    try {
+      console.log('Fetching event registrations...');
+      
+      const { data, error } = await supabase
+        .from('event_registrations')
+        .select(`
+          *,
+          events(title, event_date)
+        `)
+        .order('registered_at', { ascending: false });
+      
+      if (error) {
+        console.error('Error fetching event registrations:', error);
+        // Don't throw error for event registrations as it might be expected to fail
+        setEventRegistrations([]);
+        return;
+      }
+      
+      console.log('Event registrations fetched:', data?.length || 0, data);
+      setEventRegistrations(data || []);
+    } catch (error: any) {
+      console.error('Error fetching event registrations:', error);
+      setEventRegistrations([]);
+    }
+  };
+
+  const fetchAllData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      await Promise.all([
+        fetchUserProfiles(),
+        fetchContactSubmissions(),
+        fetchNewsletterSubscribers(),
+        fetchEventRegistrations()
+      ]);
+      
+    } catch (error: any) {
+      console.error('Error fetching admin data:', error);
+      setError('Failed to load admin dashboard data');
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
-    fetchUserProfiles();
-    fetchContactSubmissions();
-    fetchNewsletterSubscribers();
-    fetchEventRegistrations();
-  }, []);
+    if (user && isAdmin) {
+      fetchAllData();
+    }
+  }, [user, isAdmin]);
+
+  if (loading) {
+    return (
+      <ProtectedRoute adminOnly>
+        <Layout>
+          <ResponsiveContainer>
+            <div className="flex items-center justify-center min-h-[400px]">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-iwc-blue mx-auto mb-4"></div>
+                <p className="text-gray-600 dark:text-gray-400">Loading admin dashboard...</p>
+              </div>
+            </div>
+          </ResponsiveContainer>
+        </Layout>
+      </ProtectedRoute>
+    );
+  }
+
+  if (error) {
+    return (
+      <ProtectedRoute adminOnly>
+        <Layout>
+          <ResponsiveContainer>
+            <div className="flex items-center justify-center min-h-[400px]">
+              <div className="text-center">
+                <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Dashboard Error</h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
+                <button 
+                  onClick={fetchAllData}
+                  className="bg-iwc-blue hover:bg-iwc-orange text-white px-4 py-2 rounded-md transition-colors"
+                >
+                  Retry Loading
+                </button>
+              </div>
+            </div>
+          </ResponsiveContainer>
+        </Layout>
+      </ProtectedRoute>
+    );
+  }
 
   return (
     <ProtectedRoute adminOnly>
       <Layout>
-        <div className="container mx-auto px-4 py-8">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-3">
-              <Shield className="h-8 w-8 text-purple-600 dark:text-purple-400" />
+        <ResponsiveContainer padding="lg">
+          <div className="mb-6 sm:mb-8">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-3">
+              <Shield className="h-6 w-6 sm:h-8 sm:w-8 text-purple-600 dark:text-purple-400" />
               Admin Dashboard
             </h1>
-            <p className="text-gray-600 dark:text-gray-400">
+            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
               Welcome back, {user?.email}. Manage your system from here.
             </p>
           </div>
 
           <Tabs defaultValue="analytics" className="space-y-6">
             <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-              <TabsTrigger value="analytics" className="flex items-center gap-2">
+              <TabsTrigger value="analytics" className="flex items-center gap-2 text-xs sm:text-sm">
                 <BarChart3 className="h-4 w-4" />
-                Analytics
+                <span className="hidden sm:inline">Analytics</span>
+                <span className="sm:hidden">Stats</span>
               </TabsTrigger>
-              <TabsTrigger value="members" className="flex items-center gap-2">
+              <TabsTrigger value="members" className="flex items-center gap-2 text-xs sm:text-sm">
                 <Users className="h-4 w-4" />
-                Members
+                <span className="hidden sm:inline">Members</span>
+                <span className="sm:hidden">Users</span>
               </TabsTrigger>
-              <TabsTrigger value="donations" className="flex items-center gap-2">
+              <TabsTrigger value="donations" className="flex items-center gap-2 text-xs sm:text-sm">
                 <Heart className="h-4 w-4" />
-                Donations
+                <span className="hidden sm:inline">Donations</span>
+                <span className="sm:hidden">Gifts</span>
               </TabsTrigger>
-              <TabsTrigger value="data" className="flex items-center gap-2">
+              <TabsTrigger value="data" className="flex items-center gap-2 text-xs sm:text-sm">
                 <Database className="h-4 w-4" />
-                Data Management
+                <span className="hidden sm:inline">Data Management</span>
+                <span className="sm:hidden">Data</span>
               </TabsTrigger>
             </TabsList>
 
@@ -157,7 +316,7 @@ const AdminDashboard = () => {
               </div>
             </TabsContent>
           </Tabs>
-        </div>
+        </ResponsiveContainer>
       </Layout>
     </ProtectedRoute>
   );
