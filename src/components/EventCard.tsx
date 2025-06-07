@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Calendar, MapPin, Users, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -26,15 +25,17 @@ export const EventCard: React.FC<EventCardProps> = ({
   const [checkingRegistration, setCheckingRegistration] = useState(false);
 
   useEffect(() => {
-    if (user && showRegistration) {
+    if (user?.email && showRegistration) {
       checkRegistrationStatus();
     }
   }, [user, event.id, showRegistration]);
 
   const checkRegistrationStatus = async () => {
+    if (!user?.email) return;
+    
     setCheckingRegistration(true);
     try {
-      const registered = await isUserRegistered(event.id);
+      const registered = await isUserRegistered(event.id, user.email);
       setIsRegistered(registered);
     } catch (error) {
       console.error('Error checking registration:', error);
