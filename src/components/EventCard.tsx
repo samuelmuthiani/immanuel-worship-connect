@@ -97,7 +97,17 @@ export const EventCard: React.FC<EventCardProps> = ({
     setError(null);
 
     try {
-      const result = await registerForEvent(event.id, validation.data);
+      // Ensure we have required fields from validation
+      const validatedData = validation.data;
+      if (!validatedData.name || !validatedData.email) {
+        throw new Error('Name and email are required');
+      }
+
+      const result = await registerForEvent(event.id, {
+        name: validatedData.name,
+        email: validatedData.email,
+        phone: validatedData.phone
+      });
 
       if (result.success) {
         setIsRegistered(true);

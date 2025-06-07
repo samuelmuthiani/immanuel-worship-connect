@@ -9,8 +9,11 @@ export {
 } from './supabaseStorage';
 
 export {
+  getDashboardAnalytics
+} from './enhancedStorage';
+
+export {
   exportToCSV,
-  getDashboardAnalytics,
   bulkDeleteItems,
   updateUserRole,
   logAuditAction
