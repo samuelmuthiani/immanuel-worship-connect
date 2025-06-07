@@ -7,88 +7,84 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar, Clock, User, Search, Tag } from 'lucide-react';
+import { Calendar, Clock, User, Search, Tag, Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
-
-// Mock blog posts data - in a real app, this would come from Supabase
-const mockPosts = [
-  {
-    id: '1',
-    title: 'Finding Hope in Difficult Times',
-    excerpt: 'Life often presents us with challenges that test our faith and resilience. In these moments, we must remember that hope is not lost...',
-    content: 'Full article content here...',
-    author: 'Pastor John Smith',
-    publishedAt: '2024-01-15T10:00:00Z',
-    category: 'Faith',
-    tags: ['hope', 'faith', 'encouragement'],
-    imageUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&h=400&fit=crop'
-  },
-  {
-    id: '2',
-    title: 'The Power of Community Prayer',
-    excerpt: 'When we come together in prayer, something miraculous happens. Our individual voices unite to create a powerful chorus...',
-    content: 'Full article content here...',
-    author: 'Minister Sarah Johnson',
-    publishedAt: '2024-01-10T14:30:00Z',
-    category: 'Prayer',
-    tags: ['prayer', 'community', 'unity'],
-    imageUrl: 'https://images.unsplash.com/photo-1438232992991-995b7058bbb3?w=800&h=400&fit=crop'
-  },
-  {
-    id: '3',
-    title: 'Lessons from the Sermon on the Mount',
-    excerpt: 'The teachings of Jesus in Matthew 5-7 continue to guide and challenge us today. Let us explore the timeless wisdom...',
-    content: 'Full article content here...',
-    author: 'Pastor John Smith',
-    publishedAt: '2024-01-05T09:15:00Z',
-    category: 'Teaching',
-    tags: ['sermon', 'teaching', 'matthew'],
-    imageUrl: 'https://images.unsplash.com/photo-1544568100-847a948585b9?w=800&h=400&fit=crop'
-  },
-  {
-    id: '4',
-    title: 'Youth Ministry Updates',
-    excerpt: 'Our youth ministry continues to grow and thrive. Here are some exciting updates about our recent activities...',
-    content: 'Full article content here...',
-    author: 'Youth Pastor Mike Wilson',
-    publishedAt: '2024-01-01T16:00:00Z',
-    category: 'Youth',
-    tags: ['youth', 'ministry', 'updates'],
-    imageUrl: 'https://images.unsplash.com/photo-1529390079861-591de354faf5?w=800&h=400&fit=crop'
-  }
-];
-
-const categories = ['All', 'Faith', 'Prayer', 'Teaching', 'Youth', 'Events'];
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
+import { getAllBlogPosts, BlogPost } from '@/utils/blogUtils';
 
 const Blog = () => {
-  const [posts, setPosts] = useState(mockPosts);
-  const [filteredPosts, setFilteredPosts] = useState(mockPosts);
+  const { user, isAdmin } = useAuth();
+  const { toast } = useToast();
+  const [posts, setPosts] = useState<BlogPost[]>([]);
+  const [filteredPosts, setFilteredPosts] = useState<BlogPost[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const postsPerPage = 6;
 
-  // Filter posts based on search and category
   useEffect(() => {
+    fetchBlogPosts();
+  }, []);
+
+  useEffect(() => {
+    filterPosts();
+  }, [searchTerm, posts]);
+
+  const fetchBlogPosts = async () => {
+    try {
+      setLoading(true);
+      const blogPosts = await getAllBlogPosts();
+      
+      if (blogPosts.length === 0) {
+        // Use fallback data if no posts in database
+        const fallbackPosts = [
+          {
+            id: 'fallback-1',
+            title: 'Finding Hope in Difficult Times',
+            content: 'Life often presents us with challenges that test our faith and resilience. In these moments, we must remember that hope is not lost...',
+            author_id: 'fallback-author',
+            published_at: '2024-01-15T10:00:00Z',
+            author_email: 'pastor@iwc.com'
+          },
+          {
+            id: 'fallback-2', 
+            title: 'The Power of Community Prayer',
+            content: 'When we come together in prayer, something miraculous happens. Our individual voices unite to create a powerful chorus...',
+            author_id: 'fallback-author',
+            published_at: '2024-01-10T14:30:00Z',
+            author_email: 'minister@iwc.com'
+          }
+        ];
+        setPosts(fallbackPosts);
+      } else {
+        setPosts(blogPosts);
+      }
+    } catch (error) {
+      console.error('Error fetching blog posts:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load blog posts. Please try again.',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filterPosts = () => {
     let filtered = posts;
 
-    // Filter by category
-    if (selectedCategory !== 'All') {
-      filtered = filtered.filter(post => post.category === selectedCategory);
-    }
-
-    // Filter by search term
     if (searchTerm) {
       filtered = filtered.filter(post =>
         post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        post.excerpt.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        post.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+        post.content.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
     setFilteredPosts(filtered);
     setCurrentPage(1);
-  }, [searchTerm, selectedCategory, posts]);
+  };
 
   // Pagination
   const indexOfLastPost = currentPage * postsPerPage;
@@ -104,16 +100,35 @@ const Blog = () => {
     });
   };
 
-  const getCategoryColor = (category: string) => {
-    const colors: { [key: string]: string } = {
-      'Faith': 'bg-iwc-blue',
-      'Prayer': 'bg-iwc-orange',
-      'Teaching': 'bg-iwc-gold',
-      'Youth': 'bg-iwc-red',
-      'Events': 'bg-green-500'
-    };
-    return colors[category] || 'bg-gray-500';
+  const getExcerpt = (content: string, maxLength: number = 150) => {
+    if (content.length <= maxLength) return content;
+    return content.substring(0, maxLength) + '...';
   };
+
+  const getAuthorName = (post: BlogPost) => {
+    return post.author_email?.split('@')[0] || 'Church Admin';
+  };
+
+  if (loading) {
+    return (
+      <Layout>
+        <PageContainer
+          title="Church Blog"
+          description="Stay connected with our community through inspiring articles and teachings"
+          showBackButton={true}
+          backTo="/"
+          maxWidth="2xl"
+        >
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-iwc-blue mx-auto mb-4"></div>
+              <p className="text-gray-600 dark:text-gray-400">Loading blog posts...</p>
+            </div>
+          </div>
+        </PageContainer>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -125,39 +140,37 @@ const Blog = () => {
         maxWidth="2xl"
       >
         <div className="space-y-8">
-          {/* Search and Filter Section */}
-          <EnhancedCard gradient={true} className="border-l-4 border-l-iwc-blue">
-            <CardContent className="p-6">
-              <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-                <div className="relative flex-1 max-w-md">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <Input
-                    type="text"
-                    placeholder="Search articles..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                
-                <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="w-full md:w-auto">
-                  <TabsList className="grid grid-cols-3 md:grid-cols-6 w-full md:w-auto">
-                    {categories.map((category) => (
-                      <TabsTrigger key={category} value={category} className="text-xs">
-                        {category}
-                      </TabsTrigger>
-                    ))}
-                  </TabsList>
-                </Tabs>
-              </div>
-            </CardContent>
-          </EnhancedCard>
+          {/* Header with admin actions */}
+          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                type="text"
+                placeholder="Search articles..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            
+            {isAdmin && (
+              <Button
+                className="bg-iwc-blue hover:bg-iwc-orange text-white"
+                onClick={() => toast({
+                  title: 'Coming Soon',
+                  description: 'Blog post creation will be available soon.'
+                })}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                New Post
+              </Button>
+            )}
+          </div>
 
           {/* Results Summary */}
           <div className="flex items-center justify-between">
             <p className="text-gray-600 dark:text-gray-400">
               Showing {filteredPosts.length} article{filteredPosts.length !== 1 ? 's' : ''}
-              {selectedCategory !== 'All' && ` in "${selectedCategory}"`}
               {searchTerm && ` matching "${searchTerm}"`}
             </p>
           </div>
@@ -173,16 +186,11 @@ const Blog = () => {
                   className="overflow-hidden group"
                   style={{ animationDelay: `${index * 100}ms` }}
                 >
-                  <div className="aspect-video relative overflow-hidden">
-                    <img
-                      src={post.imageUrl}
-                      alt={post.title}
-                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    />
-                    <div className="absolute top-4 left-4">
-                      <Badge className={`${getCategoryColor(post.category)} text-white`}>
-                        {post.category}
-                      </Badge>
+                  <div className="aspect-video relative overflow-hidden bg-gradient-to-br from-iwc-blue to-iwc-orange">
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="text-white text-center p-4">
+                        <h3 className="font-bold text-lg line-clamp-2">{post.title}</h3>
+                      </div>
                     </div>
                   </div>
                   
@@ -194,36 +202,28 @@ const Blog = () => {
                   
                   <CardContent className="space-y-4">
                     <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-3">
-                      {post.excerpt}
+                      {getExcerpt(post.content)}
                     </p>
-                    
-                    <div className="flex flex-wrap gap-1">
-                      {post.tags.slice(0, 3).map((tag) => (
-                        <Badge key={tag} variant="secondary" className="text-xs">
-                          <Tag className="h-3 w-3 mr-1" />
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
                     
                     <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
                       <div className="flex items-center space-x-1">
                         <User className="h-3 w-3" />
-                        <span>{post.author}</span>
+                        <span>{getAuthorName(post)}</span>
                       </div>
                       <div className="flex items-center space-x-1">
                         <Calendar className="h-3 w-3" />
-                        <span>{formatDate(post.publishedAt)}</span>
+                        <span>{formatDate(post.published_at)}</span>
                       </div>
                     </div>
                     
                     <Button 
-                      asChild 
                       className="w-full bg-gradient-to-r from-iwc-blue to-iwc-orange hover:from-iwc-orange hover:to-iwc-red"
+                      onClick={() => toast({
+                        title: 'Coming Soon',
+                        description: 'Individual blog post pages will be available soon.'
+                      })}
                     >
-                      <Link to={`/blog/${post.id}`}>
-                        Read More
-                      </Link>
+                      Read More
                     </Button>
                   </CardContent>
                 </EnhancedCard>
@@ -238,7 +238,7 @@ const Blog = () => {
                 No articles found
               </h3>
               <p className="text-gray-600 dark:text-gray-400">
-                Try adjusting your search terms or category filter.
+                Try adjusting your search terms or check back later for new posts.
               </p>
             </div>
           )}

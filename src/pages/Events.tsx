@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
-import { Calendar, MapPin, Clock, Users, Filter, Search, X } from 'lucide-react';
+import { Calendar, MapPin, Clock, Users, Filter, Search, X, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -8,21 +9,7 @@ import { EnhancedCard, CardContent, CardHeader, CardTitle } from '@/components/u
 import { BackButton } from '@/components/ui/back-button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
-import { saveRSVP } from '@/utils/storage';
-
-interface Event {
-  id: string;
-  title: string;
-  description: string;
-  event_date: string;
-  location: string;
-  organizer?: string;
-  category?: string;
-  registration_required?: boolean;
-  created_at?: string;
-  updated_at?: string;
-}
+import { getUpcomingEvents, registerForEvent, isUserRegistered, Event } from '@/utils/eventUtils';
 
 interface RegistrationForm {
   name: string;
@@ -46,6 +33,7 @@ const Events = () => {
     phone: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [registeredEvents, setRegisteredEvents] = useState<Set<string>>(new Set());
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -57,82 +45,45 @@ const Events = () => {
     filterEvents();
   }, [events, searchTerm, selectedCategory]);
 
+  useEffect(() => {
+    if (user?.email) {
+      checkUserRegistrations();
+    }
+  }, [events, user]);
+
   const fetchEvents = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('events')
-        .select('*')
-        .gte('event_date', new Date().toISOString())
-        .order('event_date', { ascending: true });
-
-      if (error) throw error;
-
-      // If no events in database, use placeholder data
-      const eventsData = data?.length ? data : [
-        {
-          id: '1',
-          title: 'Sunday Worship Service',
-          description: 'Join us for a powerful time of worship, biblical teaching, and fellowship. All are welcome to experience God\'s presence with us.',
-          event_date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-          location: 'Main Sanctuary',
-          organizer: 'Pastor John Thompson',
-          category: 'Worship',
-          registration_required: false
-        },
-        {
-          id: '2',
-          title: 'Youth Fellowship Night',
-          description: 'An evening of fun, games, worship, and spiritual growth designed specifically for our youth (ages 13-18).',
-          event_date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
-          location: 'Youth Center',
-          organizer: 'Michael Roberts',
-          category: 'Youth',
-          registration_required: true
-        },
-        {
-          id: '3',
-          title: 'Community Bible Study',
-          description: 'Dive deeper into God\'s Word with our weekly Bible study. This week we\'re exploring the book of Philippians.',
-          event_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-          location: 'Fellowship Hall',
-          organizer: 'Pastor Mary Thompson',
-          category: 'Education',
-          registration_required: false
-        },
-        {
-          id: '4',
-          title: 'Women\'s Ministry Brunch',
-          description: 'Join us for a morning of fellowship, encouragement, and delicious food. Guest speaker will share on "Finding Joy in Every Season".',
-          event_date: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
-          location: 'Fellowship Hall',
-          organizer: 'Sarah Johnson',
-          category: 'Fellowship',
-          registration_required: true
-        },
-        {
-          id: '5',
-          title: 'Church Picnic & BBQ',
-          description: 'Bring the whole family for our annual church picnic! Games, food, and fun for all ages. Don\'t forget to bring a side dish to share.',
-          event_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-          location: 'Church Grounds',
-          organizer: 'Events Team',
-          category: 'Fellowship',
-          registration_required: true
-        },
-        {
-          id: '6',
-          title: 'Prayer & Worship Night',
-          description: 'Join us for an evening dedicated to prayer and worship. Come seeking God\'s presence and interceding for our community.',
-          event_date: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString(),
-          location: 'Main Sanctuary',
-          organizer: 'Worship Team',
-          category: 'Worship',
-          registration_required: false
-        }
-      ];
-
-      setEvents(eventsData);
+      const eventsData = await getUpcomingEvents();
+      
+      if (eventsData.length === 0) {
+        // Use fallback data if no events in database
+        const fallbackEvents = [
+          {
+            id: '1',
+            title: 'Sunday Worship Service',
+            description: 'Join us for a powerful time of worship, biblical teaching, and fellowship. All are welcome to experience God\'s presence with us.',
+            event_date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+            location: 'Main Sanctuary',
+            organizer: 'Pastor John Thompson',
+            category: 'Worship',
+            registration_required: false
+          },
+          {
+            id: '2',
+            title: 'Prayer Breakfast',
+            description: 'Start your day with prayer and fellowship. Join us for a morning of spiritual nourishment and community connection.',
+            event_date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+            location: 'Fellowship Hall',
+            organizer: 'Prayer Ministry',
+            category: 'Prayer',
+            registration_required: true
+          }
+        ];
+        setEvents(fallbackEvents);
+      } else {
+        setEvents(eventsData);
+      }
     } catch (error) {
       console.error('Error fetching events:', error);
       toast({
@@ -143,6 +94,21 @@ const Events = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const checkUserRegistrations = async () => {
+    if (!user?.email) return;
+    
+    const registered = new Set<string>();
+    for (const event of events) {
+      if (event.registration_required) {
+        const isRegistered = await isUserRegistered(event.id, user.email);
+        if (isRegistered) {
+          registered.add(event.id);
+        }
+      }
+    }
+    setRegisteredEvents(registered);
   };
 
   const filterEvents = () => {
@@ -165,32 +131,39 @@ const Events = () => {
   };
 
   const handleRegister = (event: Event) => {
-    if (!user) {
-      toast({
-        title: 'Login Required',
-        description: 'Please log in to register for events.',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    if (event.registration_required) {
-      setRegistrationModal({ open: true, event });
-      setRegistrationForm({
-        name: '',
-        email: user.email || '',
-        phone: ''
-      });
-    } else {
+    if (!event.registration_required) {
       toast({
         title: 'No Registration Required',
         description: 'Just show up! This event doesn\'t require advance registration.',
       });
+      return;
     }
+
+    if (registeredEvents.has(event.id)) {
+      toast({
+        title: 'Already Registered',
+        description: 'You are already registered for this event.',
+      });
+      return;
+    }
+
+    if (!user) {
+      toast({
+        title: 'Login Recommended',
+        description: 'Please log in for easier registration, or continue as guest.',
+      });
+    }
+
+    setRegistrationModal({ open: true, event });
+    setRegistrationForm({
+      name: '',
+      email: user?.email || '',
+      phone: ''
+    });
   };
 
   const handleSubmitRegistration = async () => {
-    if (!registrationModal.event || !user) return;
+    if (!registrationModal.event) return;
 
     if (!registrationForm.name.trim() || !registrationForm.email.trim()) {
       toast({
@@ -204,7 +177,7 @@ const Events = () => {
     setIsSubmitting(true);
 
     try {
-      const result = await saveRSVP(registrationModal.event.id, {
+      const result = await registerForEvent(registrationModal.event.id, {
         name: registrationForm.name.trim(),
         email: registrationForm.email.trim(),
         phone: registrationForm.phone.trim()
@@ -217,14 +190,17 @@ const Events = () => {
         });
         setRegistrationModal({ open: false, event: null });
         setRegistrationForm({ name: '', email: '', phone: '' });
+        
+        // Update registered events
+        setRegisteredEvents(prev => new Set([...prev, registrationModal.event!.id]));
       } else {
-        throw new Error('Registration failed');
+        throw new Error(result.error || 'Registration failed');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error registering for event:', error);
       toast({
         title: 'Registration Failed',
-        description: 'There was an error registering for this event. Please try again.',
+        description: error.message || 'There was an error registering for this event. Please try again.',
         variant: 'destructive'
       });
     } finally {
@@ -300,17 +276,25 @@ const Events = () => {
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
                   <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
                       {event.category && (
                         <Badge variant="secondary" className="text-xs">
                           {event.category}
                         </Badge>
                       )}
-                      {event.registration_required && (
-                        <Badge variant="outline" className="text-xs border-iwc-orange text-iwc-orange">
-                          Registration Required
-                        </Badge>
-                      )}
+                      <div className="flex gap-2">
+                        {event.registration_required && (
+                          <Badge variant="outline" className="text-xs border-iwc-orange text-iwc-orange">
+                            Registration Required
+                          </Badge>
+                        )}
+                        {registeredEvents.has(event.id) && (
+                          <Badge className="text-xs bg-green-100 text-green-800 border-green-300">
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            Registered
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                     <CardTitle className="text-xl line-clamp-2 text-gray-900 dark:text-white group-hover:text-iwc-blue dark:group-hover:text-iwc-orange transition-colors">
                       {event.title}
@@ -360,9 +344,19 @@ const Events = () => {
                     
                     <Button
                       onClick={() => handleRegister(event)}
-                      className="w-full bg-iwc-blue hover:bg-iwc-orange text-white font-semibold"
+                      disabled={registeredEvents.has(event.id)}
+                      className={`w-full font-semibold ${
+                        registeredEvents.has(event.id)
+                          ? 'bg-green-600 hover:bg-green-700 text-white'
+                          : 'bg-iwc-blue hover:bg-iwc-orange text-white'
+                      }`}
                     >
-                      {event.registration_required ? 'Register Now' : 'Learn More'}
+                      {registeredEvents.has(event.id) 
+                        ? 'Already Registered' 
+                        : event.registration_required 
+                          ? 'Register Now' 
+                          : 'Learn More'
+                      }
                     </Button>
                   </CardContent>
                 </EnhancedCard>

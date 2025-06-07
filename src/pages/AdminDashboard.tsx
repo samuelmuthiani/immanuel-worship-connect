@@ -8,9 +8,10 @@ import EnhancedDataTable from '@/components/admin/EnhancedDataTable';
 import { DonationManagement } from '@/components/admin/DonationManagement';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ResponsiveContainer } from '@/components/ui/ResponsiveContainer';
-import { Shield, Users, Mail, Heart, BarChart3, Database, AlertCircle } from 'lucide-react';
+import { Shield, Users, Mail, Heart, BarChart3, Database, AlertCircle, Calendar } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { getAllEventRegistrations } from '@/utils/eventUtils';
 
 const AdminDashboard = () => {
   const { user, isAdmin } = useAuth();
@@ -56,7 +57,8 @@ const AdminDashboard = () => {
   const eventColumns = [
     { key: 'name', label: 'Name' },
     { key: 'email', label: 'Email' },
-    { key: 'event_id', label: 'Event ID' },
+    { key: 'phone', label: 'Phone' },
+    { key: 'event_title', label: 'Event' },
     { key: 'registered_at', label: 'Registered At' }
   ];
 
@@ -142,23 +144,16 @@ const AdminDashboard = () => {
     try {
       console.log('Fetching event registrations...');
       
-      const { data, error } = await supabase
-        .from('event_registrations')
-        .select(`
-          *,
-          events(title, event_date)
-        `)
-        .order('registered_at', { ascending: false });
+      const registrations = await getAllEventRegistrations();
       
-      if (error) {
-        console.error('Error fetching event registrations:', error);
-        // Don't throw error for event registrations as it might be expected to fail
-        setEventRegistrations([]);
-        return;
-      }
+      // Transform data to include event title for display
+      const transformedRegistrations = registrations.map((registration: any) => ({
+        ...registration,
+        event_title: registration.events?.title || 'Unknown Event'
+      }));
       
-      console.log('Event registrations fetched:', data?.length || 0, data);
-      setEventRegistrations(data || []);
+      console.log('Event registrations fetched:', transformedRegistrations.length);
+      setEventRegistrations(transformedRegistrations);
     } catch (error: any) {
       console.error('Error fetching event registrations:', error);
       setEventRegistrations([]);
@@ -247,7 +242,7 @@ const AdminDashboard = () => {
           </div>
 
           <Tabs defaultValue="analytics" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+            <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
               <TabsTrigger value="analytics" className="flex items-center gap-2 text-xs sm:text-sm">
                 <BarChart3 className="h-4 w-4" />
                 <span className="hidden sm:inline">Analytics</span>
@@ -258,6 +253,11 @@ const AdminDashboard = () => {
                 <span className="hidden sm:inline">Members</span>
                 <span className="sm:hidden">Users</span>
               </TabsTrigger>
+              <TabsTrigger value="events" className="flex items-center gap-2 text-xs sm:text-sm">
+                <Calendar className="h-4 w-4" />
+                <span className="hidden sm:inline">Events</span>
+                <span className="sm:hidden">Events</span>
+              </TabsTrigger>
               <TabsTrigger value="donations" className="flex items-center gap-2 text-xs sm:text-sm">
                 <Heart className="h-4 w-4" />
                 <span className="hidden sm:inline">Donations</span>
@@ -265,7 +265,7 @@ const AdminDashboard = () => {
               </TabsTrigger>
               <TabsTrigger value="data" className="flex items-center gap-2 text-xs sm:text-sm">
                 <Database className="h-4 w-4" />
-                <span className="hidden sm:inline">Data Management</span>
+                <span className="hidden sm:inline">Data</span>
                 <span className="sm:hidden">Data</span>
               </TabsTrigger>
             </TabsList>
@@ -275,22 +275,23 @@ const AdminDashboard = () => {
             </TabsContent>
 
             <TabsContent value="members" className="space-y-6">
-              <div className="grid gap-6">
-                <EnhancedDataTable
-                  title="Member Profiles"
-                  data={userProfiles}
-                  columns={profileColumns}
-                  tableName="profiles"
-                  onRefresh={fetchUserProfiles}
-                />
-                <EnhancedDataTable
-                  title="Event Registrations"
-                  data={eventRegistrations}
-                  columns={eventColumns}
-                  tableName="event_registrations"
-                  onRefresh={fetchEventRegistrations}
-                />
-              </div>
+              <EnhancedDataTable
+                title="Member Profiles"
+                data={userProfiles}
+                columns={profileColumns}
+                tableName="profiles"
+                onRefresh={fetchUserProfiles}
+              />
+            </TabsContent>
+
+            <TabsContent value="events" className="space-y-6">
+              <EnhancedDataTable
+                title="Event Registrations"
+                data={eventRegistrations}
+                columns={eventColumns}
+                tableName="event_registrations"
+                onRefresh={fetchEventRegistrations}
+              />
             </TabsContent>
 
             <TabsContent value="donations" className="space-y-6">
