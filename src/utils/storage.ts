@@ -10,7 +10,8 @@ export {
 
 // Re-export from eventUtils to avoid conflicts
 export {
-  getAllEventRegistrations
+  getAllEventRegistrations,
+  getAllEventRegistrations as getAllRSVPs  // Add backward compatibility alias
 } from './eventUtils';
 
 export {
