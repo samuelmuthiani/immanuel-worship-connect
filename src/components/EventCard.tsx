@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Calendar, MapPin, Users, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -81,7 +82,7 @@ export const EventCard: React.FC<EventCardProps> = ({
       phone: user.user_metadata?.phone || ''
     };
 
-    // Validate registration data
+    // Validate registration data with proper type guard
     const validation = await DataValidation.validateAndSanitize(registrationData, eventRegistrationSchema);
     if (!validation.success) {
       toast({
@@ -96,7 +97,7 @@ export const EventCard: React.FC<EventCardProps> = ({
     setError(null);
 
     try {
-      // Ensure we have required fields from validation
+      // Type guard ensures we have validated data
       const validatedData = validation.data;
       if (!validatedData.name || !validatedData.email) {
         throw new Error('Name and email are required');

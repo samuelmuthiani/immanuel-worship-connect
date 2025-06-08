@@ -35,7 +35,7 @@ export class EnhancedStorage {
         };
       }
 
-      // Validate and sanitize input
+      // Validate and sanitize input with proper type guard
       const validation = await DataValidation.validateAndSanitize(data, contactFormSchema);
       if (!validation.success) {
         return {
@@ -44,13 +44,15 @@ export class EnhancedStorage {
         };
       }
 
+      // Type guard ensures we have validated data
+      const validatedData = validation.data;
       const sanitizedData = {
-        ...validation.data,
-        name: DataValidation.sanitizeInput(validation.data.name!),
-        email: DataValidation.sanitizeInput(validation.data.email!),
-        subject: validation.data.subject ? DataValidation.sanitizeInput(validation.data.subject) : null,
-        message: DataValidation.sanitizeInput(validation.data.message!),
-        phone: validation.data.phone ? DataValidation.normalizePhoneNumber(validation.data.phone) : null,
+        name: DataValidation.sanitizeInput(validatedData.name!),
+        email: DataValidation.sanitizeInput(validatedData.email!),
+        subject: validatedData.subject ? DataValidation.sanitizeInput(validatedData.subject) : null,
+        message: DataValidation.sanitizeInput(validatedData.message!),
+        phone: validatedData.phone ? DataValidation.normalizePhoneNumber(validatedData.phone) : null,
+        inquiry_type: validatedData.inquiry_type!,
         submitted_at: new Date().toISOString()
       };
 
