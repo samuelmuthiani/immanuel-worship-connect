@@ -46,10 +46,10 @@ export class EnhancedStorage {
 
       const sanitizedData = {
         ...validation.data,
-        name: DataValidation.sanitizeInput(validation.data.name),
-        email: DataValidation.sanitizeInput(validation.data.email),
+        name: DataValidation.sanitizeInput(validation.data.name!),
+        email: DataValidation.sanitizeInput(validation.data.email!),
         subject: validation.data.subject ? DataValidation.sanitizeInput(validation.data.subject) : null,
-        message: DataValidation.sanitizeInput(validation.data.message),
+        message: DataValidation.sanitizeInput(validation.data.message!),
         phone: validation.data.phone ? DataValidation.normalizePhoneNumber(validation.data.phone) : null,
         submitted_at: new Date().toISOString()
       };
