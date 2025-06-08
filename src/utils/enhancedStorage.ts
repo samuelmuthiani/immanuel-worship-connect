@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { DataValidation, contactFormSchema, RateLimiter } from './dataValidation';
 
@@ -205,8 +206,3 @@ export class EnhancedStorage {
 export const saveContactSubmission = EnhancedStorage.saveContactSubmission;
 export const saveNewsletterSubscription = EnhancedStorage.saveNewsletterSubscription;
 export const getDashboardAnalytics = EnhancedStorage.getDashboardAnalytics;
-
-// Keep existing exports for backward compatibility but prevent conflicts
-export * from './adminUtils';
-export * from './profileUtils';
-export * from './eventUtils';
