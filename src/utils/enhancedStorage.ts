@@ -207,7 +207,6 @@ export const saveNewsletterSubscription = EnhancedStorage.saveNewsletterSubscrip
 export const getDashboardAnalytics = EnhancedStorage.getDashboardAnalytics;
 
 // Keep existing exports for backward compatibility but prevent conflicts
-export * from './supabaseStorage';
 export * from './adminUtils';
 export * from './profileUtils';
 export * from './eventUtils';

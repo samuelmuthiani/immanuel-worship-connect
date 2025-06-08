@@ -1,12 +1,17 @@
+
 // Re-export the main utilities from the new modular files
 export {
   saveContactSubmission,
   saveEventRSVP as saveRSVP,
   saveNewsletterSubscription,
   getAllContactSubmissions,
-  getAllEventRegistrations as getAllRSVPs,
   getAllNewsletterSubscribers
 } from './supabaseStorage';
+
+// Re-export from eventUtils to avoid conflicts
+export {
+  getAllEventRegistrations
+} from './eventUtils';
 
 export {
   getDashboardAnalytics
@@ -30,8 +35,7 @@ export {
 export {
   registerForEvent,
   isUserRegistered,
-  getAllEvents,
-  getAllEventRegistrations
+  getAllEvents
 } from './eventUtils';
 
 // Keep legacy localStorage functions for backward compatibility

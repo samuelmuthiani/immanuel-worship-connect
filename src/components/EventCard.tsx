@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Calendar, MapPin, Users, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
