@@ -32,13 +32,13 @@ const SermonManager = () => {
     const { data: sermons, isLoading } = useQuery({
         queryKey: ['admin-sermons'],
         queryFn: async () => {
-            const { data, error } = await supabase
+            const { data, error } = await (supabase as any)
                 .from('sermons')
                 .select('*')
                 .order('date_preached', { ascending: false });
 
             if (error) throw error;
-            return data as Sermon[];
+            return (data as Sermon[]) || [];
         }
     });
 
@@ -51,13 +51,13 @@ const SermonManager = () => {
             };
 
             if (sermon.id) {
-                const { error } = await supabase
+                const { error } = await (supabase as any)
                     .from('sermons')
                     .update(sermonData)
                     .eq('id', sermon.id);
                 if (error) throw error;
             } else {
-                const { error } = await supabase
+                const { error } = await (supabase as any)
                     .from('sermons')
                     .insert([sermonData]);
                 if (error) throw error;
@@ -77,7 +77,7 @@ const SermonManager = () => {
     // Delete Mutation
     const deleteSermonMutation = useMutation({
         mutationFn: async (id: string) => {
-            const { error } = await supabase.from('sermons').delete().eq('id', id);
+            const { error } = await (supabase as any).from('sermons').delete().eq('id', id);
             if (error) throw error;
         },
         onSuccess: () => {

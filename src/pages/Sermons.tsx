@@ -51,7 +51,7 @@ const Sermons = () => {
     try {
       setLoading(true);
 
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('sermons')
         .select('*')
         .order('date_preached', { ascending: false });
@@ -59,7 +59,7 @@ const Sermons = () => {
       if (error) throw error;
 
       // Transform DB data to match UI component needs
-      const transformedSermons: Sermon[] = (data || []).map((s: SermonData) => ({
+      const transformedSermons: Sermon[] = ((data || []) as SermonData[]).map((s: SermonData) => ({
         id: s.id,
         title: s.title,
         speaker: s.speaker,

@@ -87,7 +87,7 @@ export const EventCard: React.FC<EventCardProps> = ({
     if (!validation.success) {
       toast({
         title: 'Validation Error',
-        description: validation.errors.join(', '),
+        description: (validation as { success: false; errors: string[] }).errors.join(', '),
         variant: 'destructive'
       });
       return;
@@ -98,7 +98,7 @@ export const EventCard: React.FC<EventCardProps> = ({
 
     try {
       // Type guard ensures we have validated data
-      const validatedData = validation.data;
+      const validatedData = (validation as { success: true; data: { name?: string; email?: string; phone?: string } }).data;
       if (!validatedData.name || !validatedData.email) {
         throw new Error('Name and email are required');
       }
@@ -119,11 +119,11 @@ export const EventCard: React.FC<EventCardProps> = ({
         // Refresh registration status
         await checkRegistrationStatus();
       } else {
-        throw new Error(result.error?.message || 'Registration failed');
+        throw new Error(typeof result.error === 'string' ? result.error : result.error?.message || 'Registration failed');
       }
     } catch (error: unknown) {
       console.error('Registration error:', error);
-      const errorMessage = error.message || 'Failed to register for event. Please try again.';
+      const errorMessage = (error instanceof Error ? error.message : String(error)) || 'Failed to register for event. Please try again.';
       setError(errorMessage);
       toast({
         title: 'Registration Failed',

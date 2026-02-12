@@ -48,7 +48,7 @@ const ResetPassword = () => {
       
       setSent(true);
     } catch (err: unknown) {
-      setErrors({ general: err.message || 'Failed to send reset email.' });
+      setErrors({ general: (err instanceof Error ? err.message : String(err)) || 'Failed to send reset email.' });
     } finally {
       setLoading(false);
     }

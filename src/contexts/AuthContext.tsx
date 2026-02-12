@@ -322,7 +322,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { success: true };
     } catch (error: unknown) {
       console.error('Password update error:', error);
-      return { success: false, error: error.message || 'Failed to update password' };
+      return { success: false, error: (error instanceof Error ? error.message : String(error)) || 'Failed to update password' };
     }
   };
 

@@ -39,7 +39,7 @@ const Blog = () => {
     try {
       setLoading(true);
 
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('posts')
         .select('*')
         .eq('published', true)
@@ -47,7 +47,7 @@ const Blog = () => {
 
       if (error) throw error;
 
-      setPosts(data as BlogPost[] || []);
+      setPosts((data as BlogPost[]) || []);
     } catch (error) {
       console.error('Error fetching blog posts:', error);
       toast({
