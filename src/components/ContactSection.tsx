@@ -111,7 +111,7 @@ const ContactSection = () => {
 
     } catch (error: unknown) {
       console.error('Contact form submission error:', error);
-      const errorMessage = error.message || 'Failed to send message. Please try again.';
+      const errorMessage = (error instanceof Error ? error.message : String(error)) || 'Failed to send message. Please try again.';
       setError(errorMessage);
 
       toast({

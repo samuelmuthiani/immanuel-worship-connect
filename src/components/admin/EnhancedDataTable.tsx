@@ -76,7 +76,7 @@ const EnhancedDataTable = ({ title, data, columns, tableName, onRefresh }: Enhan
     if (selectedItems.length === 0) return;
     
     if (confirm(`Are you sure you want to delete ${selectedItems.length} items?`)) {
-      const result = await bulkDeleteItems(tableName, selectedItems);
+      const result = await bulkDeleteItems(tableName as any, selectedItems);
       if (result.success) {
         toast({
           title: "Items Deleted",

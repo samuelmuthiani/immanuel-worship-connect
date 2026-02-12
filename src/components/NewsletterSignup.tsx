@@ -77,7 +77,7 @@ const NewsletterSignup = () => {
       }
     } catch (error: unknown) {
       console.error('Newsletter subscription error:', error);
-      const errorMessage = error.message || 'There was an error subscribing to our newsletter. Please try again.';
+      const errorMessage = (error instanceof Error ? error.message : String(error)) || 'There was an error subscribing to our newsletter. Please try again.';
       setError(errorMessage);
       toast({
         title: 'Subscription Failed',

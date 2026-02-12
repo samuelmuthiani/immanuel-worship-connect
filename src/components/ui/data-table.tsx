@@ -33,7 +33,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 
 interface Column<T = Record<string, unknown>> {
-  key: keyof T | string;
+  key: string;
   label: string;
   sortable?: boolean;
   filterable?: boolean;
@@ -77,16 +77,14 @@ export function DataTable<T extends Record<string, unknown> & { id: string }>({
 
   // Filter and search data
   const filteredData = data.filter(row => {
-    // Search filter
     const matchesSearch = searchTerm === '' ||
       columns.some(col =>
-        String(row[col.key]).toLowerCase().includes(searchTerm.toLowerCase())
+        String((row as Record<string, unknown>)[col.key] ?? '').toLowerCase().includes(searchTerm.toLowerCase())
       );
 
-    // Column filters
     const matchesFilters = Object.entries(filters).every(([key, value]) => {
       if (!value) return true;
-      return String(row[key]).toLowerCase().includes(value.toLowerCase());
+      return String((row as Record<string, unknown>)[key] ?? '').toLowerCase().includes(value.toLowerCase());
     });
 
     return matchesSearch && matchesFilters;
@@ -97,15 +95,15 @@ export function DataTable<T extends Record<string, unknown> & { id: string }>({
     if (!sortConfig) return filteredData;
 
     return [...filteredData].sort((a, b) => {
-      const aVal = a[sortConfig.key];
-      const bVal = b[sortConfig.key];
+      const aVal = (a as Record<string, unknown>)[sortConfig.key];
+      const bVal = (b as Record<string, unknown>)[sortConfig.key];
 
-      if (aVal < bVal) {
-        return sortConfig.direction === 'asc' ? -1 : 1;
-      }
-      if (aVal > bVal) {
-        return sortConfig.direction === 'asc' ? 1 : -1;
-      }
+      if (aVal == null && bVal == null) return 0;
+      if (aVal == null) return 1;
+      if (bVal == null) return -1;
+
+      if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
       return 0;
     });
   }, [filteredData, sortConfig]);
@@ -257,7 +255,9 @@ export function DataTable<T extends Record<string, unknown> & { id: string }>({
                   )}
                   {columns.map((column) => (
                     <TableCell key={column.key}>
-                      {column.render ? column.render(row[column.key], row) : row[column.key]}
+                      {column.render
+                        ? column.render((row as Record<string, unknown>)[column.key], row)
+                        : String((row as Record<string, unknown>)[column.key] ?? '')}
                     </TableCell>
                   ))}
                   {showActions && (

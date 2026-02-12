@@ -66,9 +66,10 @@ export class EnhancedStorage {
       // Validate and sanitize input with proper type guard
       const validation = await DataValidation.validateAndSanitize(data, contactFormSchema);
       if (!validation.success) {
+        const errorResult = validation as { success: false; errors: string[] };
         return {
           success: false,
-          error: `Validation failed: ${validation.errors.join(', ')}`
+          error: `Validation failed: ${errorResult.errors.join(', ')}`
         };
       }
 

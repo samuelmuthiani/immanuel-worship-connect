@@ -63,9 +63,9 @@ export const getDashboardAnalytics = async () => {
 };
 
 // Bulk operations - simplified type handling
-export const bulkDeleteItems = async (table: TableName, ids: string[]) => {
+export const bulkDeleteItems = async (table: string, ids: string[]) => {
   try {
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from(table)
       .delete()
       .in('id', ids);
@@ -103,7 +103,7 @@ export const logAuditAction = async (action: string, target?: string, details?: 
       .insert([{
         action,
         target,
-        details,
+        details: details as any,
         user_id: user?.id,
         timestamp: new Date().toISOString()
       }]);

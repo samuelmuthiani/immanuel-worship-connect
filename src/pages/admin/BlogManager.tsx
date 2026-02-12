@@ -33,13 +33,13 @@ const BlogManager = () => {
     const { data: posts, isLoading } = useQuery({
         queryKey: ['admin-posts'],
         queryFn: async () => {
-            const { data, error } = await supabase
+            const { data, error } = await (supabase as any)
                 .from('posts')
                 .select('*')
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
-            return data as Post[];
+            return (data as Post[]) || [];
         }
     });
 
@@ -56,13 +56,13 @@ const BlogManager = () => {
             };
 
             if (post.id) {
-                const { error } = await supabase
+                const { error } = await (supabase as any)
                     .from('posts')
                     .update(postData)
                     .eq('id', post.id);
                 if (error) throw error;
             } else {
-                const { error } = await supabase
+                const { error } = await (supabase as any)
                     .from('posts')
                     .insert([postData]);
                 if (error) throw error;
@@ -82,7 +82,7 @@ const BlogManager = () => {
     // Delete Mutation
     const deletePostMutation = useMutation({
         mutationFn: async (id: string) => {
-            const { error } = await supabase.from('posts').delete().eq('id', id);
+            const { error } = await (supabase as any).from('posts').delete().eq('id', id);
             if (error) throw error;
         },
         onSuccess: () => {

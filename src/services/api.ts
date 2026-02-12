@@ -92,9 +92,9 @@ export const userAPI = {
       last_name: SecurityService.sanitizeInput(getString(profileData.last_name)),
       phone: SecurityService.sanitizeInput(getString(profileData.phone)),
       bio: SecurityService.sanitizeInput(getString(profileData.bio)),
-      date_of_birth: profileData.date_of_birth,
+      date_of_birth: getString(profileData.date_of_birth) || null,
       address: SecurityService.sanitizeInput(getString(profileData.address)),
-      avatar_url: profileData.avatar_url,
+      avatar_url: getString(profileData.avatar_url) || null,
       ministry: SecurityService.sanitizeInput(getString(profileData.ministry)),
       gender: SecurityService.sanitizeInput(getString(profileData.gender)),
       updated_at: new Date().toISOString()
@@ -102,11 +102,11 @@ export const userAPI = {
 
     const { data, error } = await supabase
       .from('profiles')
-      .upsert({
+      .upsert([{
         id: userId,
         email: user.email,
         ...sanitizedData
-      })
+      }])
       .select()
       .single();
 

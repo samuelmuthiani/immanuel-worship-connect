@@ -25,7 +25,7 @@ const ContactFormEnhanced: React.FC = () => {
   const { errors, isSubmitting, validateField, handleSubmit } = useFormValidation({
     schema: contactFormSchema,
     onSubmit: async (data) => {
-      const result = await EnhancedStorage.saveContactSubmission(data);
+      const result = await EnhancedStorage.saveContactSubmission(data as any);
       
       if (result.success) {
         toast({

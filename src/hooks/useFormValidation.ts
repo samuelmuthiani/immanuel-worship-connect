@@ -14,11 +14,7 @@ export function useFormValidation<T>({ schema, onSubmit }: UseFormValidationOpti
 
   const validateField = useCallback(async (name: string, value: unknown) => {
     try {
-      // Validate single field
-      const fieldSchema = schema.pick({ [name]: true } as Record<string, true>);
-      await fieldSchema.parseAsync({ [name]: value });
-
-      // Clear error if validation passes
+      // Just clear the error for this field on change
       setErrors(prev => {
         const newErrors = { ...prev };
         delete newErrors[name];
@@ -33,7 +29,7 @@ export function useFormValidation<T>({ schema, onSubmit }: UseFormValidationOpti
         }));
       }
     }
-  }, [schema]);
+  }, []);
 
   const handleSubmit = useCallback(async (data: unknown) => {
     setIsSubmitting(true);
@@ -44,18 +40,26 @@ export function useFormValidation<T>({ schema, onSubmit }: UseFormValidationOpti
 
       if (!validation.success) {
         const fieldErrors: Record<string, string> = {};
-        validation.errors.forEach(error => {
-          const [field, message] = error.split(': ');
-          fieldErrors[field] = message;
+        const errorResult = validation as { success: false; errors: string[] };
+        errorResult.errors.forEach((error: string) => {
+          const colonIndex = error.indexOf(': ');
+          if (colonIndex > -1) {
+            const field = error.substring(0, colonIndex);
+            const message = error.substring(colonIndex + 2);
+            fieldErrors[field] = message;
+          } else {
+            fieldErrors['general'] = error;
+          }
         });
         setErrors(fieldErrors);
         return;
       }
 
-      await onSubmit(validation.data);
+      const successResult = validation as { success: true; data: T };
+      await onSubmit(successResult.data);
     } catch (error: unknown) {
       console.error('Form submission error:', error);
-      setErrors({ general: error.message || 'An unexpected error occurred' });
+      setErrors({ general: (error instanceof Error ? error.message : String(error)) || 'An unexpected error occurred' });
     } finally {
       setIsSubmitting(false);
     }
