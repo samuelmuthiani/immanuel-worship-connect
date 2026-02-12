@@ -7,15 +7,25 @@ import { supabase } from '@/integrations/supabase/client';
 
 const RSVPS_PER_PAGE = 5;
 
+interface EventRegistration {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  event_id: string;
+  registered_at: string;
+  [key: string]: string | undefined;
+}
+
 const RSVPAdminTable = () => {
-  const [rsvps, setRsvps] = useState<any[]>([]);
+  const [rsvps, setRsvps] = useState<EventRegistration[]>([]);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<number[]>([]);
   const [showModal, setShowModal] = useState(false);
-  const [modalRSVP, setModalRSVP] = useState<any>(null);
+  const [modalRSVP, setModalRSVP] = useState<EventRegistration | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [editRSVP, setEditRSVP] = useState<any>(null);
+  const [editRSVP, setEditRSVP] = useState<EventRegistration | null>(null);
 
   useEffect(() => {
     // Fetch RSVPs from Supabase (was localStorage)
@@ -33,8 +43,8 @@ const RSVPAdminTable = () => {
     })();
   }, []);
 
-  function arrayToCSV(rows: any[], headers: string[]): string {
-    const escape = (v: any) => '"' + String(v).replace(/"/g, '""') + '"';
+  function arrayToCSV(rows: EventRegistration[], headers: string[]): string {
+    const escape = (v: string | undefined) => '"' + String(v).replace(/"/g, '""') + '"';
     return [headers.join(','), ...rows.map(row => headers.map(h => escape(row[h] ?? '')).join(','))].join('\r\n');
   }
   function downloadCSV(filename: string, csv: string) {
@@ -132,10 +142,10 @@ const RSVPAdminTable = () => {
                 </td>
               </tr>
             ) : filtered
-              .slice((page-1)*RSVPS_PER_PAGE, page*RSVPS_PER_PAGE)
+              .slice((page - 1) * RSVPS_PER_PAGE, page * RSVPS_PER_PAGE)
               .map((rsvp, i) => (
-                <tr key={i} className="border-t hover:bg-gray-100 focus-within:bg-blue-50" tabIndex={0} aria-label={`RSVP row ${i+1}`}> 
-                  <td><input type="checkbox" checked={selected.includes(i)} onChange={e => setSelected(e.target.checked ? [...selected, i] : selected.filter(idx => idx !== i))} aria-label={`Select RSVP ${i+1}`} /></td>
+                <tr key={i} className="border-t hover:bg-gray-100 focus-within:bg-blue-50" tabIndex={0} aria-label={`RSVP row ${i + 1}`}>
+                  <td><input type="checkbox" checked={selected.includes(i)} onChange={e => setSelected(e.target.checked ? [...selected, i] : selected.filter(idx => idx !== i))} aria-label={`Select RSVP ${i + 1}`} /></td>
                   {Object.values(rsvp).map((val, j) => <td key={j} scope="row">{String(val)}</td>)}
                   <td className="flex gap-2">
                     <Tooltip>
@@ -164,9 +174,9 @@ const RSVPAdminTable = () => {
       </div>
       {/* Pagination */}
       <div className="flex justify-end gap-2 mt-2">
-        <button onClick={() => setPage(p => Math.max(1, p-1))} disabled={page === 1} className="px-2 py-1 border rounded disabled:opacity-50" aria-label="Previous page">Prev</button>
+        <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="px-2 py-1 border rounded disabled:opacity-50" aria-label="Previous page">Prev</button>
         <span aria-live="polite">Page {page}</span>
-        <button onClick={() => setPage(p => p+1)}
+        <button onClick={() => setPage(p => p + 1)}
           disabled={page * RSVPS_PER_PAGE >= filtered.length}
           className="px-2 py-1 border rounded disabled:opacity-50" aria-label="Next page">Next</button>
       </div>
@@ -193,7 +203,7 @@ const RSVPAdminTable = () => {
               {Object.entries(editRSVP).map(([k, v]) => (
                 <div key={k}>
                   <label className="block text-sm font-medium text-gray-700" htmlFor={`edit-${k}`}>{k}</label>
-                  <input id={`edit-${k}`} className="border rounded p-2 w-full" value={typeof v === 'string' || typeof v === 'number' ? v : ''} onChange={e => setEditRSVP((prev: any) => ({ ...prev, [k]: e.target.value }))} />
+                  <input id={`edit-${k}`} className="border rounded p-2 w-full" value={typeof v === 'string' || typeof v === 'number' ? v : ''} onChange={e => setEditRSVP((prev) => prev ? ({ ...prev, [k]: e.target.value }) : null)} />
                 </div>
               ))}
               <DialogFooter>

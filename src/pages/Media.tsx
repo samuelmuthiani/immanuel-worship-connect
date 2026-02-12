@@ -1,10 +1,25 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
+interface MediaPhoto {
+  id?: string;
+  url?: string;
+  src?: string;
+  alt?: string;
+  created_at?: string;
+}
+
+interface MediaVideo {
+  id?: string;
+  url?: string;
+  src?: string;
+  title?: string;
+  created_at?: string;
+}
+
 const Media = () => {
-  const [photos, setPhotos] = useState<any[]>([]);
-  const [videos, setVideos] = useState<any[]>([]);
-  const [sermons, setSermons] = useState<any[]>([]);
+  const [photos, setPhotos] = useState<MediaPhoto[]>([]);
+  const [videos, setVideos] = useState<MediaVideo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -12,12 +27,12 @@ const Media = () => {
     setLoading(true);
     const fetchMedia = async () => {
       try {
-        const { data: photoData } = await (supabase as any).from('media_photos').select('*').order('created_at', { ascending: false });
-        const { data: videoData } = await (supabase as any).from('media_videos').select('*').order('created_at', { ascending: false });
+        const { data: photoData } = await supabase.from('media_photos').select('*').order('created_at', { ascending: false });
+        const { data: videoData } = await supabase.from('media_videos').select('*').order('created_at', { ascending: false });
         // Optionally add sermons table if available
         setPhotos(photoData || []);
         setVideos(videoData || []);
-      } catch (err: any) {
+      } catch (err: unknown) {
         setError('Could not load media.');
       } finally {
         setLoading(false);
@@ -42,7 +57,7 @@ const Media = () => {
                 <img
                   key={idx}
                   src={photo.url || photo.src}
-                  alt={photo.alt || `Photo ${idx+1}`}
+                  alt={photo.alt || `Photo ${idx + 1}`}
                   className="rounded shadow object-cover w-full h-40"
                   loading="lazy"
                 />
@@ -56,7 +71,7 @@ const Media = () => {
                 <div key={idx} className="aspect-w-16 aspect-h-9">
                   <iframe
                     src={video.url || video.src}
-                    title={video.title || `Video ${idx+1}`}
+                    title={video.title || `Video ${idx + 1}`}
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
                     className="w-full h-64 rounded shadow"

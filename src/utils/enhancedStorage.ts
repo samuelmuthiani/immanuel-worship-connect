@@ -18,12 +18,40 @@ export interface EventRegistration {
   event_id: string;
 }
 
+interface ContactSubmissionResult {
+  id: string;
+  name: string;
+  email: string;
+  subject?: string;
+  message: string;
+  phone?: string;
+  inquiry_type: string;
+  submitted_at: string;
+  user_id?: string;
+}
+
+interface NewsletterSubscriptionResult {
+  id: string;
+  email: string;
+  subscribed_at: string;
+}
+
+interface DashboardAnalytics {
+  totalUsers: number;
+  totalContacts: number;
+  totalRegistrations: number;
+  totalSubscribers: number;
+  newUsersMonth: number;
+  contactsMonth: number;
+  registrationsMonth: number;
+}
+
 export class EnhancedStorage {
   // Enhanced contact submission with validation and rate limiting
   static async saveContactSubmission(data: ContactSubmission): Promise<{
     success: boolean;
     error?: string;
-    data?: any;
+    data?: ContactSubmissionResult;
   }> {
     try {
       // Rate limiting check
@@ -58,10 +86,10 @@ export class EnhancedStorage {
 
       // Get current user if authenticated
       const { data: { user } } = await supabase.auth.getUser();
-      
+
       // If user is authenticated, link the submission to their profile
       if (user) {
-        (sanitizedData as any).user_id = user.id;
+        (sanitizedData as ContactSubmissionResult & { user_id: string }).user_id = user.id;
       }
 
       console.log('Saving contact submission:', sanitizedData);
@@ -83,11 +111,11 @@ export class EnhancedStorage {
       console.log('Contact submission saved successfully:', result);
       return { success: true, data: result };
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error in saveContactSubmission:', error);
       return {
         success: false,
-        error: error.message || 'Failed to submit contact form'
+        error: (error as Error).message || 'Failed to submit contact form'
       };
     }
   }
@@ -96,7 +124,7 @@ export class EnhancedStorage {
   static async saveNewsletterSubscription(email: string): Promise<{
     success: boolean;
     error?: string;
-    data?: any;
+    data?: NewsletterSubscriptionResult;
   }> {
     try {
       if (!DataValidation.validateEmail(email)) {
@@ -124,7 +152,7 @@ export class EnhancedStorage {
 
       const { data: result, error } = await supabase
         .from('newsletter_subscribers')
-        .insert([{ 
+        .insert([{
           email: sanitizedEmail,
           subscribed_at: new Date().toISOString()
         }])
@@ -138,17 +166,17 @@ export class EnhancedStorage {
 
       return { success: true, data: result };
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error in saveNewsletterSubscription:', error);
       return {
         success: false,
-        error: error.message || 'Failed to subscribe to newsletter'
+        error: (error as Error).message || 'Failed to subscribe to newsletter'
       };
     }
   }
 
   // Get enhanced dashboard analytics
-  static async getDashboardAnalytics(): Promise<any> {
+  static async getDashboardAnalytics(): Promise<DashboardAnalytics> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Authentication required');
@@ -168,7 +196,7 @@ export class EnhancedStorage {
 
       // Get monthly stats
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-      
+
       const [
         { count: newUsersMonth },
         { count: contactsMonth },

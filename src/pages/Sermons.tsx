@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Layout from '@/components/Layout';
 import { Play, Download, Share2, Calendar, Clock, User, Search, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,17 @@ interface Sermon {
   tags?: string[];
 }
 
+interface SermonData {
+  id: string;
+  title: string;
+  speaker: string;
+  date_preached: string;
+  description?: string;
+  video_url?: string;
+  audio_url?: string;
+  series?: string;
+}
+
 const Sermons = () => {
   const [sermons, setSermons] = useState<Sermon[]>([]);
   const [filteredSermons, setFilteredSermons] = useState<Sermon[]>([]);
@@ -36,93 +47,34 @@ const Sermons = () => {
 
   const sermonsPerPage = 6;
 
-  useEffect(() => {
-    fetchSermons();
-  }, []);
-
-  useEffect(() => {
-    filterSermons();
-  }, [sermons, searchTerm, selectedSeries]);
-
-  const fetchSermons = async () => {
+  const fetchSermons = useCallback(async () => {
     try {
       setLoading(true);
-      
-      // Try to fetch from Supabase first
+
       const { data, error } = await supabase
-        .from('site_content')
-        .select('content')
-        .eq('section', 'sermons')
-        .maybeSingle();
+        .from('sermons')
+        .select('*')
+        .order('date_preached', { ascending: false });
 
-      let sermonsData: Sermon[] = [];
+      if (error) throw error;
 
-      if (data && data.content) {
-        sermonsData = JSON.parse(data.content);
-      } else {
-        // Fallback to placeholder data
-        sermonsData = [
-          {
-            id: '1',
-            title: 'Finding Peace in Troubled Times',
-            speaker: 'Pastor John Thompson',
-            date: '2024-05-20',
-            description: 'In a world filled with uncertainty, discover how God\'s peace can guard your heart and mind.',
-            video_url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-            audio_url: '/sermons/audio/peace-troubled-times.mp3',
-            download_url: '/sermons/downloads/peace-troubled-times.pdf',
-            series: 'Faith for Today',
-            duration: '38:24',
-            thumbnail: 'https://images.unsplash.com/photo-1571275293295-43b3cb72e8a7?q=80&w=400',
-            tags: ['Peace', 'Faith', 'Comfort']
-          },
-          {
-            id: '2',
-            title: 'The Power of Prayer',
-            speaker: 'Pastor Mary Thompson',
-            date: '2024-05-13',
-            description: 'Understanding the transformative power of prayer in our daily lives.',
-            video_url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-            audio_url: '/sermons/audio/power-of-prayer.mp3',
-            download_url: '/sermons/downloads/power-of-prayer.pdf',
-            series: 'Spiritual Disciplines',
-            duration: '42:15',
-            thumbnail: 'https://images.unsplash.com/photo-1476820865390-c52aeebb9891?q=80&w=400',
-            tags: ['Prayer', 'Spiritual Growth', 'Discipline']
-          },
-          {
-            id: '3',
-            title: 'Walking in God\'s Purpose',
-            speaker: 'Pastor Michael Roberts',
-            date: '2024-05-06',
-            description: 'Discovering and fulfilling the unique purpose God has for your life.',
-            video_url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-            audio_url: '/sermons/audio/gods-purpose.mp3',
-            download_url: '/sermons/downloads/gods-purpose.pdf',
-            series: 'Destiny Series',
-            duration: '45:30',
-            thumbnail: 'https://images.unsplash.com/photo-1491438590914-bc09fcaaf77a?q=80&w=400',
-            tags: ['Purpose', 'Calling', 'Destiny']
-          },
-          {
-            id: '4',
-            title: 'Love Without Limits',
-            speaker: 'Pastor John Thompson',
-            date: '2024-04-29',
-            description: 'Exploring the boundless love of God and how it transforms our relationships.',
-            video_url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-            audio_url: '/sermons/audio/love-without-limits.mp3',
-            download_url: '/sermons/downloads/love-without-limits.pdf',
-            series: 'Faith for Today',
-            duration: '40:12',
-            thumbnail: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=400',
-            tags: ['Love', 'Relationships', 'Grace']
-          }
-        ];
-      }
+      // Transform DB data to match UI component needs
+      const transformedSermons: Sermon[] = (data || []).map((s: SermonData) => ({
+        id: s.id,
+        title: s.title,
+        speaker: s.speaker,
+        date: s.date_preached,
+        description: s.description,
+        video_url: s.video_url,
+        audio_url: s.audio_url,
+        series: s.series,
+        duration: '', // Not in DB yet
+        thumbnail: 'https://images.unsplash.com/photo-1476820865390-c52aeebb9891?q=80&w=400', // Default thumbnail
+        tags: []
+      }));
 
-      setSermons(sermonsData);
-      setHasMore(sermonsData.length >= sermonsPerPage);
+      setSermons(transformedSermons);
+      setHasMore(false); // No pagination implemented on backend yet for this view
     } catch (error) {
       console.error('Error fetching sermons:', error);
       toast({
@@ -130,12 +82,13 @@ const Sermons = () => {
         description: 'Failed to load sermons. Please try again.',
         variant: 'destructive'
       });
+      setSermons([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
-  const filterSermons = () => {
+  const filterSermons = useCallback(() => {
     let filtered = sermons;
 
     if (searchTerm) {
@@ -152,7 +105,15 @@ const Sermons = () => {
     }
 
     setFilteredSermons(filtered);
-  };
+  }, [sermons, searchTerm, selectedSeries]);
+
+  useEffect(() => {
+    fetchSermons();
+  }, [fetchSermons]);
+
+  useEffect(() => {
+    filterSermons();
+  }, [filterSermons]);
 
   const handleWatchNow = (sermon: Sermon) => {
     if (sermon.video_url) {
@@ -234,7 +195,7 @@ const Sermons = () => {
       setLoading(true);
       // Simulate loading more sermons
       const newSermons = sermons.slice(0, Math.min(sermons.length + sermonsPerPage, sermons.length));
-      
+
       if (newSermons.length === sermons.length) {
         setHasMore(false);
         toast({
@@ -242,7 +203,7 @@ const Sermons = () => {
           description: 'You\'ve reached the end of our sermon collection.',
         });
       }
-      
+
       setPage(page + 1);
     } catch (error) {
       console.error('Error loading more sermons:', error);
@@ -304,22 +265,22 @@ const Sermons = () => {
           {/* Sermons Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
             {displayedSermons.map((sermon, index) => (
-              <EnhancedCard 
-                key={sermon.id} 
+              <EnhancedCard
+                key={sermon.id}
                 className="overflow-hidden group animate-fade-in"
                 style={{ animationDelay: `${index * 0.1}s` }}
                 hover={true}
                 gradient={false}
               >
                 <div className="relative aspect-video bg-gray-200 dark:bg-gray-700 overflow-hidden">
-                  <img 
-                    src={sermon.thumbnail} 
+                  <img
+                    src={sermon.thumbnail}
                     alt={sermon.title}
                     className="w-full h-full object-cover transition-transform group-hover:scale-105"
                     loading="lazy"
                   />
                   <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <Button 
+                    <Button
                       onClick={() => handleWatchNow(sermon)}
                       className="bg-iwc-orange hover:bg-iwc-red text-white"
                     >
@@ -332,7 +293,7 @@ const Sermons = () => {
                     </div>
                   )}
                 </div>
-                
+
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between mb-2">
                     {sermon.series && (
@@ -349,19 +310,19 @@ const Sermons = () => {
                     {sermon.title}
                   </CardTitle>
                 </CardHeader>
-                
+
                 <CardContent className="pt-0">
                   <div className="flex items-center mb-3 text-sm text-iwc-blue dark:text-iwc-orange">
                     <User className="h-4 w-4 mr-2" />
                     {sermon.speaker}
                   </div>
-                  
+
                   {sermon.description && (
                     <p className="text-gray-600 dark:text-gray-300 text-sm mb-4 line-clamp-2">
                       {sermon.description}
                     </p>
                   )}
-                  
+
                   {sermon.tags && (
                     <div className="flex flex-wrap gap-1 mb-4">
                       {sermon.tags.slice(0, 3).map(tag => (
@@ -371,26 +332,26 @@ const Sermons = () => {
                       ))}
                     </div>
                   )}
-                  
+
                   <div className="flex flex-wrap gap-2">
-                    <Button 
+                    <Button
                       onClick={() => handleWatchNow(sermon)}
-                      size="sm" 
+                      size="sm"
                       className="bg-iwc-blue hover:bg-iwc-orange text-white flex-1"
                     >
                       <Play className="h-3 w-3 mr-1" /> Watch
                     </Button>
-                    <Button 
+                    <Button
                       onClick={() => handleDownload(sermon)}
-                      size="sm" 
+                      size="sm"
                       variant="outline"
                       className="border-iwc-blue text-iwc-blue hover:bg-iwc-blue hover:text-white dark:border-iwc-orange dark:text-iwc-orange dark:hover:bg-iwc-orange"
                     >
                       <Download className="h-3 w-3 mr-1" /> Download
                     </Button>
-                    <Button 
+                    <Button
                       onClick={() => handleShare(sermon)}
-                      size="sm" 
+                      size="sm"
                       variant="outline"
                       className="border-gray-300 text-gray-600 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700"
                     >
@@ -405,7 +366,7 @@ const Sermons = () => {
           {/* Load More Button */}
           {hasMore && displayedSermons.length < filteredSermons.length && (
             <div className="text-center">
-              <Button 
+              <Button
                 onClick={handleLoadMore}
                 disabled={loading}
                 size="lg"

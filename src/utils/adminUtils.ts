@@ -5,22 +5,22 @@ import type { Database } from '@/integrations/supabase/types';
 type TableName = keyof Database['public']['Tables'];
 
 // Export data to CSV format
-export const exportToCSV = (data: any[], filename: string) => {
+export const exportToCSV = <T extends Record<string, unknown>>(data: T[], filename: string) => {
   if (!data.length) return;
-  
+
   const headers = Object.keys(data[0]);
   const csvContent = [
     headers.join(','),
-    ...data.map(row => 
+    ...data.map(row =>
       headers.map(header => {
         const value = row[header];
-        return typeof value === 'string' && value.includes(',') 
-          ? `"${value}"` 
+        return typeof value === 'string' && value.includes(',')
+          ? `"${value}"`
           : value;
       }).join(',')
     )
   ].join('\n');
-  
+
   const blob = new Blob([csvContent], { type: 'text/csv' });
   const url = window.URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -63,13 +63,13 @@ export const getDashboardAnalytics = async () => {
 };
 
 // Bulk operations - simplified type handling
-export const bulkDeleteItems = async (table: string, ids: string[]) => {
+export const bulkDeleteItems = async (table: TableName, ids: string[]) => {
   try {
     const { error } = await supabase
-      .from(table as any)
+      .from(table)
       .delete()
       .in('id', ids);
-    
+
     if (error) throw error;
     return { success: true };
   } catch (error) {
@@ -84,7 +84,7 @@ export const updateUserRole = async (userId: string, role: string) => {
     const { error } = await supabase
       .from('user_roles')
       .upsert([{ user_id: userId, role }]);
-    
+
     if (error) throw error;
     return { success: true };
   } catch (error) {
@@ -94,10 +94,10 @@ export const updateUserRole = async (userId: string, role: string) => {
 };
 
 // Audit logging
-export const logAuditAction = async (action: string, target?: string, details?: any) => {
+export const logAuditAction = async (action: string, target?: string, details?: Record<string, unknown>) => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    
+
     const { error } = await supabase
       .from('audit_logs')
       .insert([{
@@ -107,7 +107,7 @@ export const logAuditAction = async (action: string, target?: string, details?: 
         user_id: user?.id,
         timestamp: new Date().toISOString()
       }]);
-    
+
     if (error) throw error;
   } catch (error) {
     console.error('Error logging audit action:', error);

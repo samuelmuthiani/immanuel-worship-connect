@@ -25,7 +25,8 @@ const validateUserOwnership = async (resourceUserId: string) => {
   return user;
 };
 
-const validateInput = (input: any, rules: Record<string, (value: any) => boolean>) => {
+type ValidationRule = (value: unknown) => boolean;
+const validateInput = (input: Record<string, unknown>, rules: Record<string, ValidationRule>) => {
   for (const [field, validator] of Object.entries(rules)) {
     if (!validator(input[field])) {
       throw new APIError(`Invalid ${field}`);
@@ -42,14 +43,14 @@ export const userAPI = {
   async getUserRoles(userId: string) {
     // Validate user can access these roles
     const currentUser = await getCurrentUser();
-    
+
     // Users can only see their own roles unless they're admin
     if (currentUser.id !== userId) {
       const { data: adminRoles } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', currentUser.id);
-      
+
       const isAdmin = adminRoles?.some(r => r.role === 'admin') || false;
       if (!isAdmin) {
         throw new APIError('Unauthorized access to user roles');
@@ -60,7 +61,7 @@ export const userAPI = {
       .from('user_roles')
       .select('role')
       .eq('user_id', userId);
-    
+
     if (error) throw new APIError(error.message);
     return data?.map(r => r.role) || [];
   },
@@ -70,45 +71,48 @@ export const userAPI = {
     await validateUserOwnership(userId);
 
     const { data, error } = await supabase
-      .from('site_content')
-      .select('content')
-      .eq('section', `profile_${userId}`)
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
       .maybeSingle();
-    
+
     if (error) throw new APIError(error.message);
-    return data ? JSON.parse(data.content) : null;
+    return data;
   },
 
-  async updateUserProfile(userId: string, profileData: any) {
+  async updateUserProfile(userId: string, profileData: Record<string, unknown>) {
     // Validate ownership
     const user = await validateUserOwnership(userId);
 
-    // Sanitize input data
+    // Sanitize input data with type guards
+    const getString = (value: unknown): string => typeof value === 'string' ? value : '';
+
     const sanitizedData = {
-      first_name: SecurityService.sanitizeInput(profileData.first_name || ''),
-      last_name: SecurityService.sanitizeInput(profileData.last_name || ''),
-      phone: SecurityService.sanitizeInput(profileData.phone || ''),
-      bio: SecurityService.sanitizeInput(profileData.bio || ''),
+      first_name: SecurityService.sanitizeInput(getString(profileData.first_name)),
+      last_name: SecurityService.sanitizeInput(getString(profileData.last_name)),
+      phone: SecurityService.sanitizeInput(getString(profileData.phone)),
+      bio: SecurityService.sanitizeInput(getString(profileData.bio)),
       date_of_birth: profileData.date_of_birth,
-      address: SecurityService.sanitizeInput(profileData.address || ''),
-      avatar_url: profileData.avatar_url
+      address: SecurityService.sanitizeInput(getString(profileData.address)),
+      avatar_url: profileData.avatar_url,
+      ministry: SecurityService.sanitizeInput(getString(profileData.ministry)),
+      gender: SecurityService.sanitizeInput(getString(profileData.gender)),
+      updated_at: new Date().toISOString()
     };
 
     const { data, error } = await supabase
-      .from('site_content')
-      .upsert([{
-        section: `profile_${userId}`,
-        content: JSON.stringify({
-          ...sanitizedData,
-          updated_at: new Date().toISOString()
-        }),
-        updated_at: new Date().toISOString()
-      }])
-      .select();
-    
+      .from('profiles')
+      .upsert({
+        id: userId,
+        email: user.email,
+        ...sanitizedData
+      })
+      .select()
+      .single();
+
     if (error) throw new APIError(error.message);
     return data;
-  }
+  },
 };
 
 // Donation-related API calls with security
@@ -145,7 +149,7 @@ export const donationAPI = {
         ...sanitizedData,
       }])
       .select();
-    
+
     if (error) throw new APIError(error.message);
     return data[0];
   },
@@ -158,23 +162,22 @@ export const donationAPI = {
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
-    
+
     if (error) throw new APIError(error.message);
     return data || [];
   },
 
   async getAllDonations() {
     const user = await getCurrentUser();
-    
+
     // Check admin privileges
     const { data: roles } = await supabase
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id);
-    
-    const isAdmin = roles?.some(r => r.role === 'admin') || 
-      ['admin@iwc.com', 'samuel.watho@gmail.com'].includes(user.email || '');
-    
+
+    const isAdmin = roles?.some(r => r.role === 'admin') || false;
+
     if (!isAdmin) {
       throw new APIError('Unauthorized access to all donations');
     }
@@ -186,7 +189,7 @@ export const donationAPI = {
         user_email:get_user_email(user_id)
       `)
       .order('created_at', { ascending: false });
-    
+
     if (error) throw new APIError(error.message);
     return data || [];
   }
@@ -215,7 +218,7 @@ export const appreciationAPI = {
         message: sanitizedMessage
       }])
       .select();
-    
+
     if (error) throw new APIError(error.message);
     return data[0];
   },
@@ -231,7 +234,7 @@ export const appreciationAPI = {
       `)
       .eq('recipient_id', user.id)
       .order('sent_at', { ascending: false });
-    
+
     if (error) throw new APIError(error.message);
     return data || [];
   },
@@ -255,7 +258,7 @@ export const appreciationAPI = {
       .from('appreciations')
       .update({ read_at: new Date().toISOString() })
       .eq('id', appreciationId);
-    
+
     if (error) throw new APIError(error.message);
   }
 };
@@ -264,22 +267,19 @@ export const appreciationAPI = {
 export const adminAPI = {
   async verifyAdminAccess() {
     const user = await getCurrentUser();
-    
-    const adminEmails = ['admin@iwc.com', 'samuel.watho@gmail.com'];
-    if (adminEmails.includes(user.email || '')) {
-      return true;
-    }
+
+
 
     const { data: roles } = await supabase
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id);
-    
+
     const isAdmin = roles?.some(r => r.role === 'admin') || false;
     if (!isAdmin) {
       throw new APIError('Administrative access required');
     }
-    
+
     return true;
   },
 
@@ -290,7 +290,7 @@ export const adminAPI = {
       .from('contact_submissions')
       .select('*')
       .order('submitted_at', { ascending: false });
-    
+
     if (error) throw new APIError(error.message);
     return data || [];
   },
@@ -302,7 +302,7 @@ export const adminAPI = {
       .from('newsletter_subscribers')
       .select('*')
       .order('subscribed_at', { ascending: false });
-    
+
     if (error) throw new APIError(error.message);
     return data || [];
   },
@@ -317,7 +317,7 @@ export const adminAPI = {
         events(title, event_date)
       `)
       .order('registered_at', { ascending: false });
-    
+
     if (error) throw new APIError(error.message);
     return data || [];
   }

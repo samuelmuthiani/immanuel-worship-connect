@@ -6,7 +6,7 @@ export const contactFormSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').max(100, 'Name too long'),
   email: z.string().email('Invalid email address'),
   phone: z.string().optional().refine(
-    (val) => !val || /^[\+]?[1-9][\d]{0,15}$/.test(val.replace(/[\s\-\(\)]/g, '')),
+    (val) => !val || /^[+]?[1-9][\d]{0,15}$/.test(val.replace(/[\s\-()]/g, '')),
     'Invalid phone number'
   ),
   subject: z.string().max(200, 'Subject too long').optional(),
@@ -18,7 +18,7 @@ export const eventRegistrationSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').max(100, 'Name too long'),
   email: z.string().email('Invalid email address'),
   phone: z.string().optional().refine(
-    (val) => !val || /^[\+]?[1-9][\d]{0,15}$/.test(val.replace(/[\s\-\(\)]/g, '')),
+    (val) => !val || /^[+]?[1-9][\d]{0,15}$/.test(val.replace(/[\s\-()]/g, '')),
     'Invalid phone number'
   )
 });
@@ -27,7 +27,7 @@ export const profileUpdateSchema = z.object({
   first_name: z.string().min(1, 'First name required').max(50, 'First name too long').optional(),
   last_name: z.string().min(1, 'Last name required').max(50, 'Last name too long').optional(),
   phone: z.string().optional().refine(
-    (val) => !val || /^[\+]?[1-9][\d]{0,15}$/.test(val.replace(/[\s\-\(\)]/g, '')),
+    (val) => !val || /^[+]?[1-9][\d]{0,15}$/.test(val.replace(/[\s\-()]/g, '')),
     'Invalid phone number'
   ),
   date_of_birth: z.string().optional().refine(
@@ -44,10 +44,10 @@ export const profileUpdateSchema = z.object({
 export class DataValidation {
   static sanitizeInput(input: string): string {
     if (typeof input !== 'string') return '';
-    
+
     return input
       .trim()
-      .replace(/[<>\"'&]/g, (match) => {
+      .replace(/[<>"'&]/g, (match) => {
         const entities: Record<string, string> = {
           '<': '&lt;',
           '>': '&gt;',
@@ -67,13 +67,13 @@ export class DataValidation {
 
   static validatePhone(phone: string): boolean {
     if (!phone) return true; // Optional field
-    const cleanPhone = phone.replace(/[\s\-\(\)]/g, '');
-    return /^[\+]?[1-9][\d]{0,15}$/.test(cleanPhone);
+    const cleanPhone = phone.replace(/[\s\-()]/g, '');
+    return /^[+]?[1-9][\d]{0,15}$/.test(cleanPhone);
   }
 
   static normalizePhoneNumber(phone: string): string {
     if (!phone) return '';
-    return phone.replace(/[\s\-\(\)]/g, '').replace(/^0/, '+254');
+    return phone.replace(/[\s\-()]/g, '').replace(/^0/, '+254');
   }
 
   static async validateAndSanitize<T>(
@@ -96,25 +96,25 @@ export class DataValidation {
 // Rate limiting utility
 export class RateLimiter {
   private static attempts = new Map<string, { count: number; lastAttempt: number }>();
-  
+
   static isAllowed(key: string, maxAttempts: number = 5, windowMs: number = 60000): boolean {
     const now = Date.now();
     const record = this.attempts.get(key);
-    
+
     if (!record || now - record.lastAttempt > windowMs) {
       this.attempts.set(key, { count: 1, lastAttempt: now });
       return true;
     }
-    
+
     if (record.count >= maxAttempts) {
       return false;
     }
-    
+
     record.count++;
     record.lastAttempt = now;
     return true;
   }
-  
+
   static reset(key: string): void {
     this.attempts.delete(key);
   }

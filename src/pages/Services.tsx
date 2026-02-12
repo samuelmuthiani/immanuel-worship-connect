@@ -71,6 +71,8 @@ const Services = () => {
   const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const contentElement = contentRef.current;
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -81,13 +83,13 @@ const Services = () => {
       { threshold: 0.1 }
     );
 
-    if (contentRef.current) {
-      observer.observe(contentRef.current);
+    if (contentElement) {
+      observer.observe(contentElement);
     }
 
     return () => {
-      if (contentRef.current) {
-        observer.unobserve(contentRef.current);
+      if (contentElement) {
+        observer.unobserve(contentElement);
       }
     };
   }, []);
@@ -104,20 +106,20 @@ const Services = () => {
             </p>
           </div>
 
-          <div 
+          <div
             ref={contentRef}
             className="transition-all duration-1000 opacity-0 translate-y-10"
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-20">
               {servicesData.map((service, index) => (
-                <div 
+                <div
                   key={index}
                   className="bg-white rounded-xl shadow-md overflow-hidden flex flex-col"
                 >
                   <div className="h-64 overflow-hidden">
-                    <img 
-                      src={service.image} 
-                      alt={service.title} 
+                    <img
+                      src={service.image}
+                      alt={service.title}
                       className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
                     />
                   </div>
@@ -134,7 +136,7 @@ const Services = () => {
               <h2 className="text-3xl font-bold mb-8 text-center text-gray-900">Upcoming Events</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {upcomingEvents.map((event, index) => (
-                  <div 
+                  <div
                     key={index}
                     className="bg-white p-6 rounded-xl shadow-md"
                   >

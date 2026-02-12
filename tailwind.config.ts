@@ -1,5 +1,6 @@
 
 import type { Config } from "tailwindcss";
+import tailwindAnimate from "tailwindcss-animate";
 
 export default {
 	darkMode: ["class"],
@@ -213,13 +214,13 @@ export default {
 					}
 				},
 				'pulse-glow': {
-					'0%, 100%': { 
-						opacity: '0.5', 
-						filter: 'blur(32px)' 
+					'0%, 100%': {
+						opacity: '0.5',
+						filter: 'blur(32px)'
 					},
-					'50%': { 
-						opacity: '0.8', 
-						filter: 'blur(48px)' 
+					'50%': {
+						opacity: '0.8',
+						filter: 'blur(48px)'
 					}
 				},
 				'shake': {
@@ -274,5 +275,5 @@ export default {
 			}
 		}
 	},
-	plugins: [require("tailwindcss-animate")],
+	plugins: [tailwindAnimate],
 } satisfies Config;

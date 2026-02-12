@@ -53,7 +53,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children, requiredRole, adminOnly
           <p className="text-gray-600 dark:text-gray-400 mb-4">
             Please check your email and click the verification link before accessing this area.
           </p>
-          <button 
+          <button
             onClick={() => window.location.href = '/login'}
             className="text-blue-600 hover:text-blue-800 underline"
           >
@@ -64,11 +64,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children, requiredRole, adminOnly
     );
   }
 
-  // Special case for hardcoded admin emails
-  const adminEmails = ['admin@iwc.com', 'samuel.watho@gmail.com'];
-  if (adminEmails.includes(user.email || '') && adminOnly) {
-    return <>{children}</>;
-  }
+
 
   // Admin only page check
   if (adminOnly && !hasRole('admin')) {

@@ -8,6 +8,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
+import AuthGuard from "@/components/AuthGuard";
 import Index from "./pages/Index";
 import About from "./pages/About";
 import Services from "./pages/Services";
@@ -22,6 +23,7 @@ import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import MemberArea from "./pages/MemberArea";
+import Profile from "./pages/member/Profile";
 import Donate from "./pages/Donate";
 import AdminDashboard from "./pages/AdminDashboard";
 import ResetPassword from "./pages/ResetPassword";
@@ -78,8 +80,21 @@ const App = () => {
                   <Route path="/register" element={<Register />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
                   <Route path="/update-password" element={<UpdatePassword />} />
-                  <Route path="/member" element={<MemberArea />} />
-                  <Route path="/admin" element={<AdminDashboard />} />
+                  <Route path="/member" element={
+                    <AuthGuard>
+                      <MemberArea />
+                    </AuthGuard>
+                  } />
+                  <Route path="/member/profile" element={
+                    <AuthGuard>
+                      <Profile />
+                    </AuthGuard>
+                  } />
+                  <Route path="/admin" element={
+                    <AuthGuard adminOnly>
+                      <AdminDashboard />
+                    </AuthGuard>
+                  } />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </BrowserRouter>

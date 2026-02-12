@@ -121,7 +121,7 @@ export const EventCard: React.FC<EventCardProps> = ({
       } else {
         throw new Error(result.error?.message || 'Registration failed');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Registration error:', error);
       const errorMessage = error.message || 'Failed to register for event. Please try again.';
       setError(errorMessage);

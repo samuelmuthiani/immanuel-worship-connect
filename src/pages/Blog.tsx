@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Layout from '@/components/Layout';
 import { PageContainer } from '@/components/ui/page-container';
 import { EnhancedCard, CardContent, CardHeader, CardTitle } from '@/components/ui/enhanced-card';
@@ -11,7 +11,19 @@ import { Calendar, Clock, User, Search, Tag, Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { getAllBlogPosts, BlogPost } from '@/utils/blogUtils';
+import { supabase } from '@/integrations/supabase/client';
+
+interface BlogPost {
+  id: string;
+  title: string;
+  slug: string;
+  content: string;
+  excerpt: string;
+  cover_image?: string;
+  author_id?: string;
+  published_at: string;
+  author_email?: string;
+}
 
 const Blog = () => {
   const { user, isAdmin } = useAuth();
@@ -23,43 +35,19 @@ const Blog = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const postsPerPage = 6;
 
-  useEffect(() => {
-    fetchBlogPosts();
-  }, []);
-
-  useEffect(() => {
-    filterPosts();
-  }, [searchTerm, posts]);
-
-  const fetchBlogPosts = async () => {
+  const fetchBlogPosts = useCallback(async () => {
     try {
       setLoading(true);
-      const blogPosts = await getAllBlogPosts();
-      
-      if (blogPosts.length === 0) {
-        // Use fallback data if no posts in database
-        const fallbackPosts = [
-          {
-            id: 'fallback-1',
-            title: 'Finding Hope in Difficult Times',
-            content: 'Life often presents us with challenges that test our faith and resilience. In these moments, we must remember that hope is not lost...',
-            author_id: 'fallback-author',
-            published_at: '2024-01-15T10:00:00Z',
-            author_email: 'pastor@iwc.com'
-          },
-          {
-            id: 'fallback-2', 
-            title: 'The Power of Community Prayer',
-            content: 'When we come together in prayer, something miraculous happens. Our individual voices unite to create a powerful chorus...',
-            author_id: 'fallback-author',
-            published_at: '2024-01-10T14:30:00Z',
-            author_email: 'minister@iwc.com'
-          }
-        ];
-        setPosts(fallbackPosts);
-      } else {
-        setPosts(blogPosts);
-      }
+
+      const { data, error } = await supabase
+        .from('posts')
+        .select('*')
+        .eq('published', true)
+        .order('published_at', { ascending: false });
+
+      if (error) throw error;
+
+      setPosts(data as BlogPost[] || []);
     } catch (error) {
       console.error('Error fetching blog posts:', error);
       toast({
@@ -67,12 +55,13 @@ const Blog = () => {
         description: 'Failed to load blog posts. Please try again.',
         variant: 'destructive'
       });
+      setPosts([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
-  const filterPosts = () => {
+  const filterPosts = useCallback(() => {
     let filtered = posts;
 
     if (searchTerm) {
@@ -84,7 +73,15 @@ const Blog = () => {
 
     setFilteredPosts(filtered);
     setCurrentPage(1);
-  };
+  }, [posts, searchTerm]);
+
+  useEffect(() => {
+    fetchBlogPosts();
+  }, [fetchBlogPosts]);
+
+  useEffect(() => {
+    filterPosts();
+  }, [filterPosts]);
 
   // Pagination
   const indexOfLastPost = currentPage * postsPerPage;
@@ -152,7 +149,7 @@ const Blog = () => {
                 className="pl-10"
               />
             </div>
-            
+
             {isAdmin && (
               <Button
                 className="bg-iwc-blue hover:bg-iwc-orange text-white"
@@ -193,18 +190,18 @@ const Blog = () => {
                       </div>
                     </div>
                   </div>
-                  
+
                   <CardHeader className="pb-2">
                     <CardTitle className="text-lg line-clamp-2 group-hover:text-iwc-blue dark:group-hover:text-iwc-orange transition-colors">
                       {post.title}
                     </CardTitle>
                   </CardHeader>
-                  
+
                   <CardContent className="space-y-4">
                     <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-3">
                       {getExcerpt(post.content)}
                     </p>
-                    
+
                     <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
                       <div className="flex items-center space-x-1">
                         <User className="h-3 w-3" />
@@ -215,8 +212,8 @@ const Blog = () => {
                         <span>{formatDate(post.published_at)}</span>
                       </div>
                     </div>
-                    
-                    <Button 
+
+                    <Button
                       className="w-full bg-gradient-to-r from-iwc-blue to-iwc-orange hover:from-iwc-orange hover:to-iwc-red"
                       onClick={() => toast({
                         title: 'Coming Soon',
@@ -253,7 +250,7 @@ const Blog = () => {
               >
                 Previous
               </Button>
-              
+
               {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                 <Button
                   key={page}
@@ -264,7 +261,7 @@ const Blog = () => {
                   {page}
                 </Button>
               ))}
-              
+
               <Button
                 variant="outline"
                 onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}

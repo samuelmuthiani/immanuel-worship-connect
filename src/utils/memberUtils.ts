@@ -17,7 +17,7 @@ export const getAllMembersWithProfile = async () => {
   // Supabase client-side cannot select from auth.users directly, so use get_user_email function or join with donations
   // We'll fetch emails via the donations table if available, otherwise fallback to user_id
 
-  // 3. Get profile data from site_content (if exists)
+  // 3. Get profile data from profiles table
   // We'll fetch profile for each user_id
   const profiles = await Promise.all(userIds.map(async (user_id) => {
     // Try to get email via a donation (if any)
@@ -27,20 +27,15 @@ export const getAllMembersWithProfile = async () => {
       .eq('user_id', user_id)
       .limit(1)
       .maybeSingle();
-    let email = donation?.user_email || null;
+    const email = donation?.user_email || null;
 
-    // Try to get profile from site_content
-    let profile = null;
-    const { data: profileRow } = await supabase
-      .from('site_content')
-      .select('content')
-      .eq('section', `profile_${user_id}`)
+    // Get profile from profiles table
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user_id)
       .maybeSingle();
-    if (profileRow && profileRow.content) {
-      try {
-        profile = JSON.parse(profileRow.content);
-      } catch {}
-    }
+
     return {
       user_id,
       email,

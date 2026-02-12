@@ -76,17 +76,11 @@ export const useMobileToast = () => {
   return { showToast };
 };
 
-// Enhanced toast utilities
+// Enhanced toast utilities - these should only be used as hooks
+// or use sonner directly for static access
 export const mobileToast = {
-  success: (message: string, options?: Partial<MobileToastOptions>) =>
-    useMobileToast().showToast({ description: message, type: 'success', ...options }),
-  
-  error: (message: string, options?: Partial<MobileToastOptions>) =>
-    useMobileToast().showToast({ description: message, type: 'error', ...options }),
-  
-  info: (message: string, options?: Partial<MobileToastOptions>) =>
-    useMobileToast().showToast({ description: message, type: 'info', ...options }),
-  
-  warning: (message: string, options?: Partial<MobileToastOptions>) =>
-    useMobileToast().showToast({ description: message, type: 'warning', ...options })
+  success: (message: string, options?: any) => sonnerToast.success(message, options),
+  error: (message: string, options?: any) => sonnerToast.error(message, options),
+  info: (message: string, options?: any) => sonnerToast.info(message, options),
+  warning: (message: string, options?: any) => sonnerToast.warning(message, options),
 };

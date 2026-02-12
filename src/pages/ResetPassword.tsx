@@ -47,7 +47,7 @@ const ResetPassword = () => {
       if (error) throw error;
       
       setSent(true);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setErrors({ general: err.message || 'Failed to send reset email.' });
     } finally {
       setLoading(false);

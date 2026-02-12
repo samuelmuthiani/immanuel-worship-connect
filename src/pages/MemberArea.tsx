@@ -65,20 +65,20 @@ const MemberArea = () => {
 
   const TabNavigation = ({ isMobile = false }) => (
     <TabsList className={`
-      ${isMobile 
-        ? 'flex flex-col w-full h-auto space-y-2 bg-transparent p-0' 
+      ${isMobile
+        ? 'flex flex-col w-full h-auto space-y-2 bg-transparent p-0'
         : 'grid w-full grid-cols-2 md:grid-cols-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700'
       }
     `}>
       {tabs.map((tab) => (
-        <TabsTrigger 
+        <TabsTrigger
           key={tab.value}
-          value={tab.value} 
+          value={tab.value}
           onClick={() => isMobile && setMobileMenuOpen(false)}
           className={`
             flex items-center gap-2 
-            ${isMobile 
-              ? 'w-full justify-start p-4 text-left bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg' 
+            ${isMobile
+              ? 'w-full justify-start p-4 text-left bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg'
               : ''
             }
           `}
@@ -110,24 +110,27 @@ const MemberArea = () => {
                   <span className="sm:hidden">Welcome back!</span>
                 </p>
               </div>
-              
-              {/* Mobile menu button */}
-              <div className="md:hidden">
-                <MobileDrawer
-                  title="Navigation"
-                  open={mobileMenuOpen}
-                  onOpenChange={setMobileMenuOpen}
-                  trigger={
-                    <button className="p-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm">
-                      <Menu className="h-5 w-5" />
-                    </button>
-                  }
-                >
-                  <div className="space-y-4">
-                    <TabNavigation isMobile={true} />
-                  </div>
-                </MobileDrawer>
-              </div>
+              <a href="/member/profile" className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
+                <Settings className="mr-2 h-4 w-4" /> Edit Profile
+              </a>
+            </div>
+
+            {/* Mobile menu button */}
+            <div className="md:hidden">
+              <MobileDrawer
+                title="Navigation"
+                open={mobileMenuOpen}
+                onOpenChange={setMobileMenuOpen}
+                trigger={
+                  <button className="p-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm">
+                    <Menu className="h-5 w-5" />
+                  </button>
+                }
+              >
+                <div className="space-y-4">
+                  <TabNavigation isMobile={true} />
+                </div>
+              </MobileDrawer>
             </div>
           </div>
 
@@ -148,7 +151,7 @@ const MemberArea = () => {
           </Tabs>
         </ResponsiveContainer>
       </Layout>
-    </ProtectedRoute>
+    </ProtectedRoute >
   );
 };
 

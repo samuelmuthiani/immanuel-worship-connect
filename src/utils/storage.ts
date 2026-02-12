@@ -40,7 +40,7 @@ export {
 } from './eventUtils';
 
 // Keep legacy localStorage functions for backward compatibility
-export const saveToLocalStorage = (key: string, value: any): void => {
+export const saveToLocalStorage = (key: string, value: unknown): void => {
   try {
     const serializedValue = JSON.stringify(value);
     localStorage.setItem(key, serializedValue);

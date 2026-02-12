@@ -12,12 +12,12 @@ export function useFormValidation<T>({ schema, onSubmit }: UseFormValidationOpti
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const validateField = useCallback(async (name: string, value: any) => {
+  const validateField = useCallback(async (name: string, value: unknown) => {
     try {
       // Validate single field
-      const fieldSchema = schema.pick({ [name]: true } as any);
+      const fieldSchema = schema.pick({ [name]: true } as Record<string, true>);
       await fieldSchema.parseAsync({ [name]: value });
-      
+
       // Clear error if validation passes
       setErrors(prev => {
         const newErrors = { ...prev };
@@ -41,7 +41,7 @@ export function useFormValidation<T>({ schema, onSubmit }: UseFormValidationOpti
 
     try {
       const validation = await DataValidation.validateAndSanitize(data, schema);
-      
+
       if (!validation.success) {
         const fieldErrors: Record<string, string> = {};
         validation.errors.forEach(error => {
@@ -53,7 +53,7 @@ export function useFormValidation<T>({ schema, onSubmit }: UseFormValidationOpti
       }
 
       await onSubmit(validation.data);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Form submission error:', error);
       setErrors({ general: error.message || 'An unexpected error occurred' });
     } finally {

@@ -75,7 +75,7 @@ const NewsletterSignup = () => {
       } else {
         throw new Error('Subscription failed - no data returned');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Newsletter subscription error:', error);
       const errorMessage = error.message || 'There was an error subscribing to our newsletter. Please try again.';
       setError(errorMessage);

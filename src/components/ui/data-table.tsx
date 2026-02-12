@@ -19,10 +19,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { 
-  ChevronLeft, 
-  ChevronRight, 
-  MoreHorizontal, 
+import {
+  ChevronLeft,
+  ChevronRight,
+  MoreHorizontal,
   Search,
   Download,
   Trash2,
@@ -32,30 +32,30 @@ import {
 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 
-interface Column {
-  key: string;
+interface Column<T = Record<string, unknown>> {
+  key: keyof T | string;
   label: string;
   sortable?: boolean;
   filterable?: boolean;
-  render?: (value: any, row: any) => React.ReactNode;
+  render?: (value: unknown, row: T) => React.ReactNode;
 }
 
-interface DataTableProps {
-  data: any[];
-  columns: Column[];
+interface DataTableProps<T = Record<string, unknown>> {
+  data: T[];
+  columns: Column<T>[];
   title?: string;
   searchPlaceholder?: string;
-  onEdit?: (row: any) => void;
-  onDelete?: (row: any) => void;
-  onView?: (row: any) => void;
-  onExport?: (selectedRows: any[]) => void;
-  onBulkDelete?: (selectedRows: any[]) => void;
+  onEdit?: (row: T) => void;
+  onDelete?: (row: T) => void;
+  onView?: (row: T) => void;
+  onExport?: (selectedRows: T[]) => void;
+  onBulkDelete?: (selectedRows: T[]) => void;
   showActions?: boolean;
   showBulkActions?: boolean;
   pageSize?: number;
 }
 
-export function DataTable({
+export function DataTable<T extends Record<string, unknown> & { id: string }>({
   data,
   columns,
   title,
@@ -68,7 +68,7 @@ export function DataTable({
   showActions = true,
   showBulkActions = true,
   pageSize = 10
-}: DataTableProps) {
+}: DataTableProps<T>) {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
@@ -78,8 +78,8 @@ export function DataTable({
   // Filter and search data
   const filteredData = data.filter(row => {
     // Search filter
-    const matchesSearch = searchTerm === '' || 
-      columns.some(col => 
+    const matchesSearch = searchTerm === '' ||
+      columns.some(col =>
         String(row[col.key]).toLowerCase().includes(searchTerm.toLowerCase())
       );
 
@@ -99,7 +99,7 @@ export function DataTable({
     return [...filteredData].sort((a, b) => {
       const aVal = a[sortConfig.key];
       const bVal = b[sortConfig.key];
-      
+
       if (aVal < bVal) {
         return sortConfig.direction === 'asc' ? -1 : 1;
       }
@@ -120,7 +120,7 @@ export function DataTable({
   const handleSort = (key: string) => {
     setSortConfig(current => {
       if (current?.key === key) {
-        return current.direction === 'asc' 
+        return current.direction === 'asc'
           ? { key, direction: 'desc' }
           : { key, direction: 'asc' };
       }
@@ -155,7 +155,7 @@ export function DataTable({
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         {title && <h3 className="text-lg font-semibold">{title}</h3>}
-        
+
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
           {/* Search */}
           <div className="relative">
@@ -225,7 +225,7 @@ export function DataTable({
                 </TableHead>
               )}
               {columns.map((column) => (
-                <TableHead 
+                <TableHead
                   key={column.key}
                   className={column.sortable ? "cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800" : ""}
                   onClick={() => column.sortable && handleSort(column.key)}
@@ -285,7 +285,7 @@ export function DataTable({
                           {onDelete && (
                             <>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem 
+                              <DropdownMenuItem
                                 onClick={() => onDelete(row)}
                                 className="text-red-600"
                               >
@@ -302,8 +302,8 @@ export function DataTable({
               ))
             ) : (
               <TableRow>
-                <TableCell 
-                  colSpan={columns.length + (showActions ? 1 : 0) + (showBulkActions ? 1 : 0)} 
+                <TableCell
+                  colSpan={columns.length + (showActions ? 1 : 0) + (showBulkActions ? 1 : 0)}
                   className="h-24 text-center"
                 >
                   No results found.
@@ -330,7 +330,7 @@ export function DataTable({
               <ChevronLeft className="h-4 w-4" />
               Previous
             </Button>
-            
+
             <div className="flex items-center space-x-1">
               {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                 const page = i + 1;
@@ -346,7 +346,7 @@ export function DataTable({
                 );
               })}
             </div>
-            
+
             <Button
               variant="outline"
               size="sm"

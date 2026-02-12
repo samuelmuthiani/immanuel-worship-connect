@@ -66,7 +66,7 @@ const UpdatePassword = () => {
       if (error) throw error;
       
       setSuccess(true);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setErrors({ general: err.message || 'Failed to update password.' });
     } finally {
       setLoading(false);

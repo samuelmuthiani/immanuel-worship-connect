@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useCallback } from 'react';
 import Layout from '@/components/Layout';
 import { Calendar, MapPin, Clock, Users, Filter, Search, X, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -22,7 +23,7 @@ const Events = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [loading, setLoading] = useState(true);
-  const [registrationModal, setRegistrationModal] = useState<{open: boolean, event: Event | null}>({
+  const [registrationModal, setRegistrationModal] = useState<{ open: boolean, event: Event | null }>({
     open: false,
     event: null
   });
@@ -36,25 +37,11 @@ const Events = () => {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchEvents();
-  }, []);
-
-  useEffect(() => {
-    filterEvents();
-  }, [events, searchTerm, selectedCategory]);
-
-  useEffect(() => {
-    if (user?.email) {
-      checkUserRegistrations();
-    }
-  }, [events, user]);
-
-  const fetchEvents = async () => {
+  const fetchEvents = useCallback(async () => {
     try {
       setLoading(true);
       const eventsData = await getUpcomingEvents();
-      
+
       if (eventsData.length === 0) {
         // Use fallback data if no events in database
         const fallbackEvents = [
@@ -93,11 +80,11 @@ const Events = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
-  const checkUserRegistrations = async () => {
+  const checkUserRegistrations = useCallback(async () => {
     if (!user?.email) return;
-    
+
     const registered = new Set<string>();
     for (const event of events) {
       if (event.registration_required) {
@@ -108,9 +95,9 @@ const Events = () => {
       }
     }
     setRegisteredEvents(registered);
-  };
+  }, [events, user?.email]);
 
-  const filterEvents = () => {
+  const filterEvents = useCallback(() => {
     let filtered = events;
 
     if (searchTerm) {
@@ -127,7 +114,21 @@ const Events = () => {
     }
 
     setFilteredEvents(filtered);
-  };
+  }, [events, searchTerm, selectedCategory]);
+
+  useEffect(() => {
+    fetchEvents();
+  }, [fetchEvents]);
+
+  useEffect(() => {
+    filterEvents();
+  }, [filterEvents]);
+
+  useEffect(() => {
+    if (user?.email) {
+      checkUserRegistrations();
+    }
+  }, [checkUserRegistrations, user?.email]);
 
   const handleRegister = (event: Event) => {
     if (!event.registration_required) {
@@ -189,17 +190,24 @@ const Events = () => {
         });
         setRegistrationModal({ open: false, event: null });
         setRegistrationForm({ name: '', email: '', phone: '' });
-        
+
         // Update registered events
-        setRegisteredEvents(prev => new Set([...prev, registrationModal.event!.id]));
+        setRegisteredEvents(prev => {
+          const newSet = new Set(prev);
+          if (registrationModal.event) {
+            newSet.add(registrationModal.event.id);
+          }
+          return newSet;
+        });
       } else {
-        throw new Error(result.error || 'Registration failed');
+        const errorMsg = result.error instanceof Error ? result.error.message : result.error;
+        throw new Error(errorMsg || 'Registration failed');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error registering for event:', error);
       toast({
         title: 'Registration Failed',
-        description: error.message || 'There was an error registering for this event. Please try again.',
+        description: (error as Error).message || 'There was an error registering for this event. Please try again.',
         variant: 'destructive'
       });
     } finally {
@@ -219,7 +227,7 @@ const Events = () => {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
         <div className="container mx-auto px-4 py-8">
           <BackButton to="/" />
-          
+
           {/* Header */}
           <div className="text-center mb-12">
             <h1 className="text-4xl md:text-5xl font-bold mb-4 text-gray-900 dark:text-white">
@@ -269,8 +277,8 @@ const Events = () => {
               </div>
             ) : (
               filteredEvents.map((event, index) => (
-                <EnhancedCard 
-                  key={event.id} 
+                <EnhancedCard
+                  key={event.id}
                   className="bg-white dark:bg-gray-800 group"
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
@@ -299,12 +307,12 @@ const Events = () => {
                       {event.title}
                     </CardTitle>
                   </CardHeader>
-                  
+
                   <CardContent className="space-y-4">
                     <p className="text-gray-600 dark:text-gray-300 text-sm line-clamp-3">
                       {event.description}
                     </p>
-                    
+
                     <div className="space-y-2 text-sm">
                       <div className="flex items-center text-gray-500 dark:text-gray-400">
                         <Calendar className="h-4 w-4 mr-2 text-iwc-blue" />
@@ -317,7 +325,7 @@ const Events = () => {
                           })}
                         </span>
                       </div>
-                      
+
                       <div className="flex items-center text-gray-500 dark:text-gray-400">
                         <Clock className="h-4 w-4 mr-2 text-iwc-blue" />
                         <span>
@@ -327,12 +335,12 @@ const Events = () => {
                           })}
                         </span>
                       </div>
-                      
+
                       <div className="flex items-center text-gray-500 dark:text-gray-400">
                         <MapPin className="h-4 w-4 mr-2 text-iwc-blue" />
                         <span>{event.location}</span>
                       </div>
-                      
+
                       {event.organizer && (
                         <div className="flex items-center text-gray-500 dark:text-gray-400">
                           <Users className="h-4 w-4 mr-2 text-iwc-blue" />
@@ -340,20 +348,19 @@ const Events = () => {
                         </div>
                       )}
                     </div>
-                    
+
                     <Button
                       onClick={() => handleRegister(event)}
                       disabled={registeredEvents.has(event.id)}
-                      className={`w-full font-semibold ${
-                        registeredEvents.has(event.id)
-                          ? 'bg-green-600 hover:bg-green-700 text-white'
-                          : 'bg-iwc-blue hover:bg-iwc-orange text-white'
-                      }`}
+                      className={`w-full font-semibold ${registeredEvents.has(event.id)
+                        ? 'bg-green-600 hover:bg-green-700 text-white'
+                        : 'bg-iwc-blue hover:bg-iwc-orange text-white'
+                        }`}
                     >
-                      {registeredEvents.has(event.id) 
-                        ? 'Already Registered' 
-                        : event.registration_required 
-                          ? 'Register Now' 
+                      {registeredEvents.has(event.id)
+                        ? 'Already Registered'
+                        : event.registration_required
+                          ? 'Register Now'
                           : 'Learn More'
                       }
                     </Button>
@@ -381,7 +388,7 @@ const Events = () => {
                   <X className="h-4 w-4" />
                 </Button>
               </div>
-              
+
               <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
                 <h4 className="font-medium text-gray-900 dark:text-white">
                   {registrationModal.event.title}
@@ -397,7 +404,7 @@ const Events = () => {
                   })}
                 </p>
               </div>
-              
+
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -410,7 +417,7 @@ const Events = () => {
                     className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Email Address *
@@ -423,7 +430,7 @@ const Events = () => {
                     className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Phone Number (Optional)
@@ -437,7 +444,7 @@ const Events = () => {
                   />
                 </div>
               </div>
-              
+
               <div className="flex gap-3 mt-6">
                 <Button
                   onClick={closeModal}

@@ -35,25 +35,20 @@ const Login = () => {
 
   const validateForm = (isAdminLogin: boolean = false) => {
     const newErrors: FormErrors = {};
-    
+
     if (!email.trim()) {
       newErrors.email = 'Email address is required';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       newErrors.email = 'Please enter a valid email address';
     }
-    
+
     if (!password) {
       newErrors.password = 'Password is required';
     } else if (password.length < 6) {
       newErrors.password = 'Password must be at least 6 characters';
     }
 
-    if (isAdminLogin) {
-      const adminEmails = ['admin@iwc.com', 'samuel.watho@gmail.com'];
-      if (!adminEmails.includes(email.trim())) {
-        console.log('Admin login attempted with non-admin email');
-      }
-    }
+
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -62,14 +57,14 @@ const Login = () => {
   const handleLogin = async (e: React.FormEvent, isAdminLogin: boolean = false) => {
     e.preventDefault();
     setErrors({});
-    
+
     if (!validateForm(isAdminLogin)) return;
-    
+
     setLoading(true);
-    
+
     try {
       const result = await signIn(email.trim(), password);
-      
+
       if (!result.success) {
         setErrors({ general: result.error || 'Authentication failed' });
       }
@@ -90,10 +85,10 @@ const Login = () => {
   return (
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-iwc-blue/90 via-iwc-orange/60 to-iwc-gold/80 dark:from-gray-900 dark:via-gray-900 dark:to-iwc-blue/80">
       <div className="absolute inset-0 pointer-events-none z-0">
-        <div className="absolute top-1/4 left-1/2 w-[600px] h-[600px] bg-iwc-orange/20 rounded-full blur-3xl opacity-60 animate-pulse-glow" style={{transform:'translate(-50%, -50%)'}} />
+        <div className="absolute top-1/4 left-1/2 w-[600px] h-[600px] bg-iwc-orange/20 rounded-full blur-3xl opacity-60 animate-pulse-glow" style={{ transform: 'translate(-50%, -50%)' }} />
         <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-iwc-blue/30 rounded-full blur-2xl opacity-40 animate-pulse-glow" />
       </div>
-      
+
       <div className="relative z-10 w-full max-w-md px-4">
         <div className="flex flex-col items-center mb-8">
           <div className="glossy-logo rounded-full p-3 bg-white/70 dark:bg-gray-900/70 shadow-xl animate-float">
@@ -243,14 +238,14 @@ const Login = () => {
 
           <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
             <div className="flex flex-col sm:flex-row justify-between items-center gap-4 text-sm">
-              <Link 
-                to="/register" 
+              <Link
+                to="/register"
                 className="text-iwc-blue dark:text-iwc-orange hover:underline font-medium transition-colors"
               >
                 Create an account
               </Link>
-              <Link 
-                to="/reset-password" 
+              <Link
+                to="/reset-password"
                 className="text-gray-600 dark:text-gray-400 hover:text-iwc-orange transition-colors"
               >
                 Forgot password?

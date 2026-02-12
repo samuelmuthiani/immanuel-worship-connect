@@ -29,7 +29,7 @@ export const saveContactSubmission = async (formData: {
     }
 
     console.log('Saving contact submission:', sanitizedData);
-    
+
     const { data, error } = await supabase
       .from('contact_submissions')
       .insert([{
@@ -37,13 +37,40 @@ export const saveContactSubmission = async (formData: {
         submitted_at: new Date().toISOString()
       }])
       .select();
-    
+
     if (error) {
       console.error('Supabase error saving contact:', error);
       throw error;
     }
-    
+
     console.log('Contact submission saved successfully:', data);
+
+    // Trigger email notification via Edge Function
+    try {
+      const emailResponse = await supabase.functions.invoke('send-email', {
+        body: {
+          to: 'admin@iwc.com', // Replace with actual admin email or fetch from settings
+          subject: `New Contact Inquiry: ${sanitizedData.subject || 'No Subject'}`,
+          html: `
+            <h2>New Contact Submission</h2>
+            <p><strong>Name:</strong> ${sanitizedData.name}</p>
+            <p><strong>Email:</strong> ${sanitizedData.email}</p>
+            <p><strong>Type:</strong> ${sanitizedData.inquiry_type}</p>
+            <p><strong>Message:</strong></p>
+            <p>${sanitizedData.message}</p>
+          `,
+          from: 'Immanuel Worship Connect <onboarding@resend.dev>'
+        }
+      });
+
+      if (emailResponse.error) {
+        console.warn('Failed to send notification email:', emailResponse.error);
+      }
+    } catch (emailError) {
+      console.error('Error invoking send-email function:', emailError);
+      // Don't fail the whole operation if email fails, as DB save was successful
+    }
+
     return { success: true, data };
   } catch (error) {
     console.error('Error saving contact submission:', error);
@@ -70,7 +97,7 @@ export const saveEventRSVP = async (eventId: string, rsvpData: {
     }
 
     console.log('Saving event RSVP:', { eventId, rsvpData: sanitizedData });
-    
+
     const { data, error } = await supabase
       .from('event_registrations')
       .insert([{
@@ -79,12 +106,12 @@ export const saveEventRSVP = async (eventId: string, rsvpData: {
         registered_at: new Date().toISOString()
       }])
       .select();
-    
+
     if (error) {
       console.error('Supabase error saving RSVP:', error);
       throw error;
     }
-    
+
     console.log('RSVP saved successfully:', data);
     return { success: true, data };
   } catch (error) {
@@ -97,13 +124,13 @@ export const saveEventRSVP = async (eventId: string, rsvpData: {
 export const saveNewsletterSubscription = async (email: string) => {
   try {
     const sanitizedEmail = SecurityService.sanitizeInput(email);
-    
+
     if (!sanitizedEmail) {
       throw new Error('Valid email address is required');
     }
 
     console.log('Saving newsletter subscription:', sanitizedEmail);
-    
+
     const { data, error } = await supabase
       .from('newsletter_subscribers')
       .insert([{
@@ -111,18 +138,18 @@ export const saveNewsletterSubscription = async (email: string) => {
         subscribed_at: new Date().toISOString()
       }])
       .select();
-    
+
     if (error) {
       console.error('Supabase error saving newsletter subscription:', error);
-      
+
       // Handle duplicate email
       if (error.code === '23505') {
         throw new Error('This email is already subscribed to our newsletter.');
       }
-      
+
       throw error;
     }
-    
+
     console.log('Newsletter subscription saved successfully:', data);
     return { success: true, data };
   } catch (error) {
@@ -166,12 +193,12 @@ export const saveDonationToSupabase = async (donationData: {
         ...sanitizedData,
       }])
       .select();
-    
+
     if (error) {
       console.error('Supabase error saving donation:', error);
       throw error;
     }
-    
+
     console.log('Donation saved successfully:', data);
     return { success: true, data };
   } catch (error) {
@@ -187,17 +214,17 @@ export const getAllContactSubmissions = async () => {
     if (!user) throw new Error('Authentication required');
 
     console.log('Fetching all contact submissions...');
-    
+
     const { data, error } = await supabase
       .from('contact_submissions')
       .select('*')
       .order('submitted_at', { ascending: false });
-    
+
     if (error) {
       console.error('Error fetching contact submissions:', error);
       throw error;
     }
-    
+
     console.log('Contact submissions fetched:', data?.length || 0);
     return data || [];
   } catch (error) {
@@ -212,7 +239,7 @@ export const getAllEventRegistrations = async () => {
     if (!user) throw new Error('Authentication required');
 
     console.log('Fetching all event registrations...');
-    
+
     const { data, error } = await supabase
       .from('event_registrations')
       .select(`
@@ -220,12 +247,12 @@ export const getAllEventRegistrations = async () => {
         events(title, event_date)
       `)
       .order('registered_at', { ascending: false });
-    
+
     if (error) {
       console.error('Error fetching event registrations:', error);
       return [];
     }
-    
+
     console.log('Event registrations fetched:', data?.length || 0);
     return data || [];
   } catch (error) {
@@ -240,17 +267,17 @@ export const getAllNewsletterSubscribers = async () => {
     if (!user) throw new Error('Authentication required');
 
     console.log('Fetching all newsletter subscribers...');
-    
+
     const { data, error } = await supabase
       .from('newsletter_subscribers')
       .select('*')
       .order('subscribed_at', { ascending: false });
-    
+
     if (error) {
       console.error('Error fetching newsletter subscribers:', error);
       throw error;
     }
-    
+
     console.log('Newsletter subscribers fetched:', data?.length || 0);
     return data || [];
   } catch (error) {
@@ -266,17 +293,17 @@ export const getAllDonationsFromSupabase = async () => {
     if (!user) throw new Error('Authentication required');
 
     console.log('Fetching all donations from Supabase...');
-    
+
     const { data, error } = await supabase
       .from('donations')
       .select('*')
       .order('created_at', { ascending: false });
-    
+
     if (error) {
       console.error('Error fetching donations:', error);
       throw error;
     }
-    
+
     console.log('Donations fetched:', data?.length || 0);
     return data || [];
   } catch (error) {
@@ -297,12 +324,12 @@ export const getUserDonationsFromSupabase = async () => {
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
-    
+
     if (error) {
       console.error('Error fetching user donations:', error);
       throw error;
     }
-    
+
     console.log('User donations fetched:', data?.length || 0);
     return data || [];
   } catch (error) {

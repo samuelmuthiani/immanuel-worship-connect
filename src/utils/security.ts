@@ -10,51 +10,51 @@ export class SecurityService {
   static validatePhoneNumber(phone: string): boolean {
     // Remove all non-digit characters for validation
     const digitsOnly = phone.replace(/\D/g, '');
-    
+
     // Check if it's a valid length (10-15 digits)
     if (digitsOnly.length < 10 || digitsOnly.length > 15) {
       return false;
     }
-    
+
     // Basic phone number regex that accepts various formats
-    const phoneRegex = /^[\+]?[1-9]?[\d\s\-\(\)]{9,20}$/;
+    const phoneRegex = /^[+]?[1-9]?[\d\s\-()]{9,20}$/;
     return phoneRegex.test(phone);
   }
 
   // Password strength validation
   static validatePassword(password: string): { isValid: boolean; errors: string[] } {
     const errors: string[] = [];
-    
+
     if (password.length < 8) {
       errors.push('Password must be at least 8 characters long');
     }
-    
+
     if (password.length > 128) {
       errors.push('Password must be less than 128 characters');
     }
-    
+
     if (!/[a-z]/.test(password)) {
       errors.push('Password must contain at least one lowercase letter');
     }
-    
+
     if (!/[A-Z]/.test(password)) {
       errors.push('Password must contain at least one uppercase letter');
     }
-    
+
     if (!/[0-9]/.test(password)) {
       errors.push('Password must contain at least one number');
     }
-    
+
     if (!/[^a-zA-Z0-9]/.test(password)) {
       errors.push('Password must contain at least one special character');
     }
-    
+
     // Check for common weak passwords
     const commonPasswords = ['password', '12345678', 'qwerty', 'abc123'];
     if (commonPasswords.some(common => password.toLowerCase().includes(common))) {
       errors.push('Password contains common patterns that are not allowed');
     }
-    
+
     return {
       isValid: errors.length === 0,
       errors
@@ -76,26 +76,26 @@ export class SecurityService {
 
   // Rate limiting check (simple in-memory implementation)
   private static attempts: Map<string, { count: number; lastAttempt: number }> = new Map();
-  
+
   static isRateLimited(identifier: string, maxAttempts: number = 5, windowMs: number = 15 * 60 * 1000): boolean {
     const now = Date.now();
     const attempts = this.attempts.get(identifier);
-    
+
     if (!attempts) {
       this.attempts.set(identifier, { count: 1, lastAttempt: now });
       return false;
     }
-    
+
     // Reset if window has passed
     if (now - attempts.lastAttempt > windowMs) {
       this.attempts.set(identifier, { count: 1, lastAttempt: now });
       return false;
     }
-    
+
     // Increment attempts
     attempts.count++;
     attempts.lastAttempt = now;
-    
+
     return attempts.count > maxAttempts;
   }
 
