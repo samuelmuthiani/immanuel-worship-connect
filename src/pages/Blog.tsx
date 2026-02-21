@@ -43,7 +43,7 @@ const Blog = () => {
         .from('posts')
         .select('*')
         .eq('published', true)
-        .order('published_at', { ascending: false });
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
 
