@@ -2,20 +2,16 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-// For browser/app usage (Vite)
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
+const SUPABASE_URL = "https://gvclufbcorgxpvmlusqw.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd2Y2x1ZmJjb3JneHB2bWx1c3F3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5MjE1OTgsImV4cCI6MjA4NjQ5NzU5OH0.MqoWdPlMq5s29h40t_IN-8sa1YgFakKXc1iypskYi3M";
 
-// For Node/tsx scripts (async, uses dotenv)
-export const supabasePromise = (async () => {
-  if (typeof window === 'undefined') {
-    const dotenv = await import('dotenv');
-    dotenv.config();
-    const url = process.env.VITE_SUPABASE_URL;
-    const key = process.env.VITE_SUPABASE_ANON_KEY;
-    if (!url || !key) throw new Error('Supabase environment variables are not set.');
-    return createClient<Database>(url, key);
+// Import the supabase client like this:
+// import { supabase } from "@/integrations/supabase/client";
+
+export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+  auth: {
+    storage: localStorage,
+    persistSession: true,
+    autoRefreshToken: true,
   }
-  return supabase;
-})();
+});
