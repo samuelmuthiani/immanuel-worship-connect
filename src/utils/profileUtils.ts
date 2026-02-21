@@ -31,7 +31,7 @@ export const getUserProfile = async (): Promise<UserProfile | null> => {
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
-      .eq('id', user.id)
+      .eq('user_id', user.id)
       .maybeSingle();
     
     if (error) {
@@ -46,6 +46,7 @@ export const getUserProfile = async (): Promise<UserProfile | null> => {
       console.log('No profile found, creating new profile...');
       const newProfile = {
         id: user.id,
+        user_id: user.id,
         email: user.email,
         first_name: '',
         last_name: '',
@@ -105,7 +106,7 @@ export const updateUserProfile = async (profileData: Partial<UserProfile>) => {
     const { data, error } = await supabase
       .from('profiles')
       .update(cleanData)
-      .eq('id', user.id)
+      .eq('user_id', user.id)
       .select();
     
     if (error) {

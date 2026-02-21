@@ -83,7 +83,7 @@ export const updateUserRole = async (userId: string, role: string) => {
   try {
     const { error } = await supabase
       .from('user_roles')
-      .upsert([{ user_id: userId, role }]);
+      .upsert([{ user_id: userId, role: role as any }]);
 
     if (error) throw error;
     return { success: true };
@@ -102,10 +102,9 @@ export const logAuditAction = async (action: string, target?: string, details?: 
       .from('audit_logs')
       .insert([{
         action,
-        target,
+        resource_type: target,
         details: details as any,
         user_id: user?.id,
-        timestamp: new Date().toISOString()
       }]);
 
     if (error) throw error;

@@ -72,13 +72,15 @@ export const donationService = {
         throw error;
       }
 
-      const donationsWithEmails = await Promise.all(
+      const donationsWithEmails: DonationWithEmail[] = await Promise.all(
         (data || []).map(async (donation) => {
           try {
-            const { data: userEmail } = await supabase.rpc('get_user_email', {
-              user_uuid: donation.user_id
-            });
-            return { ...donation, user_email: userEmail || 'Unknown' };
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('email')
+              .eq('user_id', donation.user_id)
+              .maybeSingle();
+            return { ...donation, user_email: (profile?.email as string) || 'Unknown' };
           } catch {
             return { ...donation, user_email: 'Unknown' };
           }
@@ -111,7 +113,7 @@ export const donationService = {
     }
   },
 
-  async sendAppreciation(appreciationData: Omit<AppreciationInsert, 'id' | 'sent_at'>): Promise<Appreciation | null> {
+  async sendAppreciation(appreciationData: Omit<AppreciationInsert, 'id' | 'created_at'>): Promise<Appreciation | null> {
     try {
       const { data, error } = await supabase
         .from('appreciations')
@@ -144,7 +146,7 @@ export const donationService = {
           )
         `)
         .eq('recipient_id', userId)
-        .order('sent_at', { ascending: false });
+        .order('created_at', { ascending: false });
 
       if (error) {
         console.error('Error fetching user appreciations:', error);

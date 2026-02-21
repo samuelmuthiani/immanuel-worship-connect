@@ -3,11 +3,6 @@ import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Logs an audit event to the audit_logs table
- * @param userId The ID of the user performing the action
- * @param action The action being performed (e.g., 'delete_event', 'change_role')
- * @param details Additional details about the action (optional)
- * @param target The target of the action (e.g., user ID, event ID) (optional)
- * @returns Promise that resolves when the audit log has been created
  */
 export async function logAudit(
   userId: string, 
@@ -16,15 +11,13 @@ export async function logAudit(
   target?: string
 ) {
   try {
-    // Convert details object to JSON string if it's not already a string
     const detailsValue = typeof details === 'object' ? JSON.stringify(details) : details || null;
     
     const { error } = await supabase.from('audit_logs').insert({
       user_id: userId,
       action,
       details: detailsValue,
-      target: target || null,
-      timestamp: new Date().toISOString(),
+      resource_type: target || null,
     });
     
     if (error) {
@@ -40,8 +33,6 @@ export async function logAudit(
 
 /**
  * Retrieves audit logs with optional filtering
- * @param filters Optional filters to apply (userId, action, fromDate, toDate)
- * @returns Promise that resolves to the retrieved audit logs
  */
 export async function getAuditLogs({
   userId,
@@ -61,7 +52,7 @@ export async function getAuditLogs({
   let query = supabase
     .from('audit_logs')
     .select('*')
-    .order('timestamp', { ascending: false })
+    .order('created_at', { ascending: false })
     .limit(limit)
     .range(offset, offset + limit - 1);
 
@@ -74,11 +65,11 @@ export async function getAuditLogs({
   }
   
   if (fromDate) {
-    query = query.gte('timestamp', fromDate.toISOString());
+    query = query.gte('created_at', fromDate.toISOString());
   }
   
   if (toDate) {
-    query = query.lte('timestamp', toDate.toISOString());
+    query = query.lte('created_at', toDate.toISOString());
   }
   
   const { data, error } = await query;

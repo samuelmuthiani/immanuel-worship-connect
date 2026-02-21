@@ -135,7 +135,7 @@ export function AppreciationNotifications() {
                     )}
                     
                     <div className="text-xs text-gray-500 dark:text-gray-400">
-                      Sent on {formatDate(appreciation.sent_at)}
+                      Sent on {formatDate(appreciation.created_at)}
                     </div>
                   </div>
                   

@@ -13,17 +13,17 @@ export interface AuditLog {
   id: string;
   user_id: string;
   action: string;
-  target?: string;
+  resource_type?: string;
+  resource_id?: string;
   details?: Record<string, unknown>;
-  timestamp: string;
+  ip_address?: string;
+  created_at: string;
 }
 
 export class AdminSecurityService {
-  // Log admin actions for audit trail
   static async logAdminAction(action: AdminAction): Promise<void> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-
       if (!user) {
         console.error('Attempted admin action without authentication');
         return;
@@ -34,9 +34,8 @@ export class AdminSecurityService {
         .insert({
           user_id: user.id,
           action: action.action,
-          target: action.target,
+          resource_type: action.target,
           details: (action.details || {}) as Record<string, string | number | boolean | null>,
-          timestamp: new Date().toISOString()
         });
 
       if (error) {
@@ -47,16 +46,13 @@ export class AdminSecurityService {
     }
   }
 
-  // Verify admin privileges before sensitive operations
   static async verifyAdminAccess(requiredRole: string = 'admin'): Promise<{ isValid: boolean; user: User | null }> {
     try {
       const { data: { user }, error } = await supabase.auth.getUser();
-
       if (error || !user) {
         return { isValid: false, user: null };
       }
 
-      // Check user roles in database
       const { data: roles, error: roleError } = await supabase
         .from('user_roles')
         .select('role')
@@ -67,7 +63,7 @@ export class AdminSecurityService {
         return { isValid: false, user: null };
       }
 
-      const userRoles = roles?.map(r => r.role) || [];
+      const userRoles = (roles?.map(r => r.role) || []) as string[];
       const hasRequiredRole = userRoles.includes(requiredRole) || userRoles.includes('admin');
 
       return { isValid: hasRequiredRole, user };
@@ -77,37 +73,27 @@ export class AdminSecurityService {
     }
   }
 
-  // Secure user deletion with proper cascading
   static async deleteUser(targetUserId: string): Promise<{ success: boolean; error?: string }> {
     try {
       const { isValid, user } = await this.verifyAdminAccess();
-
       if (!isValid || !user) {
         return { success: false, error: 'Unauthorized access' };
       }
-
-      // Prevent self-deletion
       if (user.id === targetUserId) {
         return { success: false, error: 'Cannot delete your own account' };
       }
 
-      // Log the deletion attempt
       await this.logAdminAction({
         action: 'DELETE_USER',
         target: targetUserId,
         details: { deletedBy: user.id }
       });
 
-      // Call Edge Function to delete user (requires Service Role)
-      const { data, error } = await supabase.functions.invoke('admin-action', {
-        body: {
-          action: 'delete_user',
-          targetId: targetUserId
-        }
+      const { error } = await supabase.functions.invoke('admin-action', {
+        body: { action: 'delete_user', targetId: targetUserId }
       });
 
       if (error) throw new Error(error.message || 'Failed to delete user');
-
       return { success: true };
     } catch (error: unknown) {
       console.error('Error deleting user:', error);
@@ -115,35 +101,26 @@ export class AdminSecurityService {
     }
   }
 
-  // Secure role assignment
   static async assignRole(targetUserId: string, role: string): Promise<{ success: boolean; error?: string }> {
     try {
       const { isValid, user } = await this.verifyAdminAccess();
-
       if (!isValid || !user) {
         return { success: false, error: 'Unauthorized access' };
       }
 
-      // Validate role
-      const validRoles = ['admin', 'moderator', 'member'];
+      const validRoles = ['admin', 'moderator', 'user'];
       if (!validRoles.includes(role)) {
         return { success: false, error: 'Invalid role' };
       }
 
-      // Log the role assignment
       await this.logAdminAction({
         action: 'ASSIGN_ROLE',
         target: targetUserId,
         details: { role, assignedBy: user.id }
       });
 
-      // Call Edge Function to assign role (bypasses RLS if needed and ensures consistency)
-      const { data, error } = await supabase.functions.invoke('admin-action', {
-        body: {
-          action: 'assign_role',
-          targetId: targetUserId,
-          payload: { role }
-        }
+      const { error } = await supabase.functions.invoke('admin-action', {
+        body: { action: 'assign_role', targetId: targetUserId, payload: { role } }
       });
 
       if (error) {
@@ -158,11 +135,9 @@ export class AdminSecurityService {
     }
   }
 
-  // Get audit logs for admin review
   static async getAuditLogs(limit: number = 100): Promise<AuditLog[]> {
     try {
       const { isValid } = await this.verifyAdminAccess();
-
       if (!isValid) {
         throw new Error('Unauthorized access');
       }
@@ -170,7 +145,7 @@ export class AdminSecurityService {
       const { data, error } = await supabase
         .from('audit_logs')
         .select('*')
-        .order('timestamp', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(limit);
 
       if (error) {
@@ -178,7 +153,7 @@ export class AdminSecurityService {
         return [];
       }
 
-      return (data || []) as AuditLog[];
+      return (data || []) as unknown as AuditLog[];
     } catch (error) {
       console.error('Error getting audit logs:', error);
       return [];
