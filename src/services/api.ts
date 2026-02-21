@@ -73,7 +73,7 @@ export const userAPI = {
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
-      .eq('id', userId)
+      .eq('user_id', userId)
       .maybeSingle();
 
     if (error) throw new APIError(error.message);
@@ -104,6 +104,7 @@ export const userAPI = {
       .from('profiles')
       .upsert([{
         id: userId,
+        user_id: userId,
         email: user.email,
         ...sanitizedData
       }])
@@ -184,10 +185,7 @@ export const donationAPI = {
 
     const { data, error } = await supabase
       .from('donations')
-      .select(`
-        *,
-        user_email:get_user_email(user_id)
-      `)
+      .select('*')
       .order('created_at', { ascending: false });
 
     if (error) throw new APIError(error.message);
@@ -233,7 +231,7 @@ export const appreciationAPI = {
         donations!appreciations_donation_id_fkey(amount, donation_type, created_at)
       `)
       .eq('recipient_id', user.id)
-      .order('sent_at', { ascending: false });
+      .order('created_at', { ascending: false });
 
     if (error) throw new APIError(error.message);
     return data || [];

@@ -2,19 +2,8 @@
 import { BaseService, APIError } from './base.service';
 import { Database } from '@/integrations/supabase/types';
 
-type Post = Database['public']['Tables']['blog_posts']['Row'];
-interface Sermon {
-    id: string;
-    title: string;
-    description: string | null;
-    video_url: string | null;
-    audio_url: string | null;
-    speaker: string | null;
-    series: string | null;
-    date_preached: string | null;
-    created_at: string | null;
-    updated_at: string | null;
-}
+type Post = Database['public']['Tables']['posts']['Row'];
+type Sermon = Database['public']['Tables']['sermons']['Row'];
 
 export class ContentService extends BaseService {
     private static instance: ContentService;
@@ -32,29 +21,29 @@ export class ContentService extends BaseService {
 
     async getBlogPosts(): Promise<Post[]> {
         const { data, error } = await this.supabase
-            .from('blog_posts')
+            .from('posts')
             .select('*')
-            .order('published_at', { ascending: false });
+            .order('created_at', { ascending: false });
 
         if (error) throw new APIError(error.message);
         return data || [];
     }
 
     async getSermons(): Promise<Sermon[]> {
-        const { data, error } = await (this.supabase as any)
+        const { data, error } = await this.supabase
             .from('sermons')
             .select('*')
-            .order('date_preached', { ascending: false });
+            .order('sermon_date', { ascending: false });
 
         if (error) throw new APIError(error.message);
-        return (data || []) as Sermon[];
+        return data || [];
     }
 
     async getMediaPhotos() {
         const { data, error } = await this.supabase
             .from('media_photos')
             .select('*')
-            .order('uploaded_at', { ascending: false });
+            .order('created_at', { ascending: false });
 
         if (error) throw new APIError(error.message);
         return data || [];
@@ -64,7 +53,7 @@ export class ContentService extends BaseService {
         const { data, error } = await this.supabase
             .from('media_videos')
             .select('*')
-            .order('uploaded_at', { ascending: false });
+            .order('created_at', { ascending: false });
 
         if (error) throw new APIError(error.message);
         return data || [];

@@ -6,7 +6,7 @@ export const getAllMembersWithProfile = async () => {
   const { data: roles, error: rolesError } = await supabase
     .from('user_roles')
     .select('user_id')
-    .eq('role', 'member');
+    .eq('role', 'user' as any);
 
   if (rolesError) throw rolesError;
   if (!roles || roles.length === 0) return [];
@@ -33,7 +33,7 @@ export const getAllMembersWithProfile = async () => {
     const { data: profile } = await supabase
       .from('profiles')
       .select('*')
-      .eq('id', user_id)
+      .eq('user_id', user_id)
       .maybeSingle();
 
     return {
