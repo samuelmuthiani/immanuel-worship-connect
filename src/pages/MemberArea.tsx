@@ -7,12 +7,14 @@ import { MemberProfile } from '@/components/member/MemberProfile';
 import { ProfileCompletion } from '@/components/member/ProfileCompletion';
 import { AppreciationNotifications } from '@/components/member/AppreciationNotifications';
 import { MemberDonationHistory } from '@/components/member/MemberDonationHistory';
+import { DeleteAccountDialog } from '@/components/member/DeleteAccountDialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ResponsiveContainer } from '@/components/ui/ResponsiveContainer';
 import { MobileDrawer } from '@/components/ui/MobileDrawer';
 import { useQuery } from '@tanstack/react-query';
 import { getUserProfile } from '@/utils/profileUtils';
-import { User, Heart, Settings, Activity, CheckCircle, Menu } from 'lucide-react';
+import { User, Heart, Settings, Activity, CheckCircle, Menu, Trash2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 const MemberArea = () => {
   const { user } = useAuth();
@@ -60,6 +62,23 @@ const MemberArea = () => {
       shortLabel: 'Activity',
       icon: Activity,
       component: <MemberDonationHistory />
+    },
+    {
+      value: 'settings',
+      label: 'Account Settings',
+      shortLabel: 'Settings',
+      icon: Trash2,
+      component: (
+        <div className="space-y-6">
+          <div className="p-6 border border-destructive/20 rounded-lg bg-destructive/5">
+            <h3 className="text-lg font-semibold text-destructive mb-2">Danger Zone</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Permanently delete your account and all associated data. This action cannot be undone.
+            </p>
+            <DeleteAccountDialog />
+          </div>
+        </div>
+      )
     }
   ];
 
@@ -110,9 +129,12 @@ const MemberArea = () => {
                   <span className="sm:hidden">Welcome back!</span>
                 </p>
               </div>
-              <a href="/member/profile" className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
+              <Button
+                onClick={() => setActiveTab('profile')}
+                size="sm"
+              >
                 <Settings className="mr-2 h-4 w-4" /> Edit Profile
-              </a>
+              </Button>
             </div>
 
             {/* Mobile menu button */}

@@ -58,7 +58,6 @@ serve(async (req) => {
         let result;
         switch (action) {
             case 'ban_user':
-                // Example: Update metadata to ban user
                 result = await supabaseAdmin.auth.admin.updateUserById(
                     targetId,
                     { user_metadata: { banned: true } }
@@ -74,6 +73,26 @@ serve(async (req) => {
                     .from('user_roles')
                     .upsert({ user_id: targetId, role: payload.role })
                 break;
+
+            case 'register_admin': {
+                // Create a new user and assign admin role
+                const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+                    email: payload.email,
+                    password: payload.password,
+                    email_confirm: true,
+                })
+                if (createError) throw createError;
+                if (!newUser.user) throw new Error('Failed to create user');
+
+                // Assign admin role
+                const { error: roleError } = await supabaseAdmin
+                    .from('user_roles')
+                    .insert({ user_id: newUser.user.id, role: 'admin' })
+                if (roleError) throw roleError;
+
+                result = { data: { user_id: newUser.user.id, email: payload.email }, error: null }
+                break;
+            }
 
             default:
                 throw new Error(`Unknown action: ${action}`)

@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { useQueryClient } from '@tanstack/react-query';
 import { getUserProfile, UserProfile } from '@/utils/profileUtils';
 import { ProfileDisplay } from './ProfileDisplay';
 import { EnhancedProfileForm } from './EnhancedProfileForm';
@@ -12,6 +13,7 @@ import { ResponsiveContainer } from '@/components/ui/ResponsiveContainer';
 export function MemberProfile() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -65,8 +67,9 @@ export function MemberProfile() {
 
   const handleSave = () => {
     setIsEditing(false);
-    // Reload profile to get updated data
     loadProfile();
+    // Invalidate the profile query so ProfileCompletion updates
+    queryClient.invalidateQueries({ queryKey: ['user-profile'] });
   };
 
   const handleCancel = () => {

@@ -46,7 +46,7 @@ export class AuthService extends BaseService {
         const { data, error } = await this.supabase
             .from('profiles')
             .select('*')
-            .eq('id', userId)
+            .eq('user_id', userId)
             .maybeSingle();
 
         if (error) throw new APIError(error.message);
@@ -74,7 +74,7 @@ export class AuthService extends BaseService {
         const { data, error } = await this.supabase
             .from('profiles')
             .upsert({
-                id: userId,
+                user_id: userId,
                 email: user.email,
                 ...sanitizedData
             } as Database['public']['Tables']['profiles']['Insert'])
