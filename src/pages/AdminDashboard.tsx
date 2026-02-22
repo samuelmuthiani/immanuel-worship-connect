@@ -8,11 +8,12 @@ import EnhancedDataTable from '@/components/admin/EnhancedDataTable';
 import { DonationManagement } from '@/components/admin/DonationManagement';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ResponsiveContainer } from '@/components/ui/ResponsiveContainer';
-import { Shield, Users, Mail, Heart, BarChart3, Database, AlertCircle, Calendar } from 'lucide-react';
+import { Shield, Users, Mail, Heart, BarChart3, Database, AlertCircle, Calendar, ShieldPlus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { adminService } from '@/services/admin.service';
 import BlogManager from '@/pages/admin/BlogManager';
 import SermonManager from '@/pages/admin/SermonManager';
+import { AdminRegisterAdmin } from '@/components/admin/AdminRegisterAdmin';
 
 interface UserProfile {
   id: string;
@@ -76,6 +77,10 @@ const AdminDashboard = () => {
     { key: 'phone', label: 'Phone' },
     { key: 'ministry', label: 'Ministry' },
     { key: 'gender', label: 'Gender' },
+    { key: 'address', label: 'Address' },
+    { key: 'bio', label: 'Bio' },
+    { key: 'date_of_birth', label: 'DOB' },
+    { key: 'profile_completion', label: 'Completion %' },
     { key: 'created_at', label: 'Member Since' }
   ];
 
@@ -105,7 +110,16 @@ const AdminDashboard = () => {
   const fetchUserProfiles = useCallback(async () => {
     try {
       const data = await adminService.getUserProfiles();
-      setUserProfiles(data as UserProfile[]);
+      // Calculate completion percentage for each profile
+      const profileFields = ['first_name', 'last_name', 'phone', 'date_of_birth', 'address', 'avatar_url', 'bio', 'ministry', 'gender'];
+      const enrichedData = (data as UserProfile[]).map(profile => {
+        const completed = profileFields.filter(f => {
+          const val = (profile as any)[f];
+          return val && String(val).trim() !== '';
+        }).length;
+        return { ...profile, profile_completion: `${Math.round((completed / profileFields.length) * 100)}%` };
+      });
+      setUserProfiles(enrichedData);
     } catch (err: unknown) {
       console.error('Error fetching profiles:', err);
       toast({
@@ -242,7 +256,7 @@ const AdminDashboard = () => {
           </div>
 
           <Tabs defaultValue="analytics" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 h-auto gap-1 p-1">
+            <TabsList className="grid w-full grid-cols-2 lg:grid-cols-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 h-auto gap-1 p-1">
               <TabsTrigger value="analytics" className="flex items-center gap-2 py-2 text-xs sm:text-sm">
                 <BarChart3 className="h-4 w-4" />
                 <span className="hidden sm:inline">Analytics</span>
@@ -267,6 +281,11 @@ const AdminDashboard = () => {
                 <Heart className="h-4 w-4" />
                 <span className="hidden sm:inline">Donations</span>
                 <span className="sm:hidden">Gifts</span>
+              </TabsTrigger>
+              <TabsTrigger value="admin-mgmt" className="flex items-center gap-2 py-2 text-xs sm:text-sm">
+                <ShieldPlus className="h-4 w-4" />
+                <span className="hidden sm:inline">Admin Mgmt</span>
+                <span className="sm:hidden">Admin</span>
               </TabsTrigger>
             </TabsList>
 
@@ -303,6 +322,10 @@ const AdminDashboard = () => {
 
             <TabsContent value="donations" className="space-y-6">
               <DonationManagement />
+            </TabsContent>
+
+            <TabsContent value="admin-mgmt" className="space-y-6">
+              <AdminRegisterAdmin />
             </TabsContent>
 
             <TabsContent value="data" className="space-y-6">

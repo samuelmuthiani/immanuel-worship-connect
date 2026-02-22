@@ -23,7 +23,7 @@ import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import MemberArea from "./pages/MemberArea";
-import Profile from "./pages/member/Profile";
+
 import Donate from "./pages/Donate";
 import AdminDashboard from "./pages/AdminDashboard";
 import ResetPassword from "./pages/ResetPassword";
@@ -85,11 +85,7 @@ const App = () => {
                       <MemberArea />
                     </AuthGuard>
                   } />
-                  <Route path="/member/profile" element={
-                    <AuthGuard>
-                      <Profile />
-                    </AuthGuard>
-                  } />
+                  
                   <Route path="/admin" element={
                     <AuthGuard adminOnly>
                       <AdminDashboard />
