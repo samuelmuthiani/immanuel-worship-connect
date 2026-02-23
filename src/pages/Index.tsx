@@ -16,12 +16,12 @@ const Index = () => {
       <AboutSection />
       <ServicesSection />
       <EventsPreviewSection />
-      <div className="py-16 bg-white dark:bg-gray-800">
-        <div className="container mx-auto px-4">
+      <TestimonialsSection />
+      <section className="py-24 bg-background">
+        <div className="container mx-auto px-4 max-w-4xl">
           <ChurchLocationMap />
         </div>
-      </div>
-      <TestimonialsSection />
+      </section>
       <ContactSection />
     </Layout>
   );

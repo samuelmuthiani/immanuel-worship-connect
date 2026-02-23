@@ -1,9 +1,10 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { X, Home, Info, Calendar, Mic, Mail, Heart, User, Shield, LogOut, Settings } from 'lucide-react';
+import { X, Home, Info, Calendar, Mic, Mail, Heart, User, Shield, LogOut, Settings, BookOpen, Image, Church } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
+import { ModeToggle } from '@/components/mode-toggle';
 
 interface MobileMenuProps {
   isOpen: boolean;
@@ -16,146 +17,99 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
   const navLinks = [
     { path: '/', label: 'Home', icon: Home },
     { path: '/about', label: 'About', icon: Info },
-    { path: '/services', label: 'Services', icon: Settings },
+    { path: '/services', label: 'Services', icon: Church },
     { path: '/events', label: 'Events', icon: Calendar },
+    { path: '/media', label: 'Media', icon: Image },
+    { path: '/blog', label: 'Blog', icon: BookOpen },
     { path: '/sermons', label: 'Sermons', icon: Mic },
     { path: '/contact', label: 'Contact', icon: Mail },
     { path: '/donate', label: 'Donate', icon: Heart, highlight: true },
   ];
 
-  const getUserLinks = () => {
-    if (!user) return [];
-    
-    const links = [];
-    
-    if (isAdmin) {
-      links.push({
-        path: '/admin',
-        label: 'Admin Dashboard',
-        icon: Shield,
-        description: 'Manage the system'
-      });
-    }
-    
-    links.push({
-      path: '/member',
-      label: 'Member Area',
-      icon: User,
-      description: isAdmin ? 'View member features' : 'Your personal area'
-    });
-    
-    return links;
-  };
-
-  const userLinks = getUserLinks();
-
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 lg:hidden">
-      {/* Backdrop */}
-      <div className="fixed inset-0 bg-black bg-opacity-50" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       
-      {/* Menu Panel */}
-      <div className="fixed inset-y-0 right-0 max-w-sm w-full bg-white dark:bg-gray-900 shadow-xl transform transition-transform duration-300 ease-in-out">
+      <div className="fixed inset-y-0 right-0 max-w-sm w-full bg-card border-l border-border shadow-2xl">
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-            <div className="flex items-center space-x-3">
-              <img 
-                src="/iwc-logo.png" 
-                alt="IWC Logo" 
-                className="h-8 w-8 object-contain"
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none';
-                }}
-              />
-              <span className="text-lg font-bold text-iwc-blue dark:text-iwc-orange">IWC</span>
+          <div className="flex items-center justify-between p-5 border-b border-border">
+            <span className="text-lg font-bold text-foreground" style={{ fontFamily: 'DM Serif Display, serif' }}>
+              Menu
+            </span>
+            <div className="flex items-center gap-2">
+              <ModeToggle />
+              <button onClick={onClose} className="p-2 rounded-lg text-muted-foreground hover:bg-accent transition-colors" aria-label="Close menu">
+                <X className="h-5 w-5" />
+              </button>
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 rounded-md text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-              aria-label="Close menu"
-            >
-              <X className="h-6 w-6" />
-            </button>
           </div>
           
-          {/* User Info (if logged in) */}
+          {/* User Info */}
           {user && (
-            <div className="p-4 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-              <div className="flex items-center space-x-3">
-                <div className={`w-10 h-10 ${isAdmin ? 'bg-gradient-to-br from-purple-600 to-iwc-blue' : 'bg-gradient-to-br from-iwc-blue to-iwc-orange'} text-white rounded-full flex items-center justify-center`}>
-                  {isAdmin ? <Shield className="h-5 w-5" /> : <User className="h-5 w-5" />}
+            <div className="p-5 border-b border-border">
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isAdmin ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}>
+                  {isAdmin ? <Shield className="h-4 w-4" /> : <User className="h-4 w-4" />}
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">{user.email}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{isAdmin ? 'Administrator' : 'Member'}</p>
+                  <p className="text-sm font-medium text-foreground truncate max-w-[180px]">{user.email}</p>
+                  <p className="text-xs text-muted-foreground capitalize">{isAdmin ? 'Administrator' : 'Member'}</p>
                 </div>
               </div>
             </div>
           )}
           
-          {/* Navigation Links */}
-          <nav className="flex-1 p-4 space-y-2">
+          {/* Navigation */}
+          <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
             {navLinks.map(({ path, label, icon: Icon, highlight }) => (
               <Link
                 key={path}
                 to={path}
                 onClick={onClose}
-                className={`flex items-center space-x-3 px-4 py-3 rounded-md text-sm font-medium transition-colors ${
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
                   highlight
-                    ? 'bg-gradient-to-r from-iwc-orange to-iwc-red text-white shadow-md'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    ? 'bg-secondary text-secondary-foreground'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent'
                 }`}
               >
-                <Icon className="h-5 w-5" />
+                <Icon className="h-4 w-4" />
                 <span>{label}</span>
               </Link>
             ))}
             
-            {/* User-specific links */}
-            {userLinks.length > 0 && (
+            {user && (
               <>
-                <div className="border-t border-gray-200 dark:border-gray-700 my-4" />
-                {userLinks.map((link) => (
-                  <Link
-                    key={link.path}
-                    to={link.path}
-                    onClick={onClose}
-                    className="flex items-start space-x-3 px-4 py-3 rounded-md text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                  >
-                    <link.icon className="h-5 w-5 mt-0.5 text-gray-500 dark:text-gray-400" />
-                    <div>
-                      <span className="font-medium">{link.label}</span>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{link.description}</p>
-                    </div>
+                <div className="border-t border-border my-3" />
+                {isAdmin && (
+                  <Link to="/admin" onClick={onClose} className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent">
+                    <Shield className="h-4 w-4" /> Admin Dashboard
                   </Link>
-                ))}
+                )}
+                <Link to="/member" onClick={onClose} className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent">
+                  <Settings className="h-4 w-4" /> Member Area
+                </Link>
               </>
             )}
           </nav>
           
           {/* Footer */}
-          <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="p-4 border-t border-border">
             {user ? (
-              <Button
-                onClick={() => {
-                  onClose();
-                  signOut();
-                }}
-                variant="outline"
-                className="w-full flex items-center justify-center space-x-2 text-red-600 border-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-              >
-                <LogOut className="h-4 w-4" />
-                <span>Sign Out</span>
+              <Button onClick={() => { onClose(); signOut(); }} variant="outline" className="w-full rounded-xl text-destructive border-destructive/30 hover:bg-destructive/10">
+                <LogOut className="h-4 w-4 mr-2" /> Sign Out
               </Button>
             ) : (
-              <Link to="/login" onClick={onClose}>
-                <Button className="w-full bg-gradient-to-r from-iwc-blue to-iwc-orange hover:from-iwc-orange hover:to-iwc-red text-white">
-                  Login
+              <div className="flex gap-2">
+                <Button asChild variant="outline" className="flex-1 rounded-xl">
+                  <Link to="/login" onClick={onClose}>Sign In</Link>
                 </Button>
-              </Link>
+                <Button asChild className="flex-1 rounded-xl bg-primary">
+                  <Link to="/register" onClick={onClose}>Join Us</Link>
+                </Button>
+              </div>
             )}
           </div>
         </div>

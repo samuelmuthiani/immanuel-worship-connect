@@ -7,14 +7,8 @@ import { FloatingInput } from '@/components/ui/FloatingInput';
 import { PasswordStrength } from '@/components/ui/PasswordStrength';
 import { UserPlus, AlertCircle, CheckCircle } from 'lucide-react';
 import iwcLogo from '/iwc-logo.png';
-import './Login.css';
 
-interface FormErrors {
-  email?: string;
-  password?: string;
-  confirmPassword?: string;
-  general?: string;
-}
+interface FormErrors { email?: string; password?: string; confirmPassword?: string; general?: string; }
 
 const Register = () => {
   const [email, setEmail] = useState('');
@@ -26,33 +20,16 @@ const Register = () => {
   const navigate = useNavigate();
   const { signUp, user } = useAuth();
 
-  useEffect(() => {
-    if (user) {
-      navigate('/', { replace: true });
-    }
-  }, [user, navigate]);
+  useEffect(() => { if (user) navigate('/', { replace: true }); }, [user, navigate]);
 
   const validateForm = () => {
     const newErrors: FormErrors = {};
-    
-    if (!email.trim()) {
-      newErrors.email = 'Email address is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      newErrors.email = 'Please enter a valid email address';
-    }
-    
-    if (!password) {
-      newErrors.password = 'Password is required';
-    } else if (password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
-    }
-
-    if (!confirmPassword) {
-      newErrors.confirmPassword = 'Please confirm your password';
-    } else if (password !== confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
-    }
-
+    if (!email.trim()) newErrors.email = 'Email is required';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) newErrors.email = 'Invalid email';
+    if (!password) newErrors.password = 'Password is required';
+    else if (password.length < 6) newErrors.password = 'Min 6 characters';
+    if (!confirmPassword) newErrors.confirmPassword = 'Please confirm password';
+    else if (password !== confirmPassword) newErrors.confirmPassword = 'Passwords don\'t match';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -60,67 +37,32 @@ const Register = () => {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
-    
     if (!validateForm()) return;
-    
     setLoading(true);
-    
     try {
       const result = await signUp(email.trim(), password);
-      
-      if (result.success) {
-        setSuccess(true);
-      } else {
-        setErrors({ general: result.error || 'Registration failed' });
-      }
-    } catch (error) {
-      console.error('Registration error:', error);
-      setErrors({ general: 'An unexpected error occurred. Please try again.' });
-    } finally {
-      setLoading(false);
-    }
+      if (result.success) setSuccess(true);
+      else setErrors({ general: result.error || 'Registration failed' });
+    } catch { setErrors({ general: 'An unexpected error occurred.' }); }
+    finally { setLoading(false); }
   };
 
   const clearFieldError = (field: keyof FormErrors) => {
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: undefined }));
-    }
+    if (errors[field]) setErrors(prev => ({ ...prev, [field]: undefined }));
   };
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-iwc-blue/90 via-iwc-orange/60 to-iwc-gold/80 dark:from-gray-900 dark:via-gray-900 dark:to-iwc-blue/80">
-        <div className="absolute inset-0 pointer-events-none z-0">
-          <div className="absolute top-1/4 left-1/2 w-[600px] h-[600px] bg-iwc-orange/20 rounded-full blur-3xl opacity-60 animate-pulse-glow" style={{transform:'translate(-50%, -50%)'}} />
-          <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-iwc-blue/30 rounded-full blur-2xl opacity-40 animate-pulse-glow" />
-        </div>
-        
-        <div className="relative z-10 w-full max-w-md px-4">
-          <div className="flex flex-col items-center mb-8">
-            <div className="glossy-logo rounded-full p-3 bg-white/70 dark:bg-gray-900/70 shadow-xl animate-float">
-              <img src={iwcLogo} alt="Immanuel Worship Centre Logo" className="h-16 w-16 drop-shadow-lg" />
-            </div>
-          </div>
-
-          <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-2xl rounded-3xl shadow-2xl p-8 border border-white/20 dark:border-gray-700/50 glossy-card animate-fade-in-up">
-            <div className="text-center">
-              <div className="flex justify-center mb-6">
-                <CheckCircle className="h-16 w-16 text-green-600 dark:text-green-400 animate-bounce-once" />
-              </div>
-              <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">
-                Check Your Email
-              </h2>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                We've sent a confirmation link to <strong>{email}</strong>. 
-                Please check your email and click the link to activate your account.
-              </p>
-              <Button 
-                onClick={() => navigate('/login')} 
-                className="w-full bg-gradient-to-r from-iwc-blue to-iwc-orange hover:from-iwc-orange hover:to-iwc-blue text-white font-semibold py-3 rounded-xl shadow-lg transition-all duration-300"
-              >
-                Back to Login
-              </Button>
-            </div>
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <div className="w-full max-w-md text-center">
+          <img src={iwcLogo} alt="IWC" className="h-14 w-14 mx-auto mb-6" />
+          <div className="bg-card border border-border rounded-2xl p-8">
+            <CheckCircle className="h-14 w-14 text-green-500 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-foreground mb-3" style={{ fontFamily: 'DM Serif Display, serif' }}>Check Your Email</h2>
+            <p className="text-muted-foreground text-sm mb-6">
+              We've sent a confirmation link to <strong className="text-foreground">{email}</strong>. Click the link to activate your account.
+            </p>
+            <Button onClick={() => navigate('/login')} className="w-full rounded-xl h-12 bg-primary">Back to Login</Button>
           </div>
         </div>
       </div>
@@ -128,117 +70,36 @@ const Register = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-iwc-blue/90 via-iwc-orange/60 to-iwc-gold/80 dark:from-gray-900 dark:via-gray-900 dark:to-iwc-blue/80">
-      <div className="absolute inset-0 pointer-events-none z-0">
-        <div className="absolute top-1/4 left-1/2 w-[600px] h-[600px] bg-iwc-orange/20 rounded-full blur-3xl opacity-60 animate-pulse-glow" style={{transform:'translate(-50%, -50%)'}} />
-        <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-iwc-blue/30 rounded-full blur-2xl opacity-40 animate-pulse-glow" />
-      </div>
-      
-      <div className="relative z-10 w-full max-w-md px-4">
-        <div className="flex flex-col items-center mb-8">
-          <div className="glossy-logo rounded-full p-3 bg-white/70 dark:bg-gray-900/70 shadow-xl animate-float">
-            <img src={iwcLogo} alt="Immanuel Worship Centre Logo" className="h-16 w-16 drop-shadow-lg" />
-          </div>
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <div className="w-full max-w-md">
+        <div className="flex flex-col items-center mb-10">
+          <img src={iwcLogo} alt="IWC" className="h-14 w-14 mb-4" />
+          <h1 className="text-3xl font-bold text-foreground" style={{ fontFamily: 'DM Serif Display, serif' }}>Join Our Community</h1>
+          <p className="text-muted-foreground text-sm mt-1">Create your account</p>
         </div>
 
-        <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-2xl rounded-3xl shadow-2xl p-8 border border-white/20 dark:border-gray-700/50 glossy-card animate-fade-in-up">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-iwc-blue dark:text-iwc-orange mb-2">
-              Join Our Community
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400">
-              Create your account to get started
-            </p>
-          </div>
-
+        <div className="bg-card border border-border rounded-2xl p-8">
           {errors.general && (
-            <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl animate-shake">
-              <div className="flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400 flex-shrink-0" />
-                <p className="text-red-700 dark:text-red-300 text-sm font-medium">
-                  {errors.general}
-                </p>
-              </div>
+            <div className="mb-5 p-3 bg-destructive/10 border border-destructive/20 rounded-xl flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 text-destructive flex-shrink-0" />
+              <p className="text-destructive text-sm">{errors.general}</p>
             </div>
           )}
 
-          <form onSubmit={handleRegister} className="space-y-6">
-            <FloatingInput
-              id="register-email"
-              type="email"
-              label="Email Address"
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                clearFieldError('email');
-              }}
-              error={errors.email}
-              disabled={loading}
-              autoComplete="email"
-              autoFocus
-            />
-
-            <div className="space-y-3">
-              <FloatingInput
-                id="register-password"
-                type="password"
-                label="Password"
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  clearFieldError('password');
-                }}
-                error={errors.password}
-                showPasswordToggle
-                disabled={loading}
-                autoComplete="new-password"
-              />
+          <form onSubmit={handleRegister} className="space-y-5">
+            <FloatingInput id="register-email" type="email" label="Email Address" value={email} onChange={(e) => { setEmail(e.target.value); clearFieldError('email'); }} error={errors.email} disabled={loading} autoComplete="email" autoFocus />
+            <div className="space-y-2">
+              <FloatingInput id="register-password" type="password" label="Password" value={password} onChange={(e) => { setPassword(e.target.value); clearFieldError('password'); }} error={errors.password} showPasswordToggle disabled={loading} autoComplete="new-password" />
               {password && <PasswordStrength password={password} />}
             </div>
-
-            <FloatingInput
-              id="confirm-password"
-              type="password"
-              label="Confirm Password"
-              value={confirmPassword}
-              onChange={(e) => {
-                setConfirmPassword(e.target.value);
-                clearFieldError('confirmPassword');
-              }}
-              error={errors.confirmPassword}
-              showPasswordToggle
-              disabled={loading}
-              autoComplete="new-password"
-            />
-
-            <Button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-gradient-to-r from-iwc-blue to-iwc-orange hover:from-iwc-orange hover:to-iwc-blue text-white font-semibold py-3 rounded-xl shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Creating Account...
-                </>
-              ) : (
-                <>
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Create Account
-                </>
-              )}
+            <FloatingInput id="confirm-password" type="password" label="Confirm Password" value={confirmPassword} onChange={(e) => { setConfirmPassword(e.target.value); clearFieldError('confirmPassword'); }} error={errors.confirmPassword} showPasswordToggle disabled={loading} autoComplete="new-password" />
+            <Button type="submit" disabled={loading} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl h-12 font-semibold">
+              {loading ? <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground mr-2" /> Creating...</> : <><UserPlus className="h-4 w-4 mr-2" /> Create Account</>}
             </Button>
           </form>
 
-          <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
-            <div className="text-center">
-              <Link 
-                to="/login" 
-                className="text-iwc-blue dark:text-iwc-orange hover:underline font-medium transition-colors text-sm"
-              >
-                Already have an account? Sign in
-              </Link>
-            </div>
+          <div className="mt-6 pt-6 border-t border-border text-center">
+            <Link to="/login" className="text-primary hover:underline font-medium text-sm">Already have an account? Sign in</Link>
           </div>
         </div>
       </div>
