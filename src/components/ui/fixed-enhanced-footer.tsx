@@ -12,18 +12,9 @@ const FixedEnhancedFooter = () => {
     { name: 'Contact Us', href: '/contact' }
   ];
 
-  const ministries = [
-    { name: 'Youth Ministry', href: '/youth' },
-    { name: 'Children\'s Ministry', href: '/children' },
-    { name: 'Women\'s Ministry', href: '/women' },
-    { name: 'Men\'s Ministry', href: '/men' },
-    { name: 'Music Ministry', href: '/music' }
-  ];
-
   const resources = [
     { name: 'Sermons', href: '/sermons' },
     { name: 'Blog', href: '/blog' },
-    { name: 'Prayer Requests', href: '/prayer' },
     { name: 'Online Giving', href: '/donate' },
     { name: 'Member Portal', href: '/member' }
   ];
@@ -36,61 +27,41 @@ const FixedEnhancedFooter = () => {
   ];
 
   return (
-    <footer className="bg-gray-900 dark:bg-gray-950 text-white">
-      <div className="container mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+    <footer className="bg-foreground text-background">
+      <div className="container mx-auto px-4 py-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
           {/* Church Info */}
-          <div>
-            <h3 className="text-xl font-bold mb-4 text-iwc-orange">
-              Immanuel Worship Center
+          <div className="lg:col-span-1">
+            <h3 className="text-2xl font-bold mb-4" style={{ fontFamily: 'DM Serif Display, serif' }}>
+              Immanuel Worship Centre
             </h3>
-            <p className="text-gray-300 mb-4">
+            <p className="text-background/60 text-sm leading-relaxed mb-6">
               A community of believers dedicated to worship, fellowship, and serving our Lord Jesus Christ.
             </p>
-            <div className="space-y-2">
-              <div className="flex items-center text-sm text-gray-300">
-                <MapPin className="h-4 w-4 mr-2 text-iwc-blue" />
+            <div className="space-y-3">
+              <div className="flex items-center text-sm text-background/60">
+                <MapPin className="h-4 w-4 mr-3 text-secondary flex-shrink-0" />
                 <span>9VC3+4R4, Kilifi Town, Kenya</span>
               </div>
-              <div className="flex items-center text-sm text-gray-300">
-                <Phone className="h-4 w-4 mr-2 text-iwc-blue" />
-                <span>(254) 123-456-789</span>
+              <div className="flex items-center text-sm text-background/60">
+                <Phone className="h-4 w-4 mr-3 text-secondary flex-shrink-0" />
+                <span>0721 923213</span>
               </div>
-              <div className="flex items-center text-sm text-gray-300">
-                <Mail className="h-4 w-4 mr-2 text-iwc-blue" />
-                <span>info@iwc.org</span>
+              <div className="flex items-center text-sm text-background/60">
+                <Mail className="h-4 w-4 mr-3 text-secondary flex-shrink-0" />
+                <span>info@immanuelworship.org</span>
               </div>
             </div>
           </div>
 
           {/* Quick Links */}
           <div>
-            <h4 className="text-lg font-semibold mb-4 text-iwc-orange">Quick Links</h4>
-            <ul className="space-y-2">
-              {quickLinks.map((link, index) => (
-                <li key={`quick-${index}`}>
-                  <Link
-                    to={link.href}
-                    className="text-gray-300 hover:text-iwc-blue transition-colors text-sm"
-                  >
+            <h4 className="text-sm font-semibold mb-6 tracking-widest uppercase text-background/40">Quick Links</h4>
+            <ul className="space-y-3">
+              {quickLinks.map((link) => (
+                <li key={link.name}>
+                  <Link to={link.href} className="text-background/60 hover:text-secondary transition-colors text-sm">
                     {link.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Ministries */}
-          <div>
-            <h4 className="text-lg font-semibold mb-4 text-iwc-orange">Ministries</h4>
-            <ul className="space-y-2">
-              {ministries.map((ministry, index) => (
-                <li key={`ministry-${index}`}>
-                  <Link
-                    to={ministry.href}
-                    className="text-gray-300 hover:text-iwc-blue transition-colors text-sm"
-                  >
-                    {ministry.name}
                   </Link>
                 </li>
               ))}
@@ -99,50 +70,53 @@ const FixedEnhancedFooter = () => {
 
           {/* Resources */}
           <div>
-            <h4 className="text-lg font-semibold mb-4 text-iwc-orange">Resources</h4>
-            <ul className="space-y-2">
-              {resources.map((resource, index) => (
-                <li key={`resource-${index}`}>
-                  <Link
-                    to={resource.href}
-                    className="text-gray-300 hover:text-iwc-blue transition-colors text-sm"
-                  >
+            <h4 className="text-sm font-semibold mb-6 tracking-widest uppercase text-background/40">Resources</h4>
+            <ul className="space-y-3">
+              {resources.map((resource) => (
+                <li key={resource.name}>
+                  <Link to={resource.href} className="text-background/60 hover:text-secondary transition-colors text-sm">
                     {resource.name}
                   </Link>
                 </li>
               ))}
             </ul>
           </div>
+
+          {/* Social & Newsletter */}
+          <div>
+            <h4 className="text-sm font-semibold mb-6 tracking-widest uppercase text-background/40">Connect</h4>
+            <div className="flex space-x-3 mb-6">
+              {socialLinks.map((social) => (
+                <a
+                  key={social.label}
+                  href={social.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 rounded-full bg-background/10 flex items-center justify-center hover:bg-secondary/20 hover:text-secondary transition-all"
+                  aria-label={social.label}
+                >
+                  <social.icon className="h-4 w-4" />
+                </a>
+              ))}
+            </div>
+            <p className="text-background/40 text-xs leading-relaxed">
+              Join us every Sunday for worship at 9:00 AM & 11:00 AM. All are welcome.
+            </p>
+          </div>
         </div>
 
-        {/* Social Links & Copyright */}
-        <div className="border-t border-gray-800 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
-          <div className="flex space-x-4 mb-4 md:mb-0">
-            {socialLinks.map((social, index) => (
-              <a
-                key={`social-${index}`}
-                href={social.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gray-300 hover:text-iwc-blue transition-colors"
-                aria-label={social.label}
-              >
-                <social.icon className="h-5 w-5" />
-              </a>
-            ))}
-          </div>
-          <div className="text-center md:text-right">
-            <p className="text-gray-400 text-sm">
-              © {new Date().getFullYear()} Immanuel Worship Center. All rights reserved.
-            </p>
-            <div className="flex space-x-4 mt-2 justify-center md:justify-end">
-              <Link to="/privacy" className="text-gray-400 hover:text-iwc-blue text-xs">
-                Privacy Policy
-              </Link>
-              <Link to="/terms" className="text-gray-400 hover:text-iwc-blue text-xs">
-                Terms of Service
-              </Link>
-            </div>
+        {/* Bottom bar */}
+        <div className="border-t border-background/10 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+          <p className="text-background/40 text-xs">
+            © {new Date().getFullYear()} Immanuel Worship Centre. All rights reserved.
+          </p>
+          <div className="flex space-x-6">
+            <Link to="/privacy" className="text-background/40 hover:text-secondary text-xs transition-colors">
+              Privacy Policy
+            </Link>
+            <Link to="/terms" className="text-background/40 hover:text-secondary text-xs transition-colors">
+              Terms of Service
+            </Link>
           </div>
         </div>
       </div>
