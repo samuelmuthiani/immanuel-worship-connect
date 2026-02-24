@@ -5,233 +5,201 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { EnhancedCard, CardContent, CardHeader, CardTitle } from '@/components/ui/enhanced-card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Plus, Pencil, Trash2, Save, X, Video, Mic } from 'lucide-react';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 
 interface Sermon {
-    id: string;
-    title: string;
-    description: string;
-    video_url: string | null;
-    audio_url: string | null;
-    speaker: string;
-    series: string | null;
-    date_preached: string;
-    created_at: string;
+  id: string;
+  title: string;
+  description: string | null;
+  video_url: string | null;
+  audio_url: string | null;
+  speaker: string | null;
+  series: string | null;
+  scripture_reference: string | null;
+  sermon_date: string | null;
+  published: boolean;
+  created_at: string;
 }
 
 const SermonManager = () => {
-    const { toast } = useToast();
-    const queryClient = useQueryClient();
-    const [isEditing, setIsEditing] = useState(false);
-    const [currentSermon, setCurrentSermon] = useState<Partial<Sermon>>({});
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [isEditing, setIsEditing] = useState(false);
+  const [currentSermon, setCurrentSermon] = useState<Partial<Sermon>>({});
 
-    // Fetch Sermons
-    const { data: sermons, isLoading } = useQuery({
-        queryKey: ['admin-sermons'],
-        queryFn: async () => {
-            const { data, error } = await (supabase as any)
-                .from('sermons')
-                .select('*')
-                .order('date_preached', { ascending: false });
+  const { data: sermons, isLoading } = useQuery({
+    queryKey: ['admin-sermons'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('sermons')
+        .select('*')
+        .order('sermon_date', { ascending: false });
+      if (error) throw error;
+      return (data as Sermon[]) || [];
+    }
+  });
 
-            if (error) throw error;
-            return (data as Sermon[]) || [];
-        }
-    });
+  const saveSermonMutation = useMutation({
+    mutationFn: async (sermon: Partial<Sermon>) => {
+      const sermonData = {
+        title: sermon.title,
+        description: sermon.description || null,
+        video_url: sermon.video_url || null,
+        audio_url: sermon.audio_url || null,
+        speaker: sermon.speaker || null,
+        series: sermon.series || null,
+        scripture_reference: sermon.scripture_reference || null,
+        sermon_date: sermon.sermon_date || null,
+        published: sermon.published || false,
+        updated_at: new Date().toISOString(),
+      };
 
-    // Create/Update Mutation
-    const saveSermonMutation = useMutation({
-        mutationFn: async (sermon: Partial<Sermon>) => {
-            const sermonData = {
-                ...sermon,
-                updated_at: new Date().toISOString(),
-            };
+      if (sermon.id) {
+        const { error } = await supabase.from('sermons').update(sermonData).eq('id', sermon.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('sermons').insert([sermonData]);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-sermons'] });
+      setIsEditing(false);
+      setCurrentSermon({});
+      toast({ title: 'Success', description: 'Sermon saved' });
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    }
+  });
 
-            if (sermon.id) {
-                const { error } = await (supabase as any)
-                    .from('sermons')
-                    .update(sermonData)
-                    .eq('id', sermon.id);
-                if (error) throw error;
-            } else {
-                const { error } = await (supabase as any)
-                    .from('sermons')
-                    .insert([sermonData]);
-                if (error) throw error;
-            }
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['admin-sermons'] });
-            setIsEditing(false);
-            setCurrentSermon({});
-            toast({ title: 'Success', description: 'Sermon saved successfully' });
-        },
-        onError: (error: Error) => {
-            toast({ title: 'Error', description: error.message, variant: 'destructive' });
-        }
-    });
+  const deleteSermonMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('sermons').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-sermons'] });
+      toast({ title: 'Deleted', description: 'Sermon removed' });
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    }
+  });
 
-    // Delete Mutation
-    const deleteSermonMutation = useMutation({
-        mutationFn: async (id: string) => {
-            const { error } = await (supabase as any).from('sermons').delete().eq('id', id);
-            if (error) throw error;
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['admin-sermons'] });
-            toast({ title: 'Success', description: 'Sermon deleted' });
-        },
-        onError: (error: Error) => {
-            toast({ title: 'Error', description: error.message, variant: 'destructive' });
-        }
-    });
+  if (isLoading) return <div className="flex justify-center p-8"><Loader2 className="animate-spin text-muted-foreground" /></div>;
 
-    const handleEdit = (sermon: Sermon) => {
-        setCurrentSermon(sermon);
-        setIsEditing(true);
-    };
-
-    const handleCreate = () => {
-        setCurrentSermon({ date_preached: new Date().toISOString().split('T')[0] });
-        setIsEditing(true);
-    };
-
-    if (isLoading) return <div className="flex justify-center p-8"><Loader2 className="animate-spin" /></div>;
-
-    return (
-        <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold">Sermon Management</h2>
-                {!isEditing && (
-                    <Button onClick={handleCreate}>
-                        <Plus className="mr-2 h-4 w-4" /> New Sermon
-                    </Button>
-                )}
-            </div>
-
-            {isEditing ? (
-                <EnhancedCard>
-                    <CardHeader>
-                        <CardTitle>{currentSermon.id ? 'Edit Sermon' : 'Add New Sermon'}</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div>
-                            <Label htmlFor="title">Title</Label>
-                            <Input
-                                id="title"
-                                value={currentSermon.title || ''}
-                                onChange={e => setCurrentSermon({ ...currentSermon, title: e.target.value })}
-                                placeholder="Sermon title"
-                            />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <Label htmlFor="speaker">Speaker</Label>
-                                <Input
-                                    id="speaker"
-                                    value={currentSermon.speaker || ''}
-                                    onChange={e => setCurrentSermon({ ...currentSermon, speaker: e.target.value })}
-                                    placeholder="Pastor Name"
-                                />
-                            </div>
-                            <div>
-                                <Label htmlFor="date">Date Preached</Label>
-                                <Input
-                                    id="date"
-                                    type="date"
-                                    value={currentSermon.date_preached || ''}
-                                    onChange={e => setCurrentSermon({ ...currentSermon, date_preached: e.target.value })}
-                                />
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <Label htmlFor="video">Video URL (YouTube/Vimeo)</Label>
-                                <Input
-                                    id="video"
-                                    value={currentSermon.video_url || ''}
-                                    onChange={e => setCurrentSermon({ ...currentSermon, video_url: e.target.value })}
-                                    placeholder="https://..."
-                                />
-                            </div>
-                            <div>
-                                <Label htmlFor="audio">Audio URL (Podcast)</Label>
-                                <Input
-                                    id="audio"
-                                    value={currentSermon.audio_url || ''}
-                                    onChange={e => setCurrentSermon({ ...currentSermon, audio_url: e.target.value })}
-                                    placeholder="https://..."
-                                />
-                            </div>
-                        </div>
-
-                        <div>
-                            <Label htmlFor="series">Series (Optional)</Label>
-                            <Input
-                                id="series"
-                                value={currentSermon.series || ''}
-                                onChange={e => setCurrentSermon({ ...currentSermon, series: e.target.value })}
-                                placeholder="e.g. The Book of Romans"
-                            />
-                        </div>
-
-                        <div>
-                            <Label htmlFor="description">Description</Label>
-                            <Textarea
-                                id="description"
-                                value={currentSermon.description || ''}
-                                onChange={e => setCurrentSermon({ ...currentSermon, description: e.target.value })}
-                                rows={4}
-                            />
-                        </div>
-
-                        <div className="flex justify-end gap-2 pt-4">
-                            <Button variant="outline" onClick={() => setIsEditing(false)}>
-                                <X className="mr-2 h-4 w-4" /> Cancel
-                            </Button>
-                            <Button onClick={() => saveSermonMutation.mutate(currentSermon)}>
-                                <Save className="mr-2 h-4 w-4" /> Save Sermon
-                            </Button>
-                        </div>
-                    </CardContent>
-                </EnhancedCard>
-            ) : (
-                <div className="grid gap-4">
-                    {sermons?.map(sermon => (
-                        <EnhancedCard key={sermon.id} className="p-4 flex justify-between items-center bg-white/50 dark:bg-gray-800/50">
-                            <div>
-                                <h3 className="font-semibold text-lg">{sermon.title}</h3>
-                                <p className="text-sm text-gray-500">
-                                    {sermon.speaker} • {new Date(sermon.date_preached).toLocaleDateString()}
-                                    {sermon.series && ` • Series: ${sermon.series}`}
-                                </p>
-                                <div className="flex gap-2 mt-1">
-                                    {sermon.video_url && <Video className="h-4 w-4 text-blue-500" />}
-                                    {sermon.audio_url && <Mic className="h-4 w-4 text-green-500" />}
-                                </div>
-                            </div>
-                            <div className="flex gap-2">
-                                <Button variant="ghost" size="sm" onClick={() => handleEdit(sermon)}>
-                                    <Pencil className="h-4 w-4" />
-                                </Button>
-                                <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700" onClick={() => {
-                                    if (confirm('Are you sure you want to delete this sermon?')) deleteSermonMutation.mutate(sermon.id);
-                                }}>
-                                    <Trash2 className="h-4 w-4" />
-                                </Button>
-                            </div>
-                        </EnhancedCard>
-                    ))}
-                    {sermons?.length === 0 && <p className="text-center text-gray-500 py-8">No sermons found. Add one to get started.</p>}
-                </div>
-            )}
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-xl font-bold text-foreground">Sermons</h2>
+          <p className="text-sm text-muted-foreground">{sermons?.length || 0} sermons</p>
         </div>
-    );
+        {!isEditing && (
+          <Button onClick={() => { setCurrentSermon({ published: false, sermon_date: new Date().toISOString().split('T')[0] }); setIsEditing(true); }} size="sm">
+            <Plus className="mr-2 h-4 w-4" /> New Sermon
+          </Button>
+        )}
+      </div>
+
+      {isEditing ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">{currentSermon.id ? 'Edit Sermon' : 'New Sermon'}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="sermon-title">Title</Label>
+              <Input id="sermon-title" value={currentSermon.title || ''} onChange={e => setCurrentSermon({ ...currentSermon, title: e.target.value })} placeholder="Sermon title" />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="sermon-speaker">Speaker</Label>
+                <Input id="sermon-speaker" value={currentSermon.speaker || ''} onChange={e => setCurrentSermon({ ...currentSermon, speaker: e.target.value })} placeholder="Pastor Name" />
+              </div>
+              <div>
+                <Label htmlFor="sermon-date">Date</Label>
+                <Input id="sermon-date" type="date" value={currentSermon.sermon_date || ''} onChange={e => setCurrentSermon({ ...currentSermon, sermon_date: e.target.value })} />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="sermon-video">Video URL</Label>
+                <Input id="sermon-video" value={currentSermon.video_url || ''} onChange={e => setCurrentSermon({ ...currentSermon, video_url: e.target.value })} placeholder="https://..." />
+              </div>
+              <div>
+                <Label htmlFor="sermon-audio">Audio URL</Label>
+                <Input id="sermon-audio" value={currentSermon.audio_url || ''} onChange={e => setCurrentSermon({ ...currentSermon, audio_url: e.target.value })} placeholder="https://..." />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="sermon-series">Series</Label>
+                <Input id="sermon-series" value={currentSermon.series || ''} onChange={e => setCurrentSermon({ ...currentSermon, series: e.target.value })} placeholder="e.g. Book of Romans" />
+              </div>
+              <div>
+                <Label htmlFor="sermon-scripture">Scripture Reference</Label>
+                <Input id="sermon-scripture" value={currentSermon.scripture_reference || ''} onChange={e => setCurrentSermon({ ...currentSermon, scripture_reference: e.target.value })} placeholder="e.g. Romans 8:28" />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="sermon-desc">Description</Label>
+              <Textarea id="sermon-desc" value={currentSermon.description || ''} onChange={e => setCurrentSermon({ ...currentSermon, description: e.target.value })} rows={4} />
+            </div>
+            <div className="flex items-center space-x-2">
+              <Switch id="sermon-published" checked={currentSermon.published || false} onCheckedChange={checked => setCurrentSermon({ ...currentSermon, published: checked })} />
+              <Label htmlFor="sermon-published">Published</Label>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setIsEditing(false)}><X className="mr-2 h-4 w-4" /> Cancel</Button>
+              <Button onClick={() => saveSermonMutation.mutate(currentSermon)} disabled={!currentSermon.title}><Save className="mr-2 h-4 w-4" /> Save</Button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-3">
+          {sermons?.map(sermon => (
+            <Card key={sermon.id}>
+              <CardContent className="p-4 flex justify-between items-center">
+                <div className="min-w-0">
+                  <h3 className="font-semibold text-foreground truncate">{sermon.title}</h3>
+                  <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground flex-wrap">
+                    {sermon.speaker && <span>{sermon.speaker}</span>}
+                    {sermon.sermon_date && <span>• {new Date(sermon.sermon_date).toLocaleDateString()}</span>}
+                    {sermon.series && <Badge variant="outline" className="text-xs">{sermon.series}</Badge>}
+                    <Badge variant={sermon.published ? 'default' : 'outline'} className="text-xs">
+                      {sermon.published ? 'Published' : 'Draft'}
+                    </Badge>
+                    <div className="flex gap-1">
+                      {sermon.video_url && <Video className="h-3.5 w-3.5 text-primary" />}
+                      {sermon.audio_url && <Mic className="h-3.5 w-3.5 text-emerald-500" />}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-1 ml-2">
+                  <Button variant="ghost" size="icon" onClick={() => { setCurrentSermon(sermon); setIsEditing(true); }}>
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => {
+                    if (confirm('Delete this sermon?')) deleteSermonMutation.mutate(sermon.id);
+                  }}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+          {sermons?.length === 0 && <p className="text-center text-muted-foreground py-8">No sermons yet.</p>}
+        </div>
+      )}
+    </div>
+  );
 };
 
 export default SermonManager;
