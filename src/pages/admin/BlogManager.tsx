@@ -1,214 +1,180 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { EnhancedCard, CardContent, CardHeader, CardTitle } from '@/components/ui/enhanced-card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Plus, Pencil, Trash2, Eye, Save, X } from 'lucide-react';
+import { Loader2, Plus, Pencil, Trash2, Save, X } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 
-// Type definition for a Post
 interface Post {
-    id: string;
-    title: string;
-    slug: string;
-    content: string;
-    excerpt: string;
-    cover_image: string | null;
-    published: boolean;
-    created_at: string;
+  id: string;
+  title: string;
+  content: string | null;
+  excerpt: string | null;
+  image_url: string | null;
+  published: boolean;
+  author: string | null;
+  category: string | null;
+  created_at: string;
 }
 
 const BlogManager = () => {
-    const { toast } = useToast();
-    const queryClient = useQueryClient();
-    const [isEditing, setIsEditing] = useState(false);
-    const [currentPost, setCurrentPost] = useState<Partial<Post>>({});
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [isEditing, setIsEditing] = useState(false);
+  const [currentPost, setCurrentPost] = useState<Partial<Post>>({});
 
-    // Fetch Posts
-    const { data: posts, isLoading } = useQuery({
-        queryKey: ['admin-posts'],
-        queryFn: async () => {
-            const { data, error } = await (supabase as any)
-                .from('posts')
-                .select('*')
-                .order('created_at', { ascending: false });
+  const { data: posts, isLoading } = useQuery({
+    queryKey: ['admin-posts'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('posts')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return (data as Post[]) || [];
+    }
+  });
 
-            if (error) throw error;
-            return (data as Post[]) || [];
-        }
-    });
+  const savePostMutation = useMutation({
+    mutationFn: async (post: Partial<Post>) => {
+      const postData = {
+        title: post.title,
+        content: post.content || null,
+        excerpt: post.excerpt || null,
+        image_url: post.image_url || null,
+        published: post.published || false,
+        author: post.author || null,
+        category: post.category || null,
+        updated_at: new Date().toISOString(),
+      };
 
-    // Create/Update Mutation
-    const savePostMutation = useMutation({
-        mutationFn: async (post: Partial<Post>) => {
-            // Basic slug generation if missing
-            const slug = post.slug || post.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'untitled';
+      if (post.id) {
+        const { error } = await supabase.from('posts').update(postData).eq('id', post.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('posts').insert([postData]);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-posts'] });
+      setIsEditing(false);
+      setCurrentPost({});
+      toast({ title: 'Success', description: 'Post saved' });
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    }
+  });
 
-            const postData = {
-                ...post,
-                slug, // Ensure slug is present
-                updated_at: new Date().toISOString(),
-            };
+  const deletePostMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('posts').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-posts'] });
+      toast({ title: 'Deleted', description: 'Post removed' });
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    }
+  });
 
-            if (post.id) {
-                const { error } = await (supabase as any)
-                    .from('posts')
-                    .update(postData)
-                    .eq('id', post.id);
-                if (error) throw error;
-            } else {
-                const { error } = await (supabase as any)
-                    .from('posts')
-                    .insert([postData]);
-                if (error) throw error;
-            }
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['admin-posts'] });
-            setIsEditing(false);
-            setCurrentPost({});
-            toast({ title: 'Success', description: 'Post saved successfully' });
-        },
-        onError: (error: Error) => {
-            toast({ title: 'Error', description: error.message, variant: 'destructive' });
-        }
-    });
+  if (isLoading) return <div className="flex justify-center p-8"><Loader2 className="animate-spin text-muted-foreground" /></div>;
 
-    // Delete Mutation
-    const deletePostMutation = useMutation({
-        mutationFn: async (id: string) => {
-            const { error } = await (supabase as any).from('posts').delete().eq('id', id);
-            if (error) throw error;
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['admin-posts'] });
-            toast({ title: 'Success', description: 'Post deleted' });
-        },
-        onError: (error: Error) => {
-            toast({ title: 'Error', description: error.message, variant: 'destructive' });
-        }
-    });
-
-    const handleEdit = (post: Post) => {
-        setCurrentPost(post);
-        setIsEditing(true);
-    };
-
-    const handleCreate = () => {
-        setCurrentPost({ published: false });
-        setIsEditing(true);
-    };
-
-    if (isLoading) return <div className="flex justify-center p-8"><Loader2 className="animate-spin" /></div>;
-
-    return (
-        <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold">Blog Management</h2>
-                {!isEditing && (
-                    <Button onClick={handleCreate}>
-                        <Plus className="mr-2 h-4 w-4" /> New Post
-                    </Button>
-                )}
-            </div>
-
-            {isEditing ? (
-                <EnhancedCard>
-                    <CardHeader>
-                        <CardTitle>{currentPost.id ? 'Edit Post' : 'Create New Post'}</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div>
-                            <Label htmlFor="title">Title</Label>
-                            <Input
-                                id="title"
-                                value={currentPost.title || ''}
-                                onChange={e => setCurrentPost({ ...currentPost, title: e.target.value })}
-                                placeholder="Enter post title"
-                            />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <Label htmlFor="slug">Slug (URL friendly)</Label>
-                                <Input
-                                    id="slug"
-                                    value={currentPost.slug || ''}
-                                    onChange={e => setCurrentPost({ ...currentPost, slug: e.target.value })}
-                                    placeholder="my-new-post"
-                                />
-                            </div>
-                            <div className="flex items-center space-x-2 pt-8">
-                                <Switch
-                                    id="published"
-                                    checked={currentPost.published}
-                                    onCheckedChange={checked => setCurrentPost({ ...currentPost, published: checked })}
-                                />
-                                <Label htmlFor="published">Published</Label>
-                            </div>
-                        </div>
-
-                        <div>
-                            <Label htmlFor="excerpt">Excerpt (Short summary)</Label>
-                            <Textarea
-                                id="excerpt"
-                                value={currentPost.excerpt || ''}
-                                onChange={e => setCurrentPost({ ...currentPost, excerpt: e.target.value })}
-                                rows={2}
-                            />
-                        </div>
-
-                        <div>
-                            <Label htmlFor="content">Content (Markdown supported)</Label>
-                            <Textarea
-                                id="content"
-                                value={currentPost.content || ''}
-                                onChange={e => setCurrentPost({ ...currentPost, content: e.target.value })}
-                                rows={10}
-                                className="font-mono text-sm"
-                            />
-                        </div>
-
-                        <div className="flex justify-end gap-2 pt-4">
-                            <Button variant="outline" onClick={() => setIsEditing(false)}>
-                                <X className="mr-2 h-4 w-4" /> Cancel
-                            </Button>
-                            <Button onClick={() => savePostMutation.mutate(currentPost)}>
-                                <Save className="mr-2 h-4 w-4" /> Save Post
-                            </Button>
-                        </div>
-                    </CardContent>
-                </EnhancedCard>
-            ) : (
-                <div className="grid gap-4">
-                    {posts?.map(post => (
-                        <EnhancedCard key={post.id} className="p-4 flex justify-between items-center bg-white/50 dark:bg-gray-800/50">
-                            <div>
-                                <h3 className="font-semibold text-lg">{post.title}</h3>
-                                <p className="text-sm text-gray-500">{post.slug} • {post.published ? 'Published' : 'Draft'}</p>
-                            </div>
-                            <div className="flex gap-2">
-                                <Button variant="ghost" size="sm" onClick={() => handleEdit(post)}>
-                                    <Pencil className="h-4 w-4" />
-                                </Button>
-                                <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700" onClick={() => {
-                                    if (confirm('Are you sure you want to delete this post?')) deletePostMutation.mutate(post.id);
-                                }}>
-                                    <Trash2 className="h-4 w-4" />
-                                </Button>
-                            </div>
-                        </EnhancedCard>
-                    ))}
-                    {posts?.length === 0 && <p className="text-center text-gray-500 py-8">No posts found. Create one to get started.</p>}
-                </div>
-            )}
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-xl font-bold text-foreground">Blog Posts</h2>
+          <p className="text-sm text-muted-foreground">{posts?.length || 0} posts</p>
         </div>
-    );
+        {!isEditing && (
+          <Button onClick={() => { setCurrentPost({ published: false }); setIsEditing(true); }} size="sm">
+            <Plus className="mr-2 h-4 w-4" /> New Post
+          </Button>
+        )}
+      </div>
+
+      {isEditing ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">{currentPost.id ? 'Edit Post' : 'New Post'}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="post-title">Title</Label>
+              <Input id="post-title" value={currentPost.title || ''} onChange={e => setCurrentPost({ ...currentPost, title: e.target.value })} placeholder="Post title" />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="post-author">Author</Label>
+                <Input id="post-author" value={currentPost.author || ''} onChange={e => setCurrentPost({ ...currentPost, author: e.target.value })} placeholder="Author name" />
+              </div>
+              <div>
+                <Label htmlFor="post-category">Category</Label>
+                <Input id="post-category" value={currentPost.category || ''} onChange={e => setCurrentPost({ ...currentPost, category: e.target.value })} placeholder="e.g. Devotional" />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="post-excerpt">Excerpt</Label>
+              <Textarea id="post-excerpt" value={currentPost.excerpt || ''} onChange={e => setCurrentPost({ ...currentPost, excerpt: e.target.value })} rows={2} />
+            </div>
+            <div>
+              <Label htmlFor="post-content">Content</Label>
+              <Textarea id="post-content" value={currentPost.content || ''} onChange={e => setCurrentPost({ ...currentPost, content: e.target.value })} rows={8} className="font-mono text-sm" />
+            </div>
+            <div className="flex items-center space-x-2">
+              <Switch id="post-published" checked={currentPost.published || false} onCheckedChange={checked => setCurrentPost({ ...currentPost, published: checked })} />
+              <Label htmlFor="post-published">Published</Label>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setIsEditing(false)}><X className="mr-2 h-4 w-4" /> Cancel</Button>
+              <Button onClick={() => savePostMutation.mutate(currentPost)} disabled={!currentPost.title}><Save className="mr-2 h-4 w-4" /> Save</Button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-3">
+          {posts?.map(post => (
+            <Card key={post.id}>
+              <CardContent className="p-4 flex justify-between items-center">
+                <div className="min-w-0">
+                  <h3 className="font-semibold text-foreground truncate">{post.title}</h3>
+                  <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                    {post.author && <span>{post.author}</span>}
+                    <Badge variant={post.published ? 'default' : 'outline'} className="text-xs">
+                      {post.published ? 'Published' : 'Draft'}
+                    </Badge>
+                    {post.category && <Badge variant="outline" className="text-xs">{post.category}</Badge>}
+                  </div>
+                </div>
+                <div className="flex gap-1 ml-2">
+                  <Button variant="ghost" size="icon" onClick={() => { setCurrentPost(post); setIsEditing(true); }}>
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => {
+                    if (confirm('Delete this post?')) deletePostMutation.mutate(post.id);
+                  }}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+          {posts?.length === 0 && <p className="text-center text-muted-foreground py-8">No posts yet.</p>}
+        </div>
+      )}
+    </div>
+  );
 };
 
 export default BlogManager;
