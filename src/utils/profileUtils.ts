@@ -81,31 +81,31 @@ export const updateUserProfile = async (profileData: Partial<UserProfile>) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Authentication required');
 
-    // Sanitize all string inputs
-    const sanitizedData: Partial<UserProfile> = {
-      first_name: profileData.first_name ? SecurityService.sanitizeInput(profileData.first_name) : undefined,
-      last_name: profileData.last_name ? SecurityService.sanitizeInput(profileData.last_name) : undefined,
-      phone: profileData.phone ? SecurityService.sanitizeInput(profileData.phone) : undefined,
-      date_of_birth: profileData.date_of_birth,
-      address: profileData.address ? SecurityService.sanitizeInput(profileData.address) : undefined,
-      avatar_url: profileData.avatar_url,
-      bio: profileData.bio ? SecurityService.sanitizeInput(profileData.bio) : undefined,
-      ministry: profileData.ministry ? SecurityService.sanitizeInput(profileData.ministry) : undefined,
-      gender: profileData.gender ? SecurityService.sanitizeInput(profileData.gender) : undefined,
-      age: profileData.age,
+    const sanitizeField = (value: string | undefined | null): string | null => {
+      if (value === undefined || value === null) return null;
+      const trimmed = value.trim();
+      return trimmed ? SecurityService.sanitizeInput(trimmed) : '';
+    };
+
+    // Build update payload - include all editable fields so cleared values persist
+    const updateData: Record<string, unknown> = {
+      first_name: sanitizeField(profileData.first_name) ?? '',
+      last_name: sanitizeField(profileData.last_name) ?? '',
+      phone: sanitizeField(profileData.phone) ?? '',
+      date_of_birth: profileData.date_of_birth || null,
+      address: sanitizeField(profileData.address) ?? '',
+      avatar_url: profileData.avatar_url || null,
+      bio: sanitizeField(profileData.bio) ?? '',
+      ministry: sanitizeField(profileData.ministry) ?? '',
+      gender: sanitizeField(profileData.gender) ?? '',
       updated_at: new Date().toISOString()
     };
 
-    // Remove undefined values
-    const cleanData = Object.fromEntries(
-      Object.entries(sanitizedData).filter(([_, value]) => value !== undefined)
-    );
-
-    console.log('Updating user profile for:', user.id, cleanData);
+    console.log('Updating user profile for:', user.id, updateData);
 
     const { data, error } = await supabase
       .from('profiles')
-      .update(cleanData)
+      .update(updateData)
       .eq('user_id', user.id)
       .select();
     
