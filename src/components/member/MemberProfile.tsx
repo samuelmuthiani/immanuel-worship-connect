@@ -65,11 +65,11 @@ export function MemberProfile() {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setIsEditing(false);
-    loadProfile();
+    await loadProfile();
     // Invalidate the profile query so ProfileCompletion updates
-    queryClient.invalidateQueries({ queryKey: ['user-profile'] });
+    await queryClient.invalidateQueries({ queryKey: ['user-profile'] });
   };
 
   const handleCancel = () => {
