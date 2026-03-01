@@ -14,6 +14,7 @@ import BlogManager from '@/pages/admin/BlogManager';
 import SermonManager from '@/pages/admin/SermonManager';
 import EventManager from '@/pages/admin/EventManager';
 import { AdminRegisterAdmin } from '@/components/admin/AdminRegisterAdmin';
+import MediaManager from '@/pages/admin/MediaManager';
 
 interface UserProfile {
   id: string;
@@ -286,6 +287,7 @@ const AdminDashboard = () => {
               <TabsContent value="cms" className="space-y-8">
                 <BlogManager />
                 <SermonManager />
+                <MediaManager />
               </TabsContent>
 
               <TabsContent value="donations" className="space-y-6">
