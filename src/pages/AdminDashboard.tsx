@@ -287,6 +287,7 @@ const AdminDashboard = () => {
               <TabsContent value="cms" className="space-y-8">
                 <BlogManager />
                 <SermonManager />
+                <MediaManager />
               </TabsContent>
 
               <TabsContent value="donations" className="space-y-6">
