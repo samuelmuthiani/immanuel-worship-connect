@@ -81,7 +81,6 @@ export const registerForEvent = async (eventId: string, registrationData: {
 
     const sanitizedData = {
       event_id: eventId,
-      user_id: user?.id || null,
       name: SecurityService.sanitizeInput(registrationData.name),
       email: SecurityService.sanitizeInput(registrationData.email),
       phone: registrationData.phone ? SecurityService.sanitizeInput(registrationData.phone) : null

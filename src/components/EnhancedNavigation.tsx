@@ -115,8 +115,17 @@ const EnhancedNavigation = () => {
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-9 w-9 rounded-full border border-border">
-                    <User className="h-4 w-4" />
+                  <Button variant="ghost" className="relative h-9 w-9 rounded-full border border-border p-0 overflow-hidden">
+                    {profile?.avatar_url ? (
+                      <Avatar className="h-9 w-9">
+                        <AvatarImage src={profile.avatar_url} alt="Profile" />
+                        <AvatarFallback className="text-xs">
+                          {(profile.first_name?.[0] || '') + (profile.last_name?.[0] || '') || <User className="h-4 w-4" />}
+                        </AvatarFallback>
+                      </Avatar>
+                    ) : (
+                      <User className="h-4 w-4" />
+                    )}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56 bg-card border-border" align="end" forceMount>

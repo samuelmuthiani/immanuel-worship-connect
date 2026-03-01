@@ -200,14 +200,19 @@ const Events = () => {
           return newSet;
         });
       } else {
-        const errorMsg = result.error instanceof Error ? result.error.message : result.error;
-        throw new Error(errorMsg || 'Registration failed');
+        const errorMsg = typeof result.error === 'string' 
+          ? result.error 
+          : result.error instanceof Error 
+            ? result.error.message 
+            : 'Registration failed. Please try again.';
+        throw new Error(errorMsg);
       }
     } catch (error: unknown) {
       console.error('Error registering for event:', error);
+      const message = error instanceof Error ? error.message : 'There was an error registering for this event. Please try again.';
       toast({
         title: 'Registration Failed',
-        description: (error as Error).message || 'There was an error registering for this event. Please try again.',
+        description: message,
         variant: 'destructive'
       });
     } finally {
