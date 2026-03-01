@@ -56,6 +56,7 @@ const EventManager = () => {
         category: event.category || null,
         image_url: event.image_url || null,
         is_featured: event.is_featured || false,
+        registration_required: event.registration_required || false,
         updated_at: new Date().toISOString(),
       };
 
