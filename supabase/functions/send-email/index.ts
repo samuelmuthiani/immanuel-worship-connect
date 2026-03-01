@@ -1,5 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import { corsHeaders } from '../_shared/cors.ts'
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
@@ -9,7 +10,6 @@ interface EmailRequest {
     subject: string
     html: string
     text?: string
-    from?: string
 }
 
 serve(async (req) => {
@@ -23,11 +23,61 @@ serve(async (req) => {
             throw new Error('RESEND_API_KEY is not set')
         }
 
-        const { to, subject, html, text, from }: EmailRequest = await req.json()
+        // Authenticate the request
+        const supabaseClient = createClient(
+            Deno.env.get('SUPABASE_URL') ?? '',
+            Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+            { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
+        )
+        const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
+        if (authError || !user) {
+            return new Response(
+                JSON.stringify({ error: 'Unauthorized' }),
+                { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            )
+        }
 
-        // Basic validation
+        const body: EmailRequest = await req.json()
+        const { to, subject, html, text } = body
+
+        // Validate required fields
         if (!to || !subject || !html) {
-            throw new Error('Missing required fields: to, subject, html')
+            return new Response(
+                JSON.stringify({ error: 'Missing required fields: to, subject, html' }),
+                { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            )
+        }
+
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+        if (!emailRegex.test(to)) {
+            return new Response(
+                JSON.stringify({ error: 'Invalid email address' }),
+                { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            )
+        }
+
+        // Validate field lengths
+        if (subject.length > 200) {
+            return new Response(
+                JSON.stringify({ error: 'Subject must be 200 characters or less' }),
+                { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            )
+        }
+
+        if (html.length > 100_000) {
+            return new Response(
+                JSON.stringify({ error: 'HTML content too large' }),
+                { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            )
+        }
+
+        // Check for header injection in subject
+        if (/[\r\n]/.test(subject)) {
+            return new Response(
+                JSON.stringify({ error: 'Invalid characters in subject' }),
+                { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            )
         }
 
         const res = await fetch('https://api.resend.com/emails', {
@@ -37,11 +87,11 @@ serve(async (req) => {
                 'Authorization': `Bearer ${RESEND_API_KEY}`,
             },
             body: JSON.stringify({
-                from: from || 'Immanuel Worship Connect <onboarding@resend.dev>', // Default testing domain
+                from: 'Immanuel Worship Connect <onboarding@resend.dev>',
                 to,
                 subject,
                 html,
-                text: text || html.replace(/<[^>]*>?/gm, ''), // Fallback plain text
+                text: text || html.replace(/<[^>]*>?/gm, ''),
             }),
         })
 
@@ -57,9 +107,9 @@ serve(async (req) => {
         )
     } catch (error: unknown) {
         return new Response(
-            JSON.stringify({ error: (error instanceof Error ? error.message : String(error)) }),
+            JSON.stringify({ error: 'An error occurred while sending the email' }),
             {
-                status: 400,
+                status: 500,
                 headers: { ...corsHeaders, "Content-Type": "application/json" }
             },
         )
