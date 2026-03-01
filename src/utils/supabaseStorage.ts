@@ -2,6 +2,7 @@
 // Centralized Supabase storage utilities with enhanced security
 import { supabase } from '@/integrations/supabase/client';
 import { SecurityService } from './security';
+import { logger } from '@/lib/logger';
 
 // Contact form submission with simplified validation
 export const saveContactSubmission = async (formData: {
@@ -13,7 +14,6 @@ export const saveContactSubmission = async (formData: {
   inquiry_type?: string;
 }) => {
   try {
-    // Validate and sanitize inputs
     const sanitizedData = {
       name: SecurityService.sanitizeInput(formData.name),
       email: SecurityService.sanitizeInput(formData.email),
@@ -23,12 +23,11 @@ export const saveContactSubmission = async (formData: {
       inquiry_type: formData.inquiry_type ? SecurityService.sanitizeInput(formData.inquiry_type) : 'general'
     };
 
-    // Validate required fields
     if (!sanitizedData.name || !sanitizedData.message || !sanitizedData.email) {
       throw new Error('Name, email, and message are required');
     }
 
-    console.log('Saving contact submission:', sanitizedData);
+    logger.log('Saving contact submission');
 
     const { data, error } = await supabase
       .from('contact_submissions')
@@ -39,17 +38,17 @@ export const saveContactSubmission = async (formData: {
       .select();
 
     if (error) {
-      console.error('Supabase error saving contact:', error);
+      logger.error('Error saving contact:', error);
       throw error;
     }
 
-    console.log('Contact submission saved successfully:', data);
+    logger.log('Contact submission saved successfully');
 
     // Trigger email notification via Edge Function
     try {
       const emailResponse = await supabase.functions.invoke('send-email', {
         body: {
-          to: 'admin@iwc.com', // Replace with actual admin email or fetch from settings
+          to: 'admin@iwc.com',
           subject: `New Contact Inquiry: ${sanitizedData.subject || 'No Subject'}`,
           html: `
             <h2>New Contact Submission</h2>
@@ -64,16 +63,15 @@ export const saveContactSubmission = async (formData: {
       });
 
       if (emailResponse.error) {
-        console.warn('Failed to send notification email:', emailResponse.error);
+        logger.warn('Failed to send notification email:', emailResponse.error);
       }
     } catch (emailError) {
-      console.error('Error invoking send-email function:', emailError);
-      // Don't fail the whole operation if email fails, as DB save was successful
+      logger.error('Error invoking send-email function:', emailError);
     }
 
     return { success: true, data };
   } catch (error) {
-    console.error('Error saving contact submission:', error);
+    logger.error('Error saving contact submission:', error);
     return { success: false, error };
   }
 };
@@ -85,7 +83,6 @@ export const saveEventRSVP = async (eventId: string, rsvpData: {
   phone?: string;
 }) => {
   try {
-    // Validate and sanitize
     const sanitizedData = {
       name: SecurityService.sanitizeInput(rsvpData.name),
       email: SecurityService.sanitizeInput(rsvpData.email),
@@ -96,7 +93,7 @@ export const saveEventRSVP = async (eventId: string, rsvpData: {
       throw new Error('Name and email are required');
     }
 
-    console.log('Saving event RSVP:', { eventId, rsvpData: sanitizedData });
+    logger.log('Saving event RSVP');
 
     const { data, error } = await supabase
       .from('event_registrations')
@@ -108,14 +105,14 @@ export const saveEventRSVP = async (eventId: string, rsvpData: {
       .select();
 
     if (error) {
-      console.error('Supabase error saving RSVP:', error);
+      logger.error('Error saving RSVP:', error);
       throw error;
     }
 
-    console.log('RSVP saved successfully:', data);
+    logger.log('RSVP saved successfully');
     return { success: true, data };
   } catch (error) {
-    console.error('Error saving RSVP:', error);
+    logger.error('Error saving RSVP:', error);
     return { success: false, error };
   }
 };
@@ -129,7 +126,7 @@ export const saveNewsletterSubscription = async (email: string) => {
       throw new Error('Valid email address is required');
     }
 
-    console.log('Saving newsletter subscription:', sanitizedEmail);
+    logger.log('Saving newsletter subscription');
 
     const { data, error } = await supabase
       .from('newsletter_subscribers')
@@ -140,9 +137,8 @@ export const saveNewsletterSubscription = async (email: string) => {
       .select();
 
     if (error) {
-      console.error('Supabase error saving newsletter subscription:', error);
+      logger.error('Error saving newsletter subscription:', error);
 
-      // Handle duplicate email
       if (error.code === '23505') {
         throw new Error('This email is already subscribed to our newsletter.');
       }
@@ -150,10 +146,10 @@ export const saveNewsletterSubscription = async (email: string) => {
       throw error;
     }
 
-    console.log('Newsletter subscription saved successfully:', data);
+    logger.log('Newsletter subscription saved successfully');
     return { success: true, data };
   } catch (error) {
-    console.error('Error saving newsletter subscription:', error);
+    logger.error('Error saving newsletter subscription:', error);
     return { success: false, error };
   }
 };
@@ -170,12 +166,10 @@ export const saveDonationToSupabase = async (donationData: {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Authentication required');
 
-    // Validate donation amount
     if (typeof donationData.amount !== 'number' || donationData.amount <= 0 || donationData.amount > 1000000) {
       throw new Error('Invalid donation amount');
     }
 
-    // Sanitize inputs
     const sanitizedData = {
       amount: donationData.amount,
       donation_type: SecurityService.sanitizeInput(donationData.donation_type),
@@ -184,7 +178,7 @@ export const saveDonationToSupabase = async (donationData: {
       notes: donationData.notes ? SecurityService.sanitizeInput(donationData.notes) : null
     };
 
-    console.log('Saving donation to Supabase:', sanitizedData);
+    logger.log('Saving donation');
 
     const { data, error } = await supabase
       .from('donations')
@@ -195,14 +189,14 @@ export const saveDonationToSupabase = async (donationData: {
       .select();
 
     if (error) {
-      console.error('Supabase error saving donation:', error);
+      logger.error('Error saving donation:', error);
       throw error;
     }
 
-    console.log('Donation saved successfully:', data);
+    logger.log('Donation saved successfully');
     return { success: true, data };
   } catch (error) {
-    console.error('Error saving donation:', error);
+    logger.error('Error saving donation:', error);
     return { success: false, error };
   }
 };
@@ -213,22 +207,19 @@ export const getAllContactSubmissions = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Authentication required');
 
-    console.log('Fetching all contact submissions...');
-
     const { data, error } = await supabase
       .from('contact_submissions')
       .select('*')
       .order('submitted_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching contact submissions:', error);
+      logger.error('Error fetching contact submissions:', error);
       throw error;
     }
 
-    console.log('Contact submissions fetched:', data?.length || 0);
     return data || [];
   } catch (error) {
-    console.error('Error fetching contact submissions:', error);
+    logger.error('Error fetching contact submissions:', error);
     return [];
   }
 };
@@ -237,8 +228,6 @@ export const getAllEventRegistrations = async () => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Authentication required');
-
-    console.log('Fetching all event registrations...');
 
     const { data, error } = await supabase
       .from('event_registrations')
@@ -249,14 +238,13 @@ export const getAllEventRegistrations = async () => {
       .order('registered_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching event registrations:', error);
+      logger.error('Error fetching event registrations:', error);
       return [];
     }
 
-    console.log('Event registrations fetched:', data?.length || 0);
     return data || [];
   } catch (error) {
-    console.error('Error fetching event registrations:', error);
+    logger.error('Error fetching event registrations:', error);
     return [];
   }
 };
@@ -266,22 +254,19 @@ export const getAllNewsletterSubscribers = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Authentication required');
 
-    console.log('Fetching all newsletter subscribers...');
-
     const { data, error } = await supabase
       .from('newsletter_subscribers')
       .select('*')
       .order('subscribed_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching newsletter subscribers:', error);
+      logger.error('Error fetching newsletter subscribers:', error);
       throw error;
     }
 
-    console.log('Newsletter subscribers fetched:', data?.length || 0);
     return data || [];
   } catch (error) {
-    console.error('Error fetching newsletter subscribers:', error);
+    logger.error('Error fetching newsletter subscribers:', error);
     return [];
   }
 };
@@ -292,22 +277,19 @@ export const getAllDonationsFromSupabase = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Authentication required');
 
-    console.log('Fetching all donations from Supabase...');
-
     const { data, error } = await supabase
       .from('donations')
       .select('*')
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching donations:', error);
+      logger.error('Error fetching donations:', error);
       throw error;
     }
 
-    console.log('Donations fetched:', data?.length || 0);
     return data || [];
   } catch (error) {
-    console.error('Error fetching donations:', error);
+    logger.error('Error fetching donations:', error);
     return [];
   }
 };
@@ -317,8 +299,6 @@ export const getUserDonationsFromSupabase = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return [];
 
-    console.log('Fetching user donations for:', user.id);
-
     const { data, error } = await supabase
       .from('donations')
       .select('*')
@@ -326,14 +306,13 @@ export const getUserDonationsFromSupabase = async () => {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching user donations:', error);
+      logger.error('Error fetching user donations:', error);
       throw error;
     }
 
-    console.log('User donations fetched:', data?.length || 0);
     return data || [];
   } catch (error) {
-    console.error('Error fetching user donations:', error);
+    logger.error('Error fetching user donations:', error);
     return [];
   }
 };

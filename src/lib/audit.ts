@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/lib/logger';
 
 /**
  * Logs an audit event to the audit_logs table
@@ -21,12 +22,12 @@ export async function logAudit(
     });
     
     if (error) {
-      console.error('Error logging audit event:', error);
+      logger.error('Error logging audit event:', error);
     }
     
     return !error;
   } catch (err) {
-    console.error('Exception logging audit event:', err);
+    logger.error('Exception logging audit event:', err);
     return false;
   }
 }
@@ -75,7 +76,7 @@ export async function getAuditLogs({
   const { data, error } = await query;
   
   if (error) {
-    console.error('Error retrieving audit logs:', error);
+    logger.error('Error retrieving audit logs:', error);
     return [];
   }
   

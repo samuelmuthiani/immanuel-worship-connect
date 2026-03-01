@@ -1,6 +1,6 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { DataValidation, contactFormSchema, RateLimiter } from './dataValidation';
+import { logger } from '@/lib/logger';
 
 export interface ContactSubmission {
   name: string;
@@ -47,23 +47,20 @@ interface DashboardAnalytics {
 }
 
 export class EnhancedStorage {
-  // Enhanced contact submission with validation and rate limiting
   static async saveContactSubmission(data: ContactSubmission): Promise<{
     success: boolean;
     error?: string;
     data?: ContactSubmissionResult;
   }> {
     try {
-      // Rate limiting check
       const clientId = `contact_${data.email}`;
-      if (!RateLimiter.isAllowed(clientId, 3, 300000)) { // 3 attempts per 5 minutes
+      if (!RateLimiter.isAllowed(clientId, 3, 300000)) {
         return {
           success: false,
           error: 'Too many submission attempts. Please wait before trying again.'
         };
       }
 
-      // Validate and sanitize input with proper type guard
       const validation = await DataValidation.validateAndSanitize(data, contactFormSchema);
       if (!validation.success) {
         const errorResult = validation as { success: false; errors: string[] };
@@ -73,7 +70,6 @@ export class EnhancedStorage {
         };
       }
 
-      // Type guard ensures we have validated data
       const validatedData = validation.data;
       const sanitizedData = {
         name: DataValidation.sanitizeInput(validatedData.name!),
@@ -85,15 +81,13 @@ export class EnhancedStorage {
         submitted_at: new Date().toISOString()
       };
 
-      // Get current user if authenticated
       const { data: { user } } = await supabase.auth.getUser();
 
-      // If user is authenticated, link the submission to their profile
       if (user) {
         (sanitizedData as ContactSubmissionResult & { user_id: string }).user_id = user.id;
       }
 
-      console.log('Saving contact submission:', sanitizedData);
+      logger.log('Saving contact submission');
 
       const { data: result, error } = await supabase
         .from('contact_submissions')
@@ -102,18 +96,17 @@ export class EnhancedStorage {
         .single();
 
       if (error) {
-        console.error('Error saving contact submission:', error);
+        logger.error('Error saving contact submission:', error);
         throw error;
       }
 
-      // Reset rate limit on successful submission
       RateLimiter.reset(clientId);
 
-      console.log('Contact submission saved successfully:', result);
+      logger.log('Contact submission saved successfully');
       return { success: true, data: result };
 
     } catch (error: unknown) {
-      console.error('Error in saveContactSubmission:', error);
+      logger.error('Error in saveContactSubmission:', error);
       return {
         success: false,
         error: (error as Error).message || 'Failed to submit contact form'
@@ -121,7 +114,6 @@ export class EnhancedStorage {
     }
   }
 
-  // Enhanced newsletter subscription with deduplication
   static async saveNewsletterSubscription(email: string): Promise<{
     success: boolean;
     error?: string;
@@ -137,7 +129,6 @@ export class EnhancedStorage {
 
       const sanitizedEmail = DataValidation.sanitizeInput(email.toLowerCase());
 
-      // Check for existing subscription
       const { data: existing } = await supabase
         .from('newsletter_subscribers')
         .select('id')
@@ -161,14 +152,14 @@ export class EnhancedStorage {
         .single();
 
       if (error) {
-        console.error('Error saving newsletter subscription:', error);
+        logger.error('Error saving newsletter subscription:', error);
         throw error;
       }
 
       return { success: true, data: result };
 
     } catch (error: unknown) {
-      console.error('Error in saveNewsletterSubscription:', error);
+      logger.error('Error in saveNewsletterSubscription:', error);
       return {
         success: false,
         error: (error as Error).message || 'Failed to subscribe to newsletter'
@@ -176,13 +167,11 @@ export class EnhancedStorage {
     }
   }
 
-  // Get enhanced dashboard analytics
   static async getDashboardAnalytics(): Promise<DashboardAnalytics> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Authentication required');
 
-      // Get comprehensive analytics data
       const [
         { count: totalUsers },
         { count: totalContacts },
@@ -195,7 +184,6 @@ export class EnhancedStorage {
         supabase.from('newsletter_subscribers').select('*', { count: 'exact', head: true })
       ]);
 
-      // Get monthly stats
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
       const [
@@ -219,7 +207,7 @@ export class EnhancedStorage {
       };
 
     } catch (error) {
-      console.error('Error fetching dashboard analytics:', error);
+      logger.error('Error fetching dashboard analytics:', error);
       return {
         totalUsers: 0,
         totalContacts: 0,
@@ -233,7 +221,6 @@ export class EnhancedStorage {
   }
 }
 
-// Update storage.ts to use enhanced methods
 export const saveContactSubmission = EnhancedStorage.saveContactSubmission;
 export const saveNewsletterSubscription = EnhancedStorage.saveNewsletterSubscription;
 export const getDashboardAnalytics = EnhancedStorage.getDashboardAnalytics;

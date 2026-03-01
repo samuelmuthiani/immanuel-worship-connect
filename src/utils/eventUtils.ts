@@ -1,6 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { SecurityService } from './security';
+import { logger } from '@/lib/logger';
 
 export interface Event {
   id: string;
@@ -27,7 +28,7 @@ export interface EventRegistration {
 
 export const getAllEvents = async (): Promise<Event[]> => {
   try {
-    console.log('Fetching all events...');
+    logger.log('Fetching all events...');
 
     const { data, error } = await supabase
       .from('events')
@@ -35,21 +36,21 @@ export const getAllEvents = async (): Promise<Event[]> => {
       .order('event_date', { ascending: true });
 
     if (error) {
-      console.error('Error fetching events:', error);
+      logger.error('Error fetching events:', error);
       throw error;
     }
 
-    console.log('Events fetched:', data?.length || 0);
+    logger.log('Events fetched:', data?.length || 0);
     return data || [];
   } catch (error) {
-    console.error('Error fetching events:', error);
+    logger.error('Error fetching events:', error);
     return [];
   }
 };
 
 export const getUpcomingEvents = async (): Promise<Event[]> => {
   try {
-    console.log('Fetching upcoming events...');
+    logger.log('Fetching upcoming events...');
 
     const { data, error } = await supabase
       .from('events')
@@ -58,14 +59,14 @@ export const getUpcomingEvents = async (): Promise<Event[]> => {
       .order('event_date', { ascending: true });
 
     if (error) {
-      console.error('Error fetching upcoming events:', error);
+      logger.error('Error fetching upcoming events:', error);
       throw error;
     }
 
-    console.log('Upcoming events fetched:', data?.length || 0);
+    logger.log('Upcoming events fetched:', data?.length || 0);
     return data || [];
   } catch (error) {
-    console.error('Error fetching upcoming events:', error);
+    logger.error('Error fetching upcoming events:', error);
     return [];
   }
 };
@@ -78,7 +79,6 @@ export const registerForEvent = async (eventId: string, registrationData: {
   try {
     const { data: { user } } = await supabase.auth.getUser();
 
-    // Sanitize inputs
     const sanitizedData = {
       event_id: eventId,
       user_id: user?.id || null,
@@ -87,9 +87,8 @@ export const registerForEvent = async (eventId: string, registrationData: {
       phone: registrationData.phone ? SecurityService.sanitizeInput(registrationData.phone) : null
     };
 
-    console.log('Registering for event:', eventId, sanitizedData.name);
+    logger.log('Registering for event:', eventId);
 
-    // Check for duplicate registration
     const { data: existingRegistration } = await supabase
       .from('event_registrations')
       .select('id')
@@ -111,14 +110,14 @@ export const registerForEvent = async (eventId: string, registrationData: {
       .single();
 
     if (error) {
-      console.error('Error registering for event:', error);
+      logger.error('Error registering for event:', error);
       throw error;
     }
 
-    console.log('Event registration successful:', data.id);
+    logger.log('Event registration successful');
     return { success: true, data };
   } catch (error) {
-    console.error('Error registering for event:', error);
+    logger.error('Error registering for event:', error);
     return { success: false, error };
   }
 };
@@ -134,7 +133,7 @@ export const isUserRegistered = async (eventId: string, email: string): Promise<
 
     return !!data;
   } catch (error) {
-    console.error('Error checking registration status:', error);
+    logger.error('Error checking registration status:', error);
     return false;
   }
 };
@@ -144,7 +143,7 @@ export const getAllEventRegistrations = async (): Promise<EventRegistration[]> =
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Authentication required');
 
-    console.log('Fetching all event registrations...');
+    logger.log('Fetching all event registrations...');
 
     const { data, error } = await supabase
       .from('event_registrations')
@@ -155,14 +154,14 @@ export const getAllEventRegistrations = async (): Promise<EventRegistration[]> =
       .order('registered_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching event registrations:', error);
+      logger.error('Error fetching event registrations:', error);
       throw error;
     }
 
-    console.log('Event registrations fetched:', data?.length || 0);
+    logger.log('Event registrations fetched:', data?.length || 0);
     return data || [];
   } catch (error) {
-    console.error('Error fetching event registrations:', error);
+    logger.error('Error fetching event registrations:', error);
     return [];
   }
 };
@@ -172,7 +171,7 @@ export const getEventRegistrations = async (eventId: string): Promise<EventRegis
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Authentication required');
 
-    console.log('Fetching registrations for event:', eventId);
+    logger.log('Fetching registrations for event:', eventId);
 
     const { data, error } = await supabase
       .from('event_registrations')
@@ -181,14 +180,14 @@ export const getEventRegistrations = async (eventId: string): Promise<EventRegis
       .order('registered_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching event registrations:', error);
+      logger.error('Error fetching event registrations:', error);
       throw error;
     }
 
-    console.log('Event registrations fetched:', data?.length || 0);
+    logger.log('Event registrations fetched:', data?.length || 0);
     return data || [];
   } catch (error) {
-    console.error('Error fetching event registrations:', error);
+    logger.error('Error fetching event registrations:', error);
     return [];
   }
 };
