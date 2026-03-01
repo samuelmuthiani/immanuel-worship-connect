@@ -84,7 +84,7 @@ const EnhancedNavigation = () => {
                 IWC
               </span>
               <span className="text-[10px] text-muted-foreground tracking-widest uppercase hidden sm:block">
-                Immanuel Worship
+                Immanuel Worship Centre
               </span>
             </div>
           </Link>
