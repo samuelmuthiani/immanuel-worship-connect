@@ -203,6 +203,7 @@ export type Database = {
           image_url: string | null
           is_featured: boolean | null
           location: string | null
+          registration_required: boolean
           title: string
           updated_at: string
         }
@@ -216,6 +217,7 @@ export type Database = {
           image_url?: string | null
           is_featured?: boolean | null
           location?: string | null
+          registration_required?: boolean
           title: string
           updated_at?: string
         }
@@ -229,6 +231,7 @@ export type Database = {
           image_url?: string | null
           is_featured?: boolean | null
           location?: string | null
+          registration_required?: boolean
           title?: string
           updated_at?: string
         }
