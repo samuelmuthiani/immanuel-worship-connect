@@ -23,6 +23,7 @@ interface Event {
   category: string | null;
   image_url: string | null;
   is_featured: boolean;
+  registration_required: boolean;
   created_at: string;
 }
 
@@ -55,6 +56,7 @@ const EventManager = () => {
         category: event.category || null,
         image_url: event.image_url || null,
         is_featured: event.is_featured || false,
+        registration_required: event.registration_required || false,
         updated_at: new Date().toISOString(),
       };
 
@@ -101,7 +103,7 @@ const EventManager = () => {
   };
 
   const handleCreate = () => {
-    setCurrentEvent({ is_featured: false });
+    setCurrentEvent({ is_featured: false, registration_required: false });
     setIsEditing(true);
   };
 
@@ -208,6 +210,15 @@ const EventManager = () => {
                 onCheckedChange={checked => setCurrentEvent({ ...currentEvent, is_featured: checked })}
               />
               <Label htmlFor="event-featured">Featured Event</Label>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="event-registration"
+                checked={currentEvent.registration_required || false}
+                onCheckedChange={checked => setCurrentEvent({ ...currentEvent, registration_required: checked })}
+              />
+              <Label htmlFor="event-registration">Registration Required</Label>
             </div>
 
             <div>

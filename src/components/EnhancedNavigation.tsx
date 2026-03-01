@@ -15,6 +15,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Menu, User, LogOut, Shield, Settings } from 'lucide-react';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import iwcLogo from '/iwc-logo.png';
 
 const EnhancedNavigation = () => {
@@ -23,6 +26,20 @@ const EnhancedNavigation = () => {
   const { user, signOut, isAdmin, hasRole } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+
+  const { data: profile } = useQuery({
+    queryKey: ['user-profile', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data } = await supabase
+        .from('profiles')
+        .select('first_name, last_name, avatar_url')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!user?.id,
+  });
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -67,7 +84,7 @@ const EnhancedNavigation = () => {
                 IWC
               </span>
               <span className="text-[10px] text-muted-foreground tracking-widest uppercase hidden sm:block">
-                Immanuel Worship
+                Immanuel Worship Centre
               </span>
             </div>
           </Link>
@@ -98,8 +115,17 @@ const EnhancedNavigation = () => {
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-9 w-9 rounded-full border border-border">
-                    <User className="h-4 w-4" />
+                  <Button variant="ghost" className="relative h-9 w-9 rounded-full border border-border p-0 overflow-hidden">
+                    {profile?.avatar_url ? (
+                      <Avatar className="h-9 w-9">
+                        <AvatarImage src={profile.avatar_url} alt="Profile" />
+                        <AvatarFallback className="text-xs">
+                          {(profile.first_name?.[0] || '') + (profile.last_name?.[0] || '') || <User className="h-4 w-4" />}
+                        </AvatarFallback>
+                      </Avatar>
+                    ) : (
+                      <User className="h-4 w-4" />
+                    )}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56 bg-card border-border" align="end" forceMount>
