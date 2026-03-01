@@ -212,6 +212,15 @@ const EventManager = () => {
               <Label htmlFor="event-featured">Featured Event</Label>
             </div>
 
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="event-registration"
+                checked={currentEvent.registration_required || false}
+                onCheckedChange={checked => setCurrentEvent({ ...currentEvent, registration_required: checked })}
+              />
+              <Label htmlFor="event-registration">Registration Required</Label>
+            </div>
+
             <div>
               <Label htmlFor="event-description">Description</Label>
               <Textarea
