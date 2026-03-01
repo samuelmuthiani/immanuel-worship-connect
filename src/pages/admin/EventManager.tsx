@@ -23,6 +23,7 @@ interface Event {
   category: string | null;
   image_url: string | null;
   is_featured: boolean;
+  registration_required: boolean;
   created_at: string;
 }
 
