@@ -103,7 +103,7 @@ const EventManager = () => {
   };
 
   const handleCreate = () => {
-    setCurrentEvent({ is_featured: false });
+    setCurrentEvent({ is_featured: false, registration_required: false });
     setIsEditing(true);
   };
 
