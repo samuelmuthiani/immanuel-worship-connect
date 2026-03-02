@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Plus, Pencil, Trash2, Save, X } from 'lucide-react';
+import { Loader2, Plus, Pencil, Trash2, Save, X, Upload } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
@@ -29,6 +29,28 @@ const BlogManager = () => {
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   const [currentPost, setCurrentPost] = useState<Partial<Post>>({});
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingImage(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `blog/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const { error } = await supabase.storage.from('media').upload(fileName, file);
+      if (error) throw error;
+      const { data } = supabase.storage.from('media').getPublicUrl(fileName);
+      setCurrentPost(prev => ({ ...prev, image_url: data.publicUrl }));
+      toast({ title: 'Image uploaded', description: 'Cover image set successfully' });
+    } catch (err: any) {
+      toast({ title: 'Upload failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setUploadingImage(false);
+      if (imageInputRef.current) imageInputRef.current.value = '';
+    }
+  };
 
   const { data: posts, isLoading } = useQuery({
     queryKey: ['admin-posts'],
