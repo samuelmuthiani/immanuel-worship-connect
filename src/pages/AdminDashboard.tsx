@@ -2,6 +2,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import Layout from '@/components/Layout';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import AdminAnalytics from '@/components/admin/AdminAnalytics';
 import EnhancedDataTable from '@/components/admin/EnhancedDataTable';
@@ -44,6 +45,14 @@ interface NewsletterSubscriber {
   subscribed_at: string;
 }
 
+interface PolicyAcceptance {
+  id: string;
+  user_id: string;
+  policy_type: string;
+  accepted_at: string;
+  user_email?: string;
+}
+
 interface EventRegistration {
   id: string;
   name: string;
@@ -66,6 +75,7 @@ const AdminDashboard = () => {
   const [contactSubmissions, setContactSubmissions] = useState<ContactSubmission[]>([]);
   const [newsletterSubscribers, setNewsletterSubscribers] = useState<NewsletterSubscriber[]>([]);
   const [eventRegistrations, setEventRegistrations] = useState<EventRegistration[]>([]);
+  const [policyAcceptances, setPolicyAcceptances] = useState<PolicyAcceptance[]>([]);
 
   const profileColumns = [
     { key: 'first_name', label: 'First Name' },
@@ -98,6 +108,12 @@ const AdminDashboard = () => {
     { key: 'phone', label: 'Phone' },
     { key: 'event_title', label: 'Event' },
     { key: 'registered_at', label: 'Registered' }
+  ];
+
+  const policyColumns = [
+    { key: 'user_email', label: 'User Email' },
+    { key: 'policy_type', label: 'Policy' },
+    { key: 'accepted_at', label: 'Accepted At' }
   ];
 
   const fetchUserProfiles = useCallback(async () => {
@@ -149,6 +165,29 @@ const AdminDashboard = () => {
     }
   }, []);
 
+  const fetchPolicyAcceptances = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('policy_acceptances')
+        .select('*')
+        .order('accepted_at', { ascending: false });
+      if (error) throw error;
+      
+      // Enrich with user emails from profiles
+      const enriched = await Promise.all((data || []).map(async (acceptance: any) => {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('user_id', acceptance.user_id)
+          .maybeSingle();
+        return { ...acceptance, user_email: profile?.email || acceptance.user_id };
+      }));
+      setPolicyAcceptances(enriched);
+    } catch (err) {
+      console.error('Error fetching policy acceptances:', err);
+    }
+  }, []);
+
   const fetchAllData = useCallback(async () => {
     try {
       setLoading(true);
@@ -157,14 +196,15 @@ const AdminDashboard = () => {
         fetchUserProfiles(),
         fetchContactSubmissions(),
         fetchNewsletterSubscribers(),
-        fetchEventRegistrations()
+        fetchEventRegistrations(),
+        fetchPolicyAcceptances()
       ]);
     } catch (err) {
       setError('Failed to load dashboard data');
     } finally {
       setLoading(false);
     }
-  }, [fetchUserProfiles, fetchContactSubmissions, fetchNewsletterSubscribers, fetchEventRegistrations]);
+  }, [fetchUserProfiles, fetchContactSubmissions, fetchNewsletterSubscribers, fetchEventRegistrations, fetchPolicyAcceptances]);
 
   useEffect(() => {
     if (user && isAdmin) {
@@ -308,6 +348,13 @@ const AdminDashboard = () => {
                   columns={newsletterColumns}
                   tableName="newsletter_subscribers"
                   onRefresh={fetchNewsletterSubscribers}
+                />
+                <EnhancedDataTable
+                  title="Policy Acceptances (Terms & Privacy)"
+                  data={policyAcceptances}
+                  columns={policyColumns}
+                  tableName="policy_acceptances"
+                  onRefresh={fetchPolicyAcceptances}
                 />
               </TabsContent>
 

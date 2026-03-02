@@ -6,14 +6,18 @@ import { Button } from '@/components/ui/button';
 import { FloatingInput } from '@/components/ui/FloatingInput';
 import { PasswordStrength } from '@/components/ui/PasswordStrength';
 import { UserPlus, AlertCircle, CheckCircle } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { supabase } from '@/integrations/supabase/client';
 import iwcLogo from '/iwc-logo.png';
 
-interface FormErrors { email?: string; password?: string; confirmPassword?: string; general?: string; }
+interface FormErrors { email?: string; password?: string; confirmPassword?: string; general?: string; terms?: string; }
 
 const Register = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -30,8 +34,20 @@ const Register = () => {
     else if (password.length < 6) newErrors.password = 'Min 6 characters';
     if (!confirmPassword) newErrors.confirmPassword = 'Please confirm password';
     else if (password !== confirmPassword) newErrors.confirmPassword = 'Passwords don\'t match';
+    if (!acceptedTerms || !acceptedPrivacy) newErrors.terms = 'You must accept the Terms and Privacy Policy';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const recordPolicyAcceptance = async (userId: string) => {
+    try {
+      await supabase.from('policy_acceptances').insert([
+        { user_id: userId, policy_type: 'terms' },
+        { user_id: userId, policy_type: 'privacy' }
+      ]);
+    } catch (err) {
+      console.error('Error recording policy acceptance:', err);
+    }
   };
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -41,8 +57,12 @@ const Register = () => {
     setLoading(true);
     try {
       const result = await signUp(email.trim(), password);
-      if (result.success) setSuccess(true);
-      else setErrors({ general: result.error || 'Registration failed' });
+      if (result.success) {
+        setSuccess(true);
+        // The policy acceptance will be recorded after email confirmation when the user first logs in
+      } else {
+        setErrors({ general: result.error || 'Registration failed' });
+      }
     } catch { setErrors({ general: 'An unexpected error occurred.' }); }
     finally { setLoading(false); }
   };
@@ -93,6 +113,26 @@ const Register = () => {
               {password && <PasswordStrength password={password} />}
             </div>
             <FloatingInput id="confirm-password" type="password" label="Confirm Password" value={confirmPassword} onChange={(e) => { setConfirmPassword(e.target.value); clearFieldError('confirmPassword'); }} error={errors.confirmPassword} showPasswordToggle disabled={loading} autoComplete="new-password" />
+
+            {/* Terms & Privacy Acceptance */}
+            <div className="space-y-3">
+              <div className="flex items-start space-x-2">
+                <Checkbox id="accept-terms" checked={acceptedTerms} onCheckedChange={(checked) => { setAcceptedTerms(!!checked); clearFieldError('terms'); }} className="mt-0.5" />
+                <label htmlFor="accept-terms" className="text-sm text-muted-foreground leading-tight">
+                  I have read and agree to the{' '}
+                  <Link to="/terms" target="_blank" className="text-primary hover:underline font-medium">Terms of Service</Link>
+                </label>
+              </div>
+              <div className="flex items-start space-x-2">
+                <Checkbox id="accept-privacy" checked={acceptedPrivacy} onCheckedChange={(checked) => { setAcceptedPrivacy(!!checked); clearFieldError('terms'); }} className="mt-0.5" />
+                <label htmlFor="accept-privacy" className="text-sm text-muted-foreground leading-tight">
+                  I have read and agree to the{' '}
+                  <Link to="/privacy" target="_blank" className="text-primary hover:underline font-medium">Privacy Policy</Link>
+                </label>
+              </div>
+              {errors.terms && <p className="text-destructive text-xs">{errors.terms}</p>}
+            </div>
+
             <Button type="submit" disabled={loading} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl h-12 font-semibold">
               {loading ? <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground mr-2" /> Creating...</> : <><UserPlus className="h-4 w-4 mr-2" /> Create Account</>}
             </Button>

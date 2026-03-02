@@ -309,6 +309,27 @@ export type Database = {
         }
         Relationships: []
       }
+      policy_acceptances: {
+        Row: {
+          accepted_at: string
+          id: string
+          policy_type: string
+          user_id: string
+        }
+        Insert: {
+          accepted_at?: string
+          id?: string
+          policy_type: string
+          user_id: string
+        }
+        Update: {
+          accepted_at?: string
+          id?: string
+          policy_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       posts: {
         Row: {
           author: string | null
