@@ -2,6 +2,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import Layout from '@/components/Layout';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import AdminAnalytics from '@/components/admin/AdminAnalytics';
 import EnhancedDataTable from '@/components/admin/EnhancedDataTable';
