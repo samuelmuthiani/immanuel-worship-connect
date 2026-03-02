@@ -147,6 +147,16 @@ const BlogManager = () => {
               </div>
             </div>
             <div>
+              <Label>Cover Image</Label>
+              <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+              <div className="flex items-center gap-2">
+                <Button type="button" variant="outline" size="sm" onClick={() => imageInputRef.current?.click()} disabled={uploadingImage}>
+                  <Upload className="mr-2 h-4 w-4" /> {uploadingImage ? 'Uploading...' : 'Upload Image'}
+                </Button>
+                {currentPost.image_url && <span className="text-xs text-muted-foreground truncate max-w-[200px]">✓ Image set</span>}
+              </div>
+            </div>
+            <div>
               <Label htmlFor="post-excerpt">Excerpt</Label>
               <Textarea id="post-excerpt" value={currentPost.excerpt || ''} onChange={e => setCurrentPost({ ...currentPost, excerpt: e.target.value })} rows={2} />
             </div>
