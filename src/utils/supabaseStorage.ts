@@ -68,7 +68,7 @@ export const saveContactSubmission = async (formData: {
       logger.error('Error invoking send-email function:', emailError);
     }
 
-    return { success: true, data };
+    return { success: true };
   } catch (error) {
     logger.error('Error saving contact submission:', error);
     return { success: false, error };

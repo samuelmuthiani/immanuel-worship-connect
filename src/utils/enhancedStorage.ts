@@ -101,7 +101,7 @@ export class EnhancedStorage {
       RateLimiter.reset(clientId);
 
       logger.log('Contact submission saved successfully');
-      return { success: true, data: result };
+      return { success: true };
 
     } catch (error: unknown) {
       logger.error('Error in saveContactSubmission:', error);
