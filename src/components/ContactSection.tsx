@@ -34,8 +34,7 @@ const ContactSection = () => {
     try {
       const { error: supabaseError } = await supabase
         .from('contact_submissions')
-        .insert([{ name: form.name.trim(), email: form.email.trim(), message: form.message.trim(), inquiry_type: 'general', submitted_at: new Date().toISOString() }])
-        .select();
+        .insert([{ name: form.name.trim(), email: form.email.trim(), message: form.message.trim(), inquiry_type: 'general', submitted_at: new Date().toISOString() }]);
       if (supabaseError) throw new Error(supabaseError.message);
       setSubmitted(true);
       setForm({ name: '', email: '', message: '' });

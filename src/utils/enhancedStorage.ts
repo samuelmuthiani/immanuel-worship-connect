@@ -89,11 +89,9 @@ export class EnhancedStorage {
 
       logger.log('Saving contact submission');
 
-      const { data: result, error } = await supabase
+      const { error } = await supabase
         .from('contact_submissions')
-        .insert([sanitizedData])
-        .select()
-        .single();
+        .insert([sanitizedData]);
 
       if (error) {
         logger.error('Error saving contact submission:', error);
@@ -103,7 +101,7 @@ export class EnhancedStorage {
       RateLimiter.reset(clientId);
 
       logger.log('Contact submission saved successfully');
-      return { success: true, data: result };
+      return { success: true };
 
     } catch (error: unknown) {
       logger.error('Error in saveContactSubmission:', error);

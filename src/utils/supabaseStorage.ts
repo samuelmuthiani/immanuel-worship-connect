@@ -29,13 +29,12 @@ export const saveContactSubmission = async (formData: {
 
     logger.log('Saving contact submission');
 
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('contact_submissions')
       .insert([{
         ...sanitizedData,
         submitted_at: new Date().toISOString()
-      }])
-      .select();
+      }]);
 
     if (error) {
       logger.error('Error saving contact:', error);
@@ -69,7 +68,7 @@ export const saveContactSubmission = async (formData: {
       logger.error('Error invoking send-email function:', emailError);
     }
 
-    return { success: true, data };
+    return { success: true };
   } catch (error) {
     logger.error('Error saving contact submission:', error);
     return { success: false, error };
