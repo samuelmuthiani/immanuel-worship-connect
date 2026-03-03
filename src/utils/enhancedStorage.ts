@@ -89,11 +89,9 @@ export class EnhancedStorage {
 
       logger.log('Saving contact submission');
 
-      const { data: result, error } = await supabase
+      const { error } = await supabase
         .from('contact_submissions')
-        .insert([sanitizedData])
-        .select()
-        .single();
+        .insert([sanitizedData]);
 
       if (error) {
         logger.error('Error saving contact submission:', error);

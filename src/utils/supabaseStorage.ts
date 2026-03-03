@@ -29,13 +29,12 @@ export const saveContactSubmission = async (formData: {
 
     logger.log('Saving contact submission');
 
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('contact_submissions')
       .insert([{
         ...sanitizedData,
         submitted_at: new Date().toISOString()
-      }])
-      .select();
+      }]);
 
     if (error) {
       logger.error('Error saving contact:', error);
