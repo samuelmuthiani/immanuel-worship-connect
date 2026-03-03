@@ -34,7 +34,7 @@ const Register = () => {
     else if (password.length < 6) newErrors.password = 'Min 6 characters';
     if (!confirmPassword) newErrors.confirmPassword = 'Please confirm password';
     else if (password !== confirmPassword) newErrors.confirmPassword = 'Passwords don\'t match';
-    if (!acceptedTerms || !acceptedPrivacy) newErrors.terms = 'You must accept the Terms and Privacy Policy';
+    if (!acceptedTerms || !acceptedPrivacy) newErrors.terms = 'You must accept the Terms and Policy';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -114,20 +114,13 @@ const Register = () => {
             </div>
             <FloatingInput id="confirm-password" type="password" label="Confirm Password" value={confirmPassword} onChange={(e) => { setConfirmPassword(e.target.value); clearFieldError('confirmPassword'); }} error={errors.confirmPassword} showPasswordToggle disabled={loading} autoComplete="new-password" />
 
-            {/* Terms & Privacy Acceptance */}
+            {/* Terms and Policy Acceptance */}
             <div className="space-y-3">
               <div className="flex items-start space-x-2">
-                <Checkbox id="accept-terms" checked={acceptedTerms} onCheckedChange={(checked) => { setAcceptedTerms(!!checked); clearFieldError('terms'); }} className="mt-0.5" />
-                <label htmlFor="accept-terms" className="text-sm text-muted-foreground leading-tight">
+                <Checkbox id="accept-terms-policy" checked={acceptedTerms && acceptedPrivacy} onCheckedChange={(checked) => { setAcceptedTerms(!!checked); setAcceptedPrivacy(!!checked); clearFieldError('terms'); }} className="mt-0.5" />
+                <label htmlFor="accept-terms-policy" className="text-sm text-muted-foreground leading-tight">
                   I have read and agree to the{' '}
-                  <Link to="/terms" target="_blank" className="text-primary hover:underline font-medium">Terms of Service</Link>
-                </label>
-              </div>
-              <div className="flex items-start space-x-2">
-                <Checkbox id="accept-privacy" checked={acceptedPrivacy} onCheckedChange={(checked) => { setAcceptedPrivacy(!!checked); clearFieldError('terms'); }} className="mt-0.5" />
-                <label htmlFor="accept-privacy" className="text-sm text-muted-foreground leading-tight">
-                  I have read and agree to the{' '}
-                  <Link to="/privacy" target="_blank" className="text-primary hover:underline font-medium">Privacy Policy</Link>
+                  <Link to="/terms" target="_blank" className="text-primary hover:underline font-medium">Terms and Policy</Link>
                 </label>
               </div>
               {errors.terms && <p className="text-destructive text-xs">{errors.terms}</p>}
