@@ -350,7 +350,7 @@ const AdminDashboard = () => {
                   onRefresh={fetchNewsletterSubscribers}
                 />
                 <EnhancedDataTable
-                  title="Policy Acceptances (Terms & Privacy)"
+                  title="Terms and Policy Acceptances"
                   data={policyAcceptances}
                   columns={policyColumns}
                   tableName="policy_acceptances"
