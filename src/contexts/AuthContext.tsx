@@ -201,7 +201,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { success: false, error: 'Too many signup attempts. Please wait before trying again.' };
       }
 
-      const redirectUrl = `${window.location.origin}/`;
+      const redirectUrl = `${window.location.origin}/login`;
 
       const { data, error } = await supabase.auth.signUp({
         email: sanitizedEmail,
