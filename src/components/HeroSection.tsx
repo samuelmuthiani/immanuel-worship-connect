@@ -1,50 +1,56 @@
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Play, ArrowRight, X } from 'lucide-react';
+import { Play, ArrowRight, X, Church, Users, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const HeroSection = () => {
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
 
   return (
-    <section className="relative min-h-[90vh] flex items-center overflow-hidden">
+    <section className="relative min-h-[92vh] flex items-center overflow-hidden">
       {/* Background image */}
       <div
         className="absolute inset-0 bg-cover bg-center"
         style={{
           backgroundImage:
-            'url("https://images.unsplash.com/photo-1510425865936-0a352b16583f?ixlib=rb-4.0.3&q=80&w=1600&auto=format&fit=crop")',
+            'url("https://images.unsplash.com/photo-1438232992991-995b7058bbb3?ixlib=rb-4.0.3&q=85&w=1920&auto=format&fit=crop")',
         }}
       />
-      {/* Dark overlay */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/80" />
+      {/* Cinematic gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-black/50 to-black/70" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 
       <div className="container mx-auto px-4 z-10 relative py-20">
         <div className="max-w-3xl">
-          {/* Tagline */}
-          <p className="text-secondary font-medium tracking-widest uppercase text-sm mb-6 animate-fade-in">
-            Welcome Home
-          </p>
+          {/* Accent line */}
+          <div className="flex items-center gap-3 mb-8 animate-fade-in">
+            <div className="w-12 h-[2px] bg-secondary" />
+            <p className="text-secondary font-medium tracking-[0.25em] uppercase text-xs">
+              Welcome to Our Community
+            </p>
+          </div>
 
           <h1
-            className="text-5xl md:text-7xl lg:text-8xl font-bold text-white leading-[1.05] mb-8 animate-fade-in"
+            className="text-5xl md:text-7xl lg:text-[5.5rem] font-bold text-white leading-[1.05] mb-8 animate-fade-in"
             style={{ fontFamily: 'DM Serif Display, serif', animationDelay: '0.1s' }}
           >
-            Immanuel<br />
-            <span className="text-secondary">Worship Centre</span>
+            Immanuel{' '}
+            <span className="text-secondary italic">Worship</span>
+            <br />
+            Centre
           </h1>
 
-          <p className="text-lg md:text-xl text-white/80 max-w-xl mb-10 leading-relaxed animate-fade-in" style={{ animationDelay: '0.2s' }}>
-            A place of worship, fellowship and spiritual growth where God's presence transforms lives through love, community, and purpose.
+          <p className="text-lg md:text-xl text-white/75 max-w-xl mb-12 leading-relaxed animate-fade-in" style={{ animationDelay: '0.2s' }}>
+            A place of worship, fellowship and spiritual growth — where God's presence transforms lives through love, community, and purpose.
           </p>
 
           {/* Action Buttons */}
-          <div className="flex flex-wrap gap-4 mb-16 animate-fade-in" style={{ animationDelay: '0.3s' }}>
+          <div className="flex flex-wrap gap-4 mb-20 animate-fade-in" style={{ animationDelay: '0.3s' }}>
             <Button
               asChild
               size="lg"
-              className="bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold rounded-full px-8 h-12"
+              className="bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold rounded-full px-8 h-13 text-base shadow-lg shadow-secondary/25"
             >
               <Link to="/services" className="flex items-center gap-2">
                 Explore Our Services
@@ -56,29 +62,32 @@ const HeroSection = () => {
               variant="outline"
               size="lg"
               onClick={() => setIsVideoPlaying(true)}
-              className="bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white border-white/20 hover:border-white/40 rounded-full px-8 h-12"
+              className="bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white border-white/25 hover:border-white/40 rounded-full px-8 h-13 text-base"
             >
-              <Play className="h-4 w-4 mr-2" />
+              <Play className="h-4 w-4 mr-2 fill-current" />
               Watch Video
             </Button>
           </div>
 
-          {/* Stats row */}
-          <div className="flex flex-wrap gap-8 md:gap-12 animate-fade-in" style={{ animationDelay: '0.4s' }}>
-            <div>
-              <div className="text-3xl md:text-4xl font-bold text-white" style={{ fontFamily: 'DM Serif Display, serif' }}>500+</div>
-              <div className="text-sm text-white/60 mt-1">Community Members</div>
-            </div>
-            <div className="w-px bg-white/20 hidden md:block" />
-            <div>
-              <div className="text-3xl md:text-4xl font-bold text-white" style={{ fontFamily: 'DM Serif Display, serif' }}>25+</div>
-              <div className="text-sm text-white/60 mt-1">Years of Service</div>
-            </div>
-            <div className="w-px bg-white/20 hidden md:block" />
-            <div>
-              <div className="text-3xl md:text-4xl font-bold text-white" style={{ fontFamily: 'DM Serif Display, serif' }}>100+</div>
-              <div className="text-sm text-white/60 mt-1">Weekly Gatherings</div>
-            </div>
+          {/* Stats row - redesigned with icons */}
+          <div className="flex flex-wrap gap-10 md:gap-14 animate-fade-in" style={{ animationDelay: '0.4s' }}>
+            {[
+              { icon: Users, number: '500+', label: 'Community Members' },
+              { icon: Church, number: '25+', label: 'Years of Service' },
+              { icon: Calendar, number: '100+', label: 'Weekly Gatherings' },
+            ].map((stat, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+                  <stat.icon className="h-4 w-4 text-secondary" />
+                </div>
+                <div>
+                  <div className="text-2xl md:text-3xl font-bold text-white leading-none" style={{ fontFamily: 'DM Serif Display, serif' }}>
+                    {stat.number}
+                  </div>
+                  <div className="text-xs text-white/50 mt-0.5">{stat.label}</div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>

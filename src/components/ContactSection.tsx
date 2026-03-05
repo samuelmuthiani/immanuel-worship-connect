@@ -32,6 +32,7 @@ const ContactSection = () => {
     setLoading(true);
     setError(null);
     try {
+      // Blind insert - no .select() since public users may not have SELECT permission
       const { error: supabaseError } = await supabase
         .from('contact_submissions')
         .insert([{ name: form.name.trim(), email: form.email.trim(), message: form.message.trim(), inquiry_type: 'general', submitted_at: new Date().toISOString() }]);
@@ -56,25 +57,28 @@ const ContactSection = () => {
   ];
 
   return (
-    <section className="py-24 bg-foreground text-background">
+    <section className="py-28 bg-foreground text-background">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
           {/* Left - Info */}
           <div>
-            <p className="text-secondary font-medium tracking-widest uppercase text-sm mb-4">
-              Get In Touch
-            </p>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-[2px] bg-secondary" />
+              <p className="text-secondary font-medium tracking-[0.2em] uppercase text-xs">
+                Get In Touch
+              </p>
+            </div>
             <h2 className="text-4xl md:text-5xl font-bold mb-6" style={{ fontFamily: 'DM Serif Display, serif' }}>
-              We'd love to hear from you
+              We'd love to <span className="text-secondary italic">hear</span> from you
             </h2>
             <p className="text-background/70 text-lg mb-12 leading-relaxed">
-              Reach out with any questions, prayer requests, or just to say hello.
+              Reach out with any questions, prayer requests, or just to say hello. We're here for you.
             </p>
 
             <div className="space-y-8">
               {contactInfo.map(({ icon: Icon, label, value, sub }) => (
-                <div key={label} className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-secondary/20 flex items-center justify-center flex-shrink-0">
+                <div key={label} className="flex items-start gap-4 group">
+                  <div className="w-12 h-12 rounded-xl bg-secondary/20 flex items-center justify-center flex-shrink-0 group-hover:bg-secondary/30 transition-colors">
                     <Icon className="h-5 w-5 text-secondary" />
                   </div>
                   <div>
@@ -101,8 +105,10 @@ const ContactSection = () => {
 
             {submitted ? (
               <div className="text-center py-12">
-                <CheckCircle className="h-12 w-12 text-green-400 mx-auto mb-4" />
-                <h4 className="text-lg font-semibold mb-2">Message Sent!</h4>
+                <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle className="h-8 w-8 text-green-400" />
+                </div>
+                <h4 className="text-lg font-semibold mb-2" style={{ fontFamily: 'DM Serif Display, serif' }}>Message Sent!</h4>
                 <p className="text-background/70">We'll get back to you soon.</p>
               </div>
             ) : (
@@ -116,18 +122,18 @@ const ContactSection = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <input
                     type="text" name="name" value={form.name} onChange={handleChange} required disabled={loading}
-                    className="w-full px-4 py-3 bg-background/10 border border-background/20 rounded-xl text-background placeholder:text-background/40 focus:outline-none focus:ring-2 focus:ring-secondary/50 transition-all text-sm"
+                    className="w-full px-4 py-3.5 bg-background/10 border border-background/20 rounded-xl text-background placeholder:text-background/40 focus:outline-none focus:ring-2 focus:ring-secondary/50 transition-all text-sm"
                     placeholder="Your name"
                   />
                   <input
                     type="email" name="email" value={form.email} onChange={handleChange} required disabled={loading}
-                    className="w-full px-4 py-3 bg-background/10 border border-background/20 rounded-xl text-background placeholder:text-background/40 focus:outline-none focus:ring-2 focus:ring-secondary/50 transition-all text-sm"
+                    className="w-full px-4 py-3.5 bg-background/10 border border-background/20 rounded-xl text-background placeholder:text-background/40 focus:outline-none focus:ring-2 focus:ring-secondary/50 transition-all text-sm"
                     placeholder="Your email"
                   />
                 </div>
                 <textarea
                   name="message" value={form.message} onChange={handleChange} required disabled={loading} rows={4}
-                  className="w-full px-4 py-3 bg-background/10 border border-background/20 rounded-xl text-background placeholder:text-background/40 focus:outline-none focus:ring-2 focus:ring-secondary/50 transition-all text-sm resize-none"
+                  className="w-full px-4 py-3.5 bg-background/10 border border-background/20 rounded-xl text-background placeholder:text-background/40 focus:outline-none focus:ring-2 focus:ring-secondary/50 transition-all text-sm resize-none"
                   placeholder="Your message"
                 />
                 <Button
