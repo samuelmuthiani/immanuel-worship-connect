@@ -1,12 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { FloatingInput } from '@/components/ui/FloatingInput';
 import { PasswordStrength } from '@/components/ui/PasswordStrength';
-import { LogIn, ShieldCheck, User, AlertCircle } from 'lucide-react';
+import { LogIn, ShieldCheck, User, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import iwcLogo from '/iwc-logo.png';
 
 interface FormErrors { email?: string; password?: string; general?: string; }
@@ -17,8 +18,32 @@ const Login = () => {
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'member' | 'admin'>('member');
+  const [verifiedBanner, setVerifiedBanner] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { signIn, user, isAdmin } = useAuth();
+  const { toast } = useToast();
+
+  // Detect email verification redirect
+  useEffect(() => {
+    const hash = window.location.hash;
+    const searchParams = new URLSearchParams(location.search);
+    
+    // Supabase redirects with hash fragments containing type=signup after verification
+    const isVerified = hash.includes('type=signup') || 
+                       hash.includes('type=magiclink') ||
+                       searchParams.get('verified') === 'true';
+    
+    if (isVerified) {
+      setVerifiedBanner(true);
+      toast({
+        title: '✅ Email Verified!',
+        description: 'Your email has been confirmed. You can now sign in to your account.',
+      });
+      // Clean up URL
+      window.history.replaceState({}, document.title, '/login');
+    }
+  }, [location, toast]);
 
   useEffect(() => {
     if (user) {
@@ -64,6 +89,17 @@ const Login = () => {
           <p className="text-muted-foreground text-sm mt-1">Sign in to your account</p>
         </div>
 
+        {/* Email verified banner */}
+        {verifiedBanner && (
+          <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-2xl flex items-center gap-3">
+            <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0" />
+            <div>
+              <p className="text-green-800 dark:text-green-200 font-medium text-sm">Email Verified Successfully!</p>
+              <p className="text-green-600 dark:text-green-400 text-xs mt-0.5">You can now sign in with your credentials.</p>
+            </div>
+          </div>
+        )}
+
         <div className="bg-card border border-border rounded-2xl p-8">
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'member' | 'admin')} className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-6 bg-muted rounded-xl p-1">
@@ -100,7 +136,7 @@ const Login = () => {
                 <FloatingInput id="admin-email" type="email" label="Admin Email" value={email} onChange={(e) => { setEmail(e.target.value); clearFieldError('email'); }} error={errors.email} disabled={loading} autoComplete="email" />
                 <FloatingInput id="admin-password" type="password" label="Password" value={password} onChange={(e) => { setPassword(e.target.value); clearFieldError('password'); }} error={errors.password} showPasswordToggle disabled={loading} autoComplete="current-password" />
                 <Button type="submit" disabled={loading} className="w-full bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-xl h-12 font-semibold">
-                  {loading ? <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" /> Signing In...</> : <><ShieldCheck className="h-4 w-4 mr-2" /> Admin Access</>}
+                  {loading ? <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-destructive-foreground mr-2" /> Signing In...</> : <><ShieldCheck className="h-4 w-4 mr-2" /> Admin Access</>}
                 </Button>
               </form>
             </TabsContent>

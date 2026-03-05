@@ -28,15 +28,18 @@ const EventsPreviewSection = () => {
   }, []);
 
   return (
-    <section className="py-24 bg-muted/30">
+    <section className="py-28 bg-muted/30">
       <div className="container mx-auto px-4">
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between mb-12">
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between mb-14">
           <div>
-            <p className="text-secondary font-medium tracking-widest uppercase text-sm mb-4">
-              What's Happening
-            </p>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-[2px] bg-secondary" />
+              <p className="text-secondary font-medium tracking-[0.2em] uppercase text-xs">
+                What's Happening
+              </p>
+            </div>
             <h2 className="text-4xl md:text-5xl font-bold text-foreground" style={{ fontFamily: 'DM Serif Display, serif' }}>
-              Upcoming Events
+              Upcoming <span className="text-secondary italic">Events</span>
             </h2>
           </div>
           <Button
@@ -62,21 +65,21 @@ const EventsPreviewSection = () => {
               return (
                 <div
                   key={event.id}
-                  className="bg-card border border-border rounded-2xl overflow-hidden hover:shadow-lg transition-all duration-300 group hover:-translate-y-1"
+                  className="bg-card border border-border rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-300 group hover:-translate-y-1"
                 >
                   <div className="p-6">
                     {/* Date badge */}
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="bg-primary/10 text-primary rounded-xl px-4 py-2 text-center min-w-[60px]">
+                    <div className="flex items-start justify-between mb-5">
+                      <div className="bg-primary/10 text-primary rounded-xl px-4 py-2.5 text-center min-w-[60px]">
                         <div className="text-2xl font-bold leading-none" style={{ fontFamily: 'DM Serif Display, serif' }}>
                           {eventDate.getDate()}
                         </div>
-                        <div className="text-xs uppercase tracking-wider mt-1">
+                        <div className="text-xs uppercase tracking-wider mt-1 font-medium">
                           {eventDate.toLocaleString('en', { month: 'short' })}
                         </div>
                       </div>
                       {event.category && (
-                        <span className="text-xs bg-secondary/10 text-secondary px-3 py-1 rounded-full font-medium">
+                        <span className="text-xs bg-secondary/10 text-secondary px-3 py-1.5 rounded-full font-semibold">
                           {event.category}
                         </span>
                       )}
@@ -86,11 +89,11 @@ const EventsPreviewSection = () => {
                       {event.title}
                     </h3>
 
-                    <p className="text-muted-foreground text-sm mb-4 line-clamp-2">
+                    <p className="text-muted-foreground text-sm mb-5 line-clamp-2 leading-relaxed">
                       {event.description}
                     </p>
 
-                    <div className="space-y-2 text-sm text-muted-foreground">
+                    <div className="space-y-2 text-sm text-muted-foreground border-t border-border pt-4">
                       <div className="flex items-center gap-2">
                         <Clock className="h-3.5 w-3.5 text-secondary" />
                         {eventDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
@@ -108,8 +111,8 @@ const EventsPreviewSection = () => {
             })}
           </div>
         ) : (
-          <div className="text-center py-16 bg-card border border-border rounded-2xl">
-            <Calendar className="h-12 w-12 text-muted-foreground/40 mx-auto mb-4" />
+          <div className="text-center py-20 bg-card border border-border rounded-2xl">
+            <Calendar className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-foreground mb-2" style={{ fontFamily: 'DM Serif Display, serif' }}>
               No Upcoming Events
             </h3>

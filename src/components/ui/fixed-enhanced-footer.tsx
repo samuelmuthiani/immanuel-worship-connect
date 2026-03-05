@@ -1,7 +1,8 @@
 
 import React from 'react';
-import { MapPin, Phone, Mail, Facebook, Twitter, Instagram, Youtube } from 'lucide-react';
+import { MapPin, Phone, Mail, Facebook, Twitter, Instagram, Youtube, Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import iwcLogo from '/iwc-logo.png';
 
 const FixedEnhancedFooter = () => {
   const quickLinks = [
@@ -32,10 +33,13 @@ const FixedEnhancedFooter = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
           {/* Church Info */}
           <div className="lg:col-span-1">
-            <h3 className="text-2xl font-bold mb-4" style={{ fontFamily: 'DM Serif Display, serif' }}>
-              Immanuel Worship Centre
-            </h3>
-            <p className="text-background/60 text-sm leading-relaxed mb-6">
+            <div className="flex items-center gap-3 mb-4">
+              <img src={iwcLogo} alt="IWC" className="h-10 w-10" />
+              <h3 className="text-xl font-bold" style={{ fontFamily: 'DM Serif Display, serif' }}>
+                Immanuel Worship Centre
+              </h3>
+            </div>
+            <p className="text-background/50 text-sm leading-relaxed mb-6">
               A community of believers dedicated to worship, fellowship, and serving our Lord Jesus Christ.
             </p>
             <div className="space-y-3">
@@ -82,7 +86,7 @@ const FixedEnhancedFooter = () => {
             </ul>
           </div>
 
-          {/* Social & Newsletter */}
+          {/* Social & Info */}
           <div>
             <h4 className="text-sm font-semibold mb-6 tracking-widest uppercase text-background/40">Connect</h4>
             <div className="flex space-x-3 mb-6">
@@ -99,16 +103,21 @@ const FixedEnhancedFooter = () => {
                 </a>
               ))}
             </div>
-            <p className="text-background/40 text-xs leading-relaxed">
-              Join us every Sunday for worship at 9:00 AM & 11:00 AM. All are welcome.
-            </p>
+            <div className="bg-background/5 border border-background/10 rounded-xl p-4">
+              <p className="text-background/80 text-xs font-semibold mb-2">Service Times</p>
+              <div className="text-background/50 text-xs space-y-1">
+                <p>Sunday: 9:00 AM & 11:00 AM</p>
+                <p>Wednesday: 7:00 PM</p>
+                <p>Friday Youth: 6:30 PM</p>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Bottom bar */}
         <div className="border-t border-background/10 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-background/40 text-xs">
-            © {new Date().getFullYear()} Immanuel Worship Centre. All rights reserved.
+          <p className="text-background/40 text-xs flex items-center gap-1">
+            © {new Date().getFullYear()} Immanuel Worship Centre. Made with <Heart className="h-3 w-3 text-secondary" /> for the Kingdom.
           </p>
           <div className="flex space-x-6">
             <Link to="/privacy" className="text-background/40 hover:text-secondary text-xs transition-colors">
