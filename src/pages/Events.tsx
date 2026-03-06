@@ -40,6 +40,8 @@ const EventSkeleton = () => (
     </CardContent>
   </EnhancedCard>
 );
+
+const Events = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
