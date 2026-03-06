@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import Layout from '@/components/Layout';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import AdminAnalytics from '@/components/admin/AdminAnalytics';

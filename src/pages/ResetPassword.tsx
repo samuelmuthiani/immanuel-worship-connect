@@ -12,7 +12,10 @@ interface FormErrors {
   general?: string;
 }
 
+import { useAuth } from '@/contexts/AuthContext';
+
 const ResetPassword = () => {
+  const { requestPasswordReset } = useAuth();
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
@@ -40,11 +43,9 @@ const ResetPassword = () => {
     setLoading(true);
     
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: window.location.origin + '/update-password',
-      });
+      const result = await requestPasswordReset(email.trim());
       
-      if (error) throw error;
+      if (!result.success) throw new Error(result.error);
       
       setSent(true);
     } catch (err: unknown) {

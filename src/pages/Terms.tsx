@@ -5,7 +5,11 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { saveTermsAcceptance, getTermsAcceptance } from '@/utils/storage';
 
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+
 const Terms = () => {
+  const { user } = useAuth();
   const { toast } = useToast();
   const [hasAccepted, setHasAccepted] = useState(false);
 
@@ -14,16 +18,30 @@ const Terms = () => {
     setHasAccepted(termsStatus.accepted);
   }, []);
 
-  const handleAcceptTerms = () => {
+  const handleAcceptTerms = async () => {
     saveTermsAcceptance(true);
     setHasAccepted(true);
+
+    // Persist to database if user is logged in
+    if (user?.email) {
+      try {
+        await supabase.from('consent_records').insert([{
+          user_id: user.id,
+          email: user.email,
+          consent_type: 'terms_and_conditions',
+          status: 'granted',
+          accepted_at: new Date().toISOString()
+        }]);
+      } catch (err) {
+        console.error('Error saving consent record:', err);
+      }
+    }
+
     toast({
       title: "Terms Accepted",
       description: "Thank you for accepting our Terms of Service.",
       duration: 3000,
     });
-
-    // If this were connected to a backend, we would send the acceptance to the server here
   };
 
   return (
