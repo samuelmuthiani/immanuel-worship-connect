@@ -87,8 +87,9 @@ const AdminDashboard = () => {
     { key: 'last_name', label: 'Last Name' },
     { key: 'email', label: 'Email' },
     { key: 'phone', label: 'Phone' },
-    { key: 'ministry', label: 'Ministry' },
-    { key: 'gender', label: 'Gender' },
+    { key: 'terms_accepted', label: 'Terms' },
+    { key: 'privacy_accepted', label: 'Privacy' },
+    { key: 'accepted_at', label: 'Accepted At' },
     { key: 'profile_completion', label: 'Completion' },
     { key: 'created_at', label: 'Member Since' }
   ];

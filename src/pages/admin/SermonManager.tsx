@@ -90,7 +90,7 @@ const SermonManager = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-sermons'] });
       setIsEditing(false);
       setCurrentSermon({});
-      toast({ title: 'Success', description: 'Sermon saved' });
+      toast({ title: 'Success', description: 'Sermon saved successfully' });
     },
     onError: (error: Error) => {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });

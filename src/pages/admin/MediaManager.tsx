@@ -114,7 +114,7 @@ const MediaManager = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-photos'] });
       setIsEditingPhoto(false);
       setCurrentPhoto({});
-      toast({ title: 'Success', description: 'Photo saved' });
+      toast({ title: 'Success', description: 'Photo saved successfully' });
     },
     onError: (error: Error) => { toast({ title: 'Error', description: error.message, variant: 'destructive' }); }
   });
@@ -146,7 +146,7 @@ const MediaManager = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-videos'] });
       setIsEditingVideo(false);
       setCurrentVideo({});
-      toast({ title: 'Success', description: 'Video saved' });
+      toast({ title: 'Success', description: 'Video saved successfully' });
     },
     onError: (error: Error) => { toast({ title: 'Error', description: error.message, variant: 'destructive' }); }
   });

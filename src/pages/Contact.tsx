@@ -1,6 +1,7 @@
 
 import React from 'react';
 import Layout from '@/components/Layout';
+import SEO from '@/components/SEO';
 import { MapPin, Phone, Mail, Clock, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -47,6 +48,10 @@ const Contact = () => {
 
   return (
     <Layout>
+      <SEO 
+        title="Contact Us | Immanuel Worship Centre"
+        description="Get in touch with Immanuel Worship Centre for prayer requests, inquiries, or more info."
+      />
       {/* Hero */}
       <section className="py-20 bg-gradient-to-b from-primary/5 to-background">
         <div className="container mx-auto px-4 text-center">

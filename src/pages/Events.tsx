@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Layout from '@/components/Layout';
+import SEO from '@/components/SEO';
 import { Calendar, MapPin, Clock, Users, Filter, Search, X, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -244,6 +245,10 @@ const Events = () => {
 
   return (
     <Layout>
+      <SEO 
+        title="Upcoming Events | Immanuel Worship Centre"
+        description="Join our upcoming events and gatherings at Immanuel Worship Centre in Kilifi."
+      />
       <div className="min-h-screen bg-background transition-colors">
         <div className="container mx-auto px-4 py-8">
           {/* Header */}

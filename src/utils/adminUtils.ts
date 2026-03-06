@@ -38,19 +38,28 @@ export const getDashboardAnalytics = async () => {
       { count: totalMembers },
       { count: totalEvents },
       { count: totalSubmissions },
-      { count: totalSubscribers }
+      { count: totalSubscribers },
+      { count: totalRegistrations },
+      { count: totalGuests },
+      { count: totalPageViews }
     ] = await Promise.all([
       supabase.from('profiles').select('*', { count: 'exact', head: true }),
       supabase.from('events').select('*', { count: 'exact', head: true }),
       supabase.from('contact_submissions').select('*', { count: 'exact', head: true }),
-      supabase.from('newsletter_subscribers').select('*', { count: 'exact', head: true })
+      supabase.from('newsletter_subscribers').select('*', { count: 'exact', head: true }),
+      supabase.from('event_registrations').select('*', { count: 'exact', head: true }),
+      supabase.from('event_registrations').select('*', { count: 'exact', head: true }).eq('is_guest', true),
+      supabase.from('page_views').select('*', { count: 'exact', head: true })
     ]);
 
     return {
       totalMembers: totalMembers || 0,
       totalEvents: totalEvents || 0,
       totalSubmissions: totalSubmissions || 0,
-      totalSubscribers: totalSubscribers || 0
+      totalSubscribers: totalSubscribers || 0,
+      totalRegistrations: totalRegistrations || 0,
+      totalGuests: totalGuests || 0,
+      totalPageViews: totalPageViews || 0
     };
   } catch (error) {
     logger.error('Error fetching analytics:', error);
@@ -58,7 +67,9 @@ export const getDashboardAnalytics = async () => {
       totalMembers: 0,
       totalEvents: 0,
       totalSubmissions: 0,
-      totalSubscribers: 0
+      totalSubscribers: 0,
+      totalRegistrations: 0,
+      totalGuests: 0
     };
   }
 };

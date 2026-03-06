@@ -5,6 +5,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { HelmetProvider } from "react-helmet-async";
+import VisitorTracker from "@/components/VisitorTracker";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { ErrorDisplay } from "@/components/ui/ErrorDisplay";
@@ -79,46 +81,49 @@ const App = () => {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <ThemeProvider defaultTheme="system" storageKey="iwc-ui-theme">
-          <TooltipProvider>
-            <AuthProvider>
-              <BrowserRouter>
-                <Suspense fallback={<GlobalLoadingScreen />}>
-                  <Routes>
-                    <Route path="/" element={<Index />} />
-                    <Route path="/about" element={<About />} />
-                    <Route path="/services" element={<Services />} />
-                    <Route path="/events" element={<Events />} />
-                    <Route path="/media" element={<Media />} />
-                    <Route path="/blog" element={<Blog />} />
-                    <Route path="/sermons" element={<Sermons />} />
-                    <Route path="/donate" element={<Donate />} />
-                    <Route path="/terms" element={<Terms />} />
-                    <Route path="/privacy" element={<Privacy />} />
-                    <Route path="/contact" element={<Contact />} />
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/register" element={<Register />} />
-                    <Route path="/reset-password" element={<ResetPassword />} />
-                    <Route path="/update-password" element={<UpdatePassword />} />
-                    <Route path="/member" element={
-                      <AuthGuard>
-                        <MemberArea />
-                      </AuthGuard>
-                    } />
-                    <Route path="/admin" element={
-                      <AuthGuard adminOnly>
-                        <AdminDashboard />
-                      </AuthGuard>
-                    } />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </Suspense>
-              </BrowserRouter>
-              <Toaster />
-              <Sonner />
-            </AuthProvider>
-          </TooltipProvider>
-        </ThemeProvider>
+        <HelmetProvider>
+          <ThemeProvider defaultTheme="system" storageKey="iwc-ui-theme">
+            <TooltipProvider>
+              <AuthProvider>
+               <BrowserRouter>
+                 <VisitorTracker />
+                 <Suspense fallback={<GlobalLoadingScreen />}>
+                    <Routes>
+                      <Route path="/" element={<Index />} />
+                      <Route path="/about" element={<About />} />
+                      <Route path="/services" element={<Services />} />
+                      <Route path="/events" element={<Events />} />
+                      <Route path="/media" element={<Media />} />
+                      <Route path="/blog" element={<Blog />} />
+                      <Route path="/sermons" element={<Sermons />} />
+                      <Route path="/donate" element={<Donate />} />
+                      <Route path="/terms" element={<Terms />} />
+                      <Route path="/privacy" element={<Privacy />} />
+                      <Route path="/contact" element={<Contact />} />
+                      <Route path="/login" element={<Login />} />
+                      <Route path="/register" element={<Register />} />
+                      <Route path="/reset-password" element={<ResetPassword />} />
+                      <Route path="/update-password" element={<UpdatePassword />} />
+                      <Route path="/member" element={
+                        <AuthGuard>
+                          <MemberArea />
+                        </AuthGuard>
+                      } />
+                      <Route path="/admin" element={
+                        <AuthGuard adminOnly>
+                          <AdminDashboard />
+                        </AuthGuard>
+                      } />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </Suspense>
+                </BrowserRouter>
+                <Toaster />
+                <Sonner />
+              </AuthProvider>
+            </TooltipProvider>
+          </ThemeProvider>
+        </HelmetProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );

@@ -107,7 +107,7 @@ const BlogManager = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-posts'] });
       setIsEditing(false);
       setCurrentPost({});
-      toast({ title: 'Success', description: 'Post saved' });
+      toast({ title: 'Success', description: 'Post saved successfully' });
     },
     onError: (error: Error) => {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
