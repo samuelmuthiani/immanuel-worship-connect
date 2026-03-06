@@ -53,7 +53,7 @@ export function MemberProfile() {
         }));
       }
     } catch (error) {
-      console.error('Error loading profile:', error);
+      // Profile loading error handled via toast
       setError('Failed to load profile data. Please try again.');
       toast({
         title: 'Error',

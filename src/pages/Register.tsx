@@ -46,7 +46,7 @@ const Register = () => {
         { user_id: userId, policy_type: 'privacy' }
       ]);
     } catch (err) {
-      console.error('Error recording policy acceptance:', err);
+      // Policy acceptance error silently handled
     }
   };
 

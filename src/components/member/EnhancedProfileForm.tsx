@@ -95,7 +95,7 @@ export const EnhancedProfileForm: React.FC<EnhancedProfileFormProps> = ({
         throw new Error(result.error?.message || 'Failed to update profile');
       }
     } catch (error: unknown) {
-      console.error('Error updating profile:', error);
+      // Profile update error handled via toast
       toast({
         title: 'Error',
         description: (error instanceof Error ? error.message : String(error)) || 'Failed to update profile. Please try again.',
