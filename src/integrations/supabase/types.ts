@@ -296,19 +296,19 @@ export type Database = {
       }
       newsletter_subscribers: {
         Row: {
-          consent_status: string
+          consent_status: string | null
           email: string
           id: string
           subscribed_at: string
         }
         Insert: {
-          consent_status?: string
+          consent_status?: string | null
           email: string
           id?: string
           subscribed_at?: string
         }
         Update: {
-          consent_status?: string
+          consent_status?: string | null
           email?: string
           id?: string
           subscribed_at?: string
@@ -497,6 +497,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_event_registration_counts: {
+        Args: { event_ids: string[] }
+        Returns: {
+          event_id: string
+          registration_count: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
