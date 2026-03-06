@@ -75,13 +75,13 @@ export const getUpcomingEvents = async (): Promise<Event[]> => {
 export const getEventRegistrationCounts = async (eventIds: string[]): Promise<Record<string, number>> => {
   if (eventIds.length === 0) return {};
   try {
-    const { data, error } = await supabase.rpc('get_event_registration_counts', { event_ids: eventIds });
+    const { data, error } = await (supabase.rpc as any)('get_event_registration_counts', { event_ids: eventIds });
     if (error) {
       logger.error('Error fetching event registration counts:', error);
       return {};
     }
     const map: Record<string, number> = {};
-    (data || []).forEach((row: { event_id: string; registration_count: number }) => {
+    (data as Array<{ event_id: string; registration_count: number }> || []).forEach((row) => {
       map[row.event_id] = Number(row.registration_count) || 0;
     });
     return map;
@@ -110,25 +110,10 @@ export const registerForEvent = async (eventId: string, registrationData: {
 
     logger.log('Registering for event:', eventId);
 
-    const { data: existingRegistration } = await supabase
-      .from('event_registrations')
-      .select('id')
-      .eq('event_id', eventId)
-      .eq('email', email)
-      .maybeSingle();
-
-    if (existingRegistration) {
-      return {
-        success: false,
-        error: 'You are already registered for this event.'
-      };
-    }
-
+    // Use blind insert — duplicate is caught by unique constraint
     const { data, error } = await supabase
       .from('event_registrations')
-      .insert([insertPayload])
-      .select()
-      .single();
+      .insert([insertPayload]);
 
     if (error) {
       logger.error('Error registering for event:', error);
