@@ -17,7 +17,7 @@ interface AuthContextType {
   isAdmin: boolean;
   hasRole: (role: string) => boolean;
   signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  signUp: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  signUp: (email: string, password: string) => Promise<{ success: boolean; user?: User; error?: string }>;
   signOut: () => Promise<void>;
   refreshSession: () => Promise<void>;
   requestPasswordReset: (email: string) => Promise<{ success: boolean; error?: string }>;
@@ -231,7 +231,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         description: 'Please check your email for confirmation instructions.',
       });
 
-      return { success: true };
+      return { success: true, user: data.user ?? undefined };
     } catch (error: unknown) {
       console.error('Signup error:', error);
       const errorMessage = 'An unexpected error occurred. Please try again.';

@@ -8,7 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { EnhancedCard, CardContent, CardHeader, CardTitle } from '@/components/ui/enhanced-card';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { getUpcomingEvents, registerForEvent, isUserRegistered, Event } from '@/utils/eventUtils';
+import { SecurityService } from '@/utils/security';
+import { getUpcomingEvents, registerForEvent, isUserRegistered, getEventRegistrationCounts, Event } from '@/utils/eventUtils';
 
 interface RegistrationForm {
   name: string;
@@ -33,6 +34,7 @@ const Events = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [registeredEvents, setRegisteredEvents] = useState<Set<string>>(new Set());
+  const [attendeeCounts, setAttendeeCounts] = useState<Record<string, number>>({});
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -68,6 +70,13 @@ const Events = () => {
     setRegisteredEvents(registered);
   }, [events, user?.email]);
 
+  const fetchAttendeeCounts = useCallback(async () => {
+    if (events.length === 0) return;
+    const ids = events.map(e => e.id);
+    const counts = await getEventRegistrationCounts(ids);
+    setAttendeeCounts(counts);
+  }, [events]);
+
   const filterEvents = useCallback(() => {
     let filtered = events;
 
@@ -100,6 +109,10 @@ const Events = () => {
     }
   }, [checkUserRegistrations, user?.email]);
 
+  useEffect(() => {
+    fetchAttendeeCounts();
+  }, [fetchAttendeeCounts]);
+
   const handleRegister = (event: Event) => {
     if (!event.registration_required) {
       toast({
@@ -119,8 +132,8 @@ const Events = () => {
 
     if (!user) {
       toast({
-        title: 'Login Recommended',
-        description: 'Please log in for easier registration, or continue as guest.',
+        title: 'Guest registration',
+        description: 'You can register with your name and email—no account required.',
       });
     }
 
@@ -139,6 +152,16 @@ const Events = () => {
       toast({
         title: 'Missing Information',
         description: 'Please fill in your name and email address.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    const rateLimitKey = `event-reg-${registrationForm.email.trim().toLowerCase()}`;
+    if (SecurityService.isRateLimited(rateLimitKey, 5, 15 * 60 * 1000)) {
+      toast({
+        title: 'Too many attempts',
+        description: 'Please wait before registering again.',
         variant: 'destructive'
       });
       return;
@@ -239,9 +262,16 @@ const Events = () => {
           {/* Events Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {loading ? (
-              <div className="col-span-full text-center py-12 text-muted-foreground">
-                Loading events...
-              </div>
+              <>
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="bg-card border border-border rounded-lg p-6 animate-pulse">
+                    <div className="h-5 bg-muted rounded w-1/3 mb-3" />
+                    <div className="h-4 bg-muted rounded w-full mb-2" />
+                    <div className="h-4 bg-muted rounded w-2/3 mb-4" />
+                    <div className="h-10 bg-muted rounded w-full" />
+                  </div>
+                ))}
+              </>
             ) : filteredEvents.length === 0 ? (
               <div className="col-span-full text-center py-12 text-muted-foreground">
                 No upcoming events at the moment. Check back soon!
@@ -280,9 +310,18 @@ const Events = () => {
                   </CardHeader>
 
                   <CardContent className="space-y-4">
-                    <p className="text-muted-foreground text-sm line-clamp-3">
-                      {event.description}
-                    </p>
+                    {event.description && (
+                      <p className="text-muted-foreground text-sm line-clamp-3">
+                        {event.description}
+                      </p>
+                    )}
+
+                    {event.registration_required && attendeeCounts[event.id] !== undefined && (
+                      <p className="text-xs text-muted-foreground">
+                        <Users className="h-3.5 w-3.5 inline mr-1" />
+                        {attendeeCounts[event.id]} {attendeeCounts[event.id] === 1 ? 'person' : 'people'} registered
+                      </p>
+                    )}
 
                     <div className="space-y-2 text-sm">
                       <div className="flex items-center text-muted-foreground">
@@ -340,10 +379,10 @@ const Events = () => {
         {/* Registration Modal */}
         {registrationModal.open && registrationModal.event && (
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-            <div className="bg-card border border-border rounded-lg max-w-md w-full p-6">
+            <div className="bg-card border border-border rounded-xl shadow-xl max-w-md w-full p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-foreground">
-                  Register for Event
+                  {user ? 'Register for Event' : 'Register as Guest'}
                 </h3>
                 <Button onClick={closeModal} variant="ghost" size="sm" className="h-8 w-8 p-0">
                   <X className="h-4 w-4" />

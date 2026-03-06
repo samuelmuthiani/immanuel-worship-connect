@@ -43,6 +43,7 @@ interface NewsletterSubscriber {
   id: string;
   email: string;
   subscribed_at: string;
+  consent_status?: string;
 }
 
 interface PolicyAcceptance {
@@ -98,8 +99,9 @@ const AdminDashboard = () => {
   ];
 
   const newsletterColumns = [
-    { key: 'email', label: 'Email' },
-    { key: 'subscribed_at', label: 'Subscribed' }
+    { key: 'email', label: 'Subscriber Email' },
+    { key: 'subscribed_at', label: 'Subscription Timestamp' },
+    { key: 'consent_status', label: 'Consent Status' }
   ];
 
   const eventRegColumns = [
@@ -342,6 +344,28 @@ const AdminDashboard = () => {
                   tableName="contact_submissions"
                   onRefresh={fetchContactSubmissions}
                 />
+                {/* Newsletter stats */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="rounded-xl border border-border bg-card p-4">
+                    <p className="text-sm text-muted-foreground">Total Subscribers</p>
+                    <p className="text-2xl font-bold text-foreground mt-1">{newsletterSubscribers.length}</p>
+                  </div>
+                  <div className="rounded-xl border border-border bg-card p-4">
+                    <p className="text-sm text-muted-foreground">Recent (last 7 days)</p>
+                    <p className="text-2xl font-bold text-foreground mt-1">
+                      {newsletterSubscribers.filter(s => {
+                        const t = new Date(s.subscribed_at).getTime();
+                        return t >= Date.now() - 7 * 24 * 60 * 60 * 1000;
+                      }).length}
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-border bg-card p-4">
+                    <p className="text-sm text-muted-foreground">Consent: Granted</p>
+                    <p className="text-2xl font-bold text-foreground mt-1">
+                      {newsletterSubscribers.filter(s => (s.consent_status || 'granted') === 'granted').length}
+                    </p>
+                  </div>
+                </div>
                 <EnhancedDataTable
                   title="Newsletter Subscribers"
                   data={newsletterSubscribers}

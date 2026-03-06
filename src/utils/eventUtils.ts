@@ -71,6 +71,26 @@ export const getUpcomingEvents = async (): Promise<Event[]> => {
   }
 };
 
+/** Fetch registration counts for given event IDs (public, no PII). */
+export const getEventRegistrationCounts = async (eventIds: string[]): Promise<Record<string, number>> => {
+  if (eventIds.length === 0) return {};
+  try {
+    const { data, error } = await supabase.rpc('get_event_registration_counts', { event_ids: eventIds });
+    if (error) {
+      logger.error('Error fetching event registration counts:', error);
+      return {};
+    }
+    const map: Record<string, number> = {};
+    (data || []).forEach((row: { event_id: string; registration_count: number }) => {
+      map[row.event_id] = Number(row.registration_count) || 0;
+    });
+    return map;
+  } catch (error) {
+    logger.error('Error in getEventRegistrationCounts:', error);
+    return {};
+  }
+};
+
 export const registerForEvent = async (eventId: string, registrationData: {
   name: string;
   email: string;
@@ -79,11 +99,13 @@ export const registerForEvent = async (eventId: string, registrationData: {
   try {
     const { data: { user } } = await supabase.auth.getUser();
 
-    const sanitizedData = {
+    const email = SecurityService.sanitizeInput(registrationData.email);
+    const insertPayload = {
       event_id: eventId,
       name: SecurityService.sanitizeInput(registrationData.name),
-      email: SecurityService.sanitizeInput(registrationData.email),
-      phone: registrationData.phone ? SecurityService.sanitizeInput(registrationData.phone) : null
+      email,
+      phone: registrationData.phone ? SecurityService.sanitizeInput(registrationData.phone) : null as string | null,
+      ...(user?.id && { user_id: user.id })
     };
 
     logger.log('Registering for event:', eventId);
@@ -92,7 +114,7 @@ export const registerForEvent = async (eventId: string, registrationData: {
       .from('event_registrations')
       .select('id')
       .eq('event_id', eventId)
-      .eq('email', sanitizedData.email)
+      .eq('email', email)
       .maybeSingle();
 
     if (existingRegistration) {
@@ -104,7 +126,7 @@ export const registerForEvent = async (eventId: string, registrationData: {
 
     const { data, error } = await supabase
       .from('event_registrations')
-      .insert([sanitizedData])
+      .insert([insertPayload])
       .select()
       .single();
 

@@ -2,12 +2,15 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Mail, Check, Send, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { SecurityService } from '@/utils/security';
 
 const NewsletterSignup = () => {
   const [email, setEmail] = useState('');
+  const [consent, setConsent] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,15 +31,28 @@ const NewsletterSignup = () => {
       return;
     }
 
+    if (!consent) {
+      setError('Please agree to receive newsletter emails.');
+      return;
+    }
+
+    const rateLimitKey = `newsletter-${email.trim().toLowerCase()}`;
+    if (SecurityService.isRateLimited(rateLimitKey, 3, 60 * 60 * 1000)) {
+      setError('Too many attempts. Please try again later.');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      // Blind insert - no .select() since public users can't SELECT
+      const signupTimestamp = new Date().toISOString();
+      const sanitizedEmail = SecurityService.sanitizeEmail(email);
       const { error: supabaseError } = await supabase
         .from('newsletter_subscribers')
         .insert([{
-          email: email.trim(),
-          subscribed_at: new Date().toISOString()
+          email: sanitizedEmail,
+          subscribed_at: signupTimestamp,
+          consent_status: 'granted'
         }]);
 
       if (supabaseError) {
@@ -104,20 +120,21 @@ const NewsletterSignup = () => {
           </div>
         )}
         
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="flex-1 relative">
-            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input
-              type="email"
-              placeholder="Enter your email address"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              disabled={isSubmitting}
-              className="pl-10 bg-card border-border text-foreground placeholder:text-muted-foreground rounded-xl"
-            />
-          </div>
-          <Button
+        <div className="space-y-3">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex-1 relative">
+              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                type="email"
+                placeholder="Enter your email address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                disabled={isSubmitting}
+                className="pl-10 bg-card border-border text-foreground placeholder:text-muted-foreground rounded-xl"
+              />
+            </div>
+            <Button
             type="submit"
             disabled={isSubmitting}
             className="bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold px-6 py-2 rounded-xl whitespace-nowrap flex items-center gap-2"
@@ -133,7 +150,20 @@ const NewsletterSignup = () => {
                 Subscribe
               </>
             )}
-          </Button>
+            </Button>
+          </div>
+          <div className="flex items-start gap-2">
+            <Checkbox
+              id="newsletter-consent"
+              checked={consent}
+              onCheckedChange={(c) => setConsent(!!c)}
+              disabled={isSubmitting}
+              className="mt-0.5"
+            />
+            <label htmlFor="newsletter-consent" className="text-sm text-muted-foreground cursor-pointer">
+              I agree to receive newsletters and updates from Immanuel Worship Connect. I can unsubscribe at any time.
+            </label>
+          </div>
         </div>
       </form>
       <p className="text-xs text-muted-foreground mt-3 text-center">

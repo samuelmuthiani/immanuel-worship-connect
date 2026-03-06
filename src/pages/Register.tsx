@@ -58,8 +58,10 @@ const Register = () => {
     try {
       const result = await signUp(email.trim(), password);
       if (result.success) {
+        if (result.user?.id) {
+          await recordPolicyAcceptance(result.user.id);
+        }
         setSuccess(true);
-        // The policy acceptance will be recorded after email confirmation when the user first logs in
       } else {
         setErrors({ general: result.error || 'Registration failed' });
       }

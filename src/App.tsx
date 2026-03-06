@@ -1,5 +1,4 @@
-
-import React from "react";
+import React, { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,6 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import AuthGuard from "@/components/AuthGuard";
+import GlobalLoadingScreen from "@/components/GlobalLoadingScreen";
 import Index from "./pages/Index";
 import About from "./pages/About";
 import Services from "./pages/Services";
@@ -22,13 +22,20 @@ import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import MemberArea from "./pages/MemberArea";
-
 import Donate from "./pages/Donate";
-import AdminDashboard from "./pages/AdminDashboard";
 import ResetPassword from "./pages/ResetPassword";
 import UpdatePassword from "./pages/UpdatePassword";
-import GlobalLoadingScreen from "@/components/GlobalLoadingScreen";
+
+const MemberArea = lazy(() => import("./pages/MemberArea"));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+
+function PageLoader() {
+  return (
+    <div className="flex min-h-[60vh] items-center justify-center">
+      <div className="animate-spin rounded-full h-10 w-10 border-2 border-primary border-t-transparent" />
+    </div>
+  );
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -82,13 +89,16 @@ const App = () => {
                   <Route path="/update-password" element={<UpdatePassword />} />
                   <Route path="/member" element={
                     <AuthGuard>
-                      <MemberArea />
+                      <Suspense fallback={<PageLoader />}>
+                        <MemberArea />
+                      </Suspense>
                     </AuthGuard>
                   } />
-                  
                   <Route path="/admin" element={
                     <AuthGuard adminOnly>
-                      <AdminDashboard />
+                      <Suspense fallback={<PageLoader />}>
+                        <AdminDashboard />
+                      </Suspense>
                     </AuthGuard>
                   } />
                   <Route path="*" element={<NotFound />} />

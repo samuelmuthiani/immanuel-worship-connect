@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { SecurityService } from '@/utils/security';
 import { Phone, Mail, MapPin, Send, CheckCircle, AlertCircle, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -29,13 +30,23 @@ const ContactSection = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
+    const rateLimitKey = 'contact-form';
+    if (SecurityService.isRateLimited(rateLimitKey, 5, 15 * 60 * 1000)) {
+      setError('Too many submissions. Please try again in 15 minutes.');
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
-      // Blind insert - no .select() since public users may not have SELECT permission
       const { error: supabaseError } = await supabase
         .from('contact_submissions')
-        .insert([{ name: form.name.trim(), email: form.email.trim(), message: form.message.trim(), inquiry_type: 'general', submitted_at: new Date().toISOString() }]);
+        .insert([{
+          name: SecurityService.sanitizeInput(form.name.trim()),
+          email: SecurityService.sanitizeEmail(form.email),
+          message: SecurityService.sanitizeInput(form.message.trim()),
+          inquiry_type: 'general',
+          submitted_at: new Date().toISOString()
+        }]);
       if (supabaseError) throw new Error(supabaseError.message);
       setSubmitted(true);
       setForm({ name: '', email: '', message: '' });
