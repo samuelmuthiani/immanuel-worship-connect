@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useCallback } from 'react';
 import Layout from '@/components/Layout';
 import { useAuth } from '@/hooks/useAuth';
@@ -16,6 +15,7 @@ import SermonManager from '@/pages/admin/SermonManager';
 import EventManager from '@/pages/admin/EventManager';
 import { AdminRegisterAdmin } from '@/components/admin/AdminRegisterAdmin';
 import MediaManager from '@/pages/admin/MediaManager';
+import { logger } from '@/lib/logger';
 
 interface UserProfile {
   id: string;
@@ -131,7 +131,7 @@ const AdminDashboard = () => {
       });
       setUserProfiles(enrichedData);
     } catch (err) {
-      console.error('Error fetching profiles:', err);
+      logger.error('Error fetching profiles:', err);
     }
   }, []);
 
@@ -140,7 +140,7 @@ const AdminDashboard = () => {
       const data = await adminService.getContactSubmissions();
       setContactSubmissions(data);
     } catch (err) {
-      console.error('Error fetching contacts:', err);
+      logger.error('Error fetching contacts:', err);
     }
   }, []);
 
@@ -149,7 +149,7 @@ const AdminDashboard = () => {
       const data = await adminService.getNewsletterSubscribers();
       setNewsletterSubscribers(data);
     } catch (err) {
-      console.error('Error fetching subscribers:', err);
+      logger.error('Error fetching subscribers:', err);
     }
   }, []);
 
@@ -162,7 +162,7 @@ const AdminDashboard = () => {
       }));
       setEventRegistrations(transformed);
     } catch (err) {
-      console.error('Error fetching registrations:', err);
+      logger.error('Error fetching registrations:', err);
       setEventRegistrations([]);
     }
   }, []);
@@ -175,7 +175,6 @@ const AdminDashboard = () => {
         .order('accepted_at', { ascending: false });
       if (error) throw error;
       
-      // Enrich with user emails from profiles
       const enriched = await Promise.all((data || []).map(async (acceptance: any) => {
         const { data: profile } = await supabase
           .from('profiles')
@@ -186,7 +185,7 @@ const AdminDashboard = () => {
       }));
       setPolicyAcceptances(enriched);
     } catch (err) {
-      console.error('Error fetching policy acceptances:', err);
+      logger.error('Error fetching policy acceptances:', err);
     }
   }, []);
 
@@ -254,7 +253,6 @@ const AdminDashboard = () => {
       <Layout>
         <section className="py-12 sm:py-16">
           <div className="container max-w-7xl mx-auto px-4 sm:px-6">
-            {/* Header */}
             <div className="mb-8">
               <div className="flex items-center gap-3 mb-2">
                 <div className="p-2 rounded-xl bg-primary/10">
@@ -344,7 +342,6 @@ const AdminDashboard = () => {
                   tableName="contact_submissions"
                   onRefresh={fetchContactSubmissions}
                 />
-                {/* Newsletter stats */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="rounded-xl border border-border bg-card p-4">
                     <p className="text-sm text-muted-foreground">Total Subscribers</p>

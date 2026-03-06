@@ -32,7 +32,7 @@ export const DeleteAccountDialog: React.FC = () => {
       await signOut();
       navigate('/', { replace: true });
     } catch (error) {
-      console.error('Error deleting account:', error);
+      // Delete account error handled via toast
       toast({
         title: 'Error',
         description: 'Failed to delete account. Please try again.',

@@ -8,6 +8,7 @@ import { registerForEvent, isUserRegistered, Event } from '@/utils/eventUtils';
 import { useNavigate } from 'react-router-dom';
 import { GlobalErrorBoundary } from '@/components/ui/GlobalErrorBoundary';
 import { DataValidation, eventRegistrationSchema } from '@/utils/dataValidation';
+import { logger } from '@/lib/logger';
 
 interface EventCardProps {
   event: Event;
@@ -38,7 +39,7 @@ export const EventCard: React.FC<EventCardProps> = ({
       const registered = await isUserRegistered(event.id, user.email);
       setIsRegistered(registered);
     } catch (error) {
-      console.error('Error checking registration:', error);
+      logger.error('Error checking registration:', error);
       setError('Failed to check registration status');
     } finally {
       setCheckingRegistration(false);
@@ -122,7 +123,7 @@ export const EventCard: React.FC<EventCardProps> = ({
         throw new Error(typeof result.error === 'string' ? result.error : result.error?.message || 'Registration failed');
       }
     } catch (error: unknown) {
-      console.error('Registration error:', error);
+      logger.error('Registration error:', error);
       const errorMessage = (error instanceof Error ? error.message : String(error)) || 'Failed to register for event. Please try again.';
       setError(errorMessage);
       toast({

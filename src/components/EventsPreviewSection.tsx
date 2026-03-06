@@ -19,7 +19,7 @@ const EventsPreviewSection = () => {
           .slice(0, 3);
         setEvents(upcomingEvents);
       } catch (error) {
-        console.error('Error fetching events:', error);
+        // Error handled silently for preview section
       } finally {
         setLoading(false);
       }

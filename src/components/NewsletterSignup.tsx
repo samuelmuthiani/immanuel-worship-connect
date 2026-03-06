@@ -71,7 +71,7 @@ const NewsletterSignup = () => {
       
       setTimeout(() => setIsSubscribed(false), 5000);
     } catch (error: unknown) {
-      console.error('Newsletter subscription error:', error);
+      // Newsletter subscription error handled via UI
       const errorMessage = (error instanceof Error ? error.message : String(error)) || 'There was an error subscribing. Please try again.';
       setError(errorMessage);
       toast({

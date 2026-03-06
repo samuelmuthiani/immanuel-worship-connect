@@ -44,7 +44,7 @@ const Events = () => {
       const eventsData = await getUpcomingEvents();
       setEvents(eventsData);
     } catch (error) {
-      console.error('Error fetching events:', error);
+      // Events fetch error handled via toast
       toast({
         title: 'Error',
         description: 'Failed to load events. Please try again.',

@@ -1,6 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
+import { logger } from '@/lib/logger';
 
 export interface AdminAction {
   action: string;
@@ -25,7 +26,7 @@ export class AdminSecurityService {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        console.error('Attempted admin action without authentication');
+        logger.error('Attempted admin action without authentication');
         return;
       }
 
@@ -39,10 +40,10 @@ export class AdminSecurityService {
         });
 
       if (error) {
-        console.error('Failed to log admin action:', error);
+        logger.error('Failed to log admin action:', error);
       }
     } catch (error) {
-      console.error('Error logging admin action:', error);
+      logger.error('Error logging admin action:', error);
     }
   }
 
@@ -59,7 +60,7 @@ export class AdminSecurityService {
         .eq('user_id', user.id);
 
       if (roleError) {
-        console.error('Error checking user roles:', roleError);
+        logger.error('Error checking user roles:', roleError);
         return { isValid: false, user: null };
       }
 
@@ -68,7 +69,7 @@ export class AdminSecurityService {
 
       return { isValid: hasRequiredRole, user };
     } catch (error) {
-      console.error('Error verifying admin access:', error);
+      logger.error('Error verifying admin access:', error);
       return { isValid: false, user: null };
     }
   }
@@ -96,7 +97,7 @@ export class AdminSecurityService {
       if (error) throw new Error(error.message || 'Failed to delete user');
       return { success: true };
     } catch (error: unknown) {
-      console.error('Error deleting user:', error);
+      logger.error('Error deleting user:', error);
       return { success: false, error: (error as Error).message };
     }
   }
@@ -124,13 +125,13 @@ export class AdminSecurityService {
       });
 
       if (error) {
-        console.error('Error assigning role:', error);
+        logger.error('Error assigning role:', error);
         return { success: false, error: error.message || 'Failed to assign role' };
       }
 
       return { success: true };
     } catch (error: unknown) {
-      console.error('Error assigning role:', error);
+      logger.error('Error assigning role:', error);
       return { success: false, error: (error as Error).message };
     }
   }
@@ -149,13 +150,13 @@ export class AdminSecurityService {
         .limit(limit);
 
       if (error) {
-        console.error('Error fetching audit logs:', error);
+        logger.error('Error fetching audit logs:', error);
         return [];
       }
 
       return (data || []) as unknown as AuditLog[];
     } catch (error) {
-      console.error('Error getting audit logs:', error);
+      logger.error('Error getting audit logs:', error);
       return [];
     }
   }

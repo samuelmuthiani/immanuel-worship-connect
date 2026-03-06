@@ -42,7 +42,7 @@ const Sermons = () => {
       if (error) throw error;
       setSermons((data as Sermon[]) || []);
     } catch (error) {
-      console.error('Error fetching sermons:', error);
+      // Sermons fetch error handled via toast
       toast({
         title: 'Error',
         description: 'Failed to load sermons. Please try again.',
