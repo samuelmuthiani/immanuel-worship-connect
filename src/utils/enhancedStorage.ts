@@ -1,4 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, supabaseEnvMissing } from '@/integrations/supabase/client';
 import { DataValidation, contactFormSchema, RateLimiter } from './dataValidation';
 import { logger } from '@/lib/logger';
 
@@ -33,7 +33,7 @@ interface ContactSubmissionResult {
 interface NewsletterSubscriptionResult {
   id: string;
   email: string;
-  subscribed_at: string;
+  created_at: string;
 }
 
 interface DashboardAnalytics {
@@ -53,6 +53,10 @@ export class EnhancedStorage {
     data?: ContactSubmissionResult;
   }> {
     try {
+      if (supabaseEnvMissing) {
+        return { success: false, error: 'Missing Supabase configuration' };
+      }
+
       const clientId = `contact_${data.email}`;
       if (!RateLimiter.isAllowed(clientId, 3, 300000)) {
         return {
@@ -118,6 +122,10 @@ export class EnhancedStorage {
     data?: NewsletterSubscriptionResult;
   }> {
     try {
+      if (supabaseEnvMissing) {
+        return { success: false, error: 'Missing Supabase configuration' };
+      }
+
       if (!DataValidation.validateEmail(email)) {
         return {
           success: false,
@@ -126,35 +134,25 @@ export class EnhancedStorage {
       }
 
       const sanitizedEmail = DataValidation.sanitizeInput(email.toLowerCase());
-
-      const { data: existing } = await supabase
-        .from('newsletter_subscribers')
-        .select('id')
-        .eq('email', sanitizedEmail)
-        .maybeSingle();
-
-      if (existing) {
-        return {
-          success: false,
-          error: 'Email already subscribed to newsletter'
-        };
+      const clientId = `newsletter_${sanitizedEmail}`;
+      if (!RateLimiter.isAllowed(clientId, 3, 60 * 60 * 1000)) {
+        return { success: false, error: 'Too many attempts. Please try again later.' };
       }
 
-      const { data: result, error } = await supabase
-        .from('newsletter_subscribers')
-        .insert([{
+      const { data, error } = await supabase.functions.invoke('newsletter-subscribe', {
+        body: {
           email: sanitizedEmail,
-          subscribed_at: new Date().toISOString()
-        }])
-        .select()
-        .single();
+          source_page: window.location.pathname
+        }
+      });
 
-      if (error) {
-        logger.error('Error saving newsletter subscription:', error);
-        throw error;
+      if (error || data?.error) {
+        const message = data?.error || error?.message || 'Failed to subscribe to newsletter';
+        return { success: false, error: message };
       }
 
-      return { success: true, data: result };
+      RateLimiter.reset(clientId);
+      return { success: true };
 
     } catch (error: unknown) {
       logger.error('Error in saveNewsletterSubscription:', error);
@@ -167,6 +165,18 @@ export class EnhancedStorage {
 
   static async getDashboardAnalytics(): Promise<DashboardAnalytics> {
     try {
+      if (supabaseEnvMissing) {
+        return {
+          totalUsers: 0,
+          totalContacts: 0,
+          totalRegistrations: 0,
+          totalSubscribers: 0,
+          newUsersMonth: 0,
+          contactsMonth: 0,
+          registrationsMonth: 0
+        };
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Authentication required');
 

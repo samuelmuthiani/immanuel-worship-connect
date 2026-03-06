@@ -18,7 +18,7 @@ interface AuthContextType {
   isAdmin: boolean;
   hasRole: (role: string) => boolean;
   signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  signUp: (email: string, password: string) => Promise<{ success: boolean; user?: User; error?: string }>;
+  signUp: (email: string, password: string, metadata?: Record<string, any>) => Promise<{ success: boolean; user?: User; error?: string }>;
   signOut: () => Promise<void>;
   refreshSession: () => Promise<void>;
   requestPasswordReset: (email: string) => Promise<{ success: boolean; error?: string }>;
@@ -76,26 +76,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(currentSession?.user ?? null);
 
         if (currentSession?.user) {
-          setTimeout(async () => {
-            if (mounted) {
-              try {
-                const roles = await fetchUserRoles(currentSession.user.id);
-                setUserRoles(roles);
-              } catch (error) {
-                logger.error('Failed to fetch user roles:', error);
-                setUserRoles([]);
-              }
-            }
-          }, 100);
-        } else {
+          try {
+            const roles = await fetchUserRoles(currentSession.user.id);
+            if (mounted) setUserRoles(roles);
+          } catch (error) {
+            logger.error('Failed to fetch user roles:', error);
+            if (mounted) setUserRoles([]);
+          }
+        } else if (mounted) {
           setUserRoles([]);
         }
 
-        setIsLoading(false);
+        if (mounted) setIsLoading(false);
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session: currentSession }, error }) => {
+    supabase.auth.getSession().then(async ({ data: { session: currentSession }, error }) => {
       if (!mounted) return;
 
       if (error) {
@@ -108,12 +104,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(currentSession?.user ?? null);
 
       if (currentSession?.user) {
-        fetchUserRoles(currentSession.user.id).then(roles => {
+        try {
+          const roles = await fetchUserRoles(currentSession.user.id);
           if (mounted) setUserRoles(roles);
-        });
+        } catch (error) {
+          logger.error('Failed to fetch user roles:', error);
+          if (mounted) setUserRoles([]);
+        }
+      } else if (mounted) {
+        setUserRoles([]);
       }
 
-      setIsLoading(false);
+      if (mounted) setIsLoading(false);
     });
 
     return () => {
@@ -180,7 +182,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = async (email: string, password: string, metadata?: Record<string, any>) => {
     try {
       const sanitizedEmail = SecurityService.sanitizeEmail(email);
 
@@ -204,7 +206,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email: sanitizedEmail,
         password,
         options: {
-          emailRedirectTo: redirectUrl
+          emailRedirectTo: redirectUrl,
+          data: metadata
         }
       });
 

@@ -127,22 +127,16 @@ export const saveNewsletterSubscription = async (email: string) => {
 
     logger.log('Saving newsletter subscription');
 
-    const { data, error } = await supabase
-      .from('newsletter_subscribers')
-      .insert([{
+    const { data, error } = await supabase.functions.invoke('newsletter-subscribe', {
+      body: {
         email: sanitizedEmail,
-        subscribed_at: new Date().toISOString()
-      }])
-      .select();
-
-    if (error) {
-      logger.error('Error saving newsletter subscription:', error);
-
-      if (error.code === '23505') {
-        throw new Error('This email is already subscribed to our newsletter.');
+        source_page: window.location.pathname
       }
+    });
 
-      throw error;
+    if (error || data?.error) {
+      const message = data?.error || error?.message || 'Failed to subscribe to newsletter';
+      throw new Error(message);
     }
 
     logger.log('Newsletter subscription saved successfully');
@@ -256,7 +250,7 @@ export const getAllNewsletterSubscribers = async () => {
     const { data, error } = await supabase
       .from('newsletter_subscribers')
       .select('*')
-      .order('subscribed_at', { ascending: false });
+      .order('created_at', { ascending: false });
 
     if (error) {
       logger.error('Error fetching newsletter subscribers:', error);

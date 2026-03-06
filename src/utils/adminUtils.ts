@@ -40,7 +40,7 @@ export const getDashboardAnalytics = async () => {
       { count: totalSubmissions },
       { count: totalSubscribers }
     ] = await Promise.all([
-      supabase.from('user_roles').select('*', { count: 'exact', head: true }),
+      supabase.from('profiles').select('*', { count: 'exact', head: true }),
       supabase.from('events').select('*', { count: 'exact', head: true }),
       supabase.from('contact_submissions').select('*', { count: 'exact', head: true }),
       supabase.from('newsletter_subscribers').select('*', { count: 'exact', head: true })

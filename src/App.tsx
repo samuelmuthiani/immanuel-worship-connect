@@ -7,27 +7,28 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
+import { ErrorDisplay } from "@/components/ui/ErrorDisplay";
 import AuthGuard from "@/components/AuthGuard";
 import GlobalLoadingScreen from "@/components/GlobalLoadingScreen";
-import Index from "./pages/Index";
-import About from "./pages/About";
-import Services from "./pages/Services";
-import Events from "./pages/Events";
-import Media from "./pages/Media";
-import Blog from "./pages/Blog";
-import Sermons from "./pages/Sermons";
-import Terms from "./pages/Terms";
-import Privacy from "./pages/Privacy";
-import Contact from "./pages/Contact";
-import NotFound from "./pages/NotFound";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import Donate from "./pages/Donate";
-import ResetPassword from "./pages/ResetPassword";
-import UpdatePassword from "./pages/UpdatePassword";
-
+import { supabaseEnvMissing } from "@/integrations/supabase/client";
+const Index = lazy(() => import("./pages/Index"));
+const About = lazy(() => import("./pages/About"));
+const Services = lazy(() => import("./pages/Services"));
+const Events = lazy(() => import("./pages/Events"));
+const Media = lazy(() => import("./pages/Media"));
+const Blog = lazy(() => import("./pages/Blog"));
+const Sermons = lazy(() => import("./pages/Sermons"));
+const Terms = lazy(() => import("./pages/Terms"));
+const Privacy = lazy(() => import("./pages/Privacy"));
+const Contact = lazy(() => import("./pages/Contact"));
+const Login = lazy(() => import("./pages/Login"));
+const Register = lazy(() => import("./pages/Register"));
+const Donate = lazy(() => import("./pages/Donate"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const UpdatePassword = lazy(() => import("./pages/UpdatePassword"));
 const MemberArea = lazy(() => import("./pages/MemberArea"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 function PageLoader() {
   return (
@@ -63,6 +64,17 @@ const App = () => {
   }, []);
 
   if (appLoading) return <GlobalLoadingScreen />;
+  if (supabaseEnvMissing) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-6">
+        <ErrorDisplay
+          title="Configuration Required"
+          message="Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file to load the app."
+          showRetry={false}
+        />
+      </div>
+    );
+  }
 
   return (
     <ErrorBoundary>
@@ -71,38 +83,36 @@ const App = () => {
           <TooltipProvider>
             <AuthProvider>
               <BrowserRouter>
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/about" element={<About />} />
-                  <Route path="/services" element={<Services />} />
-                  <Route path="/events" element={<Events />} />
-                  <Route path="/media" element={<Media />} />
-                  <Route path="/blog" element={<Blog />} />
-                  <Route path="/sermons" element={<Sermons />} />
-                  <Route path="/donate" element={<Donate />} />
-                  <Route path="/terms" element={<Terms />} />
-                  <Route path="/privacy" element={<Privacy />} />
-                  <Route path="/contact" element={<Contact />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/register" element={<Register />} />
-                  <Route path="/reset-password" element={<ResetPassword />} />
-                  <Route path="/update-password" element={<UpdatePassword />} />
-                  <Route path="/member" element={
-                    <AuthGuard>
-                      <Suspense fallback={<PageLoader />}>
+                <Suspense fallback={<GlobalLoadingScreen />}>
+                  <Routes>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/about" element={<About />} />
+                    <Route path="/services" element={<Services />} />
+                    <Route path="/events" element={<Events />} />
+                    <Route path="/media" element={<Media />} />
+                    <Route path="/blog" element={<Blog />} />
+                    <Route path="/sermons" element={<Sermons />} />
+                    <Route path="/donate" element={<Donate />} />
+                    <Route path="/terms" element={<Terms />} />
+                    <Route path="/privacy" element={<Privacy />} />
+                    <Route path="/contact" element={<Contact />} />
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/register" element={<Register />} />
+                    <Route path="/reset-password" element={<ResetPassword />} />
+                    <Route path="/update-password" element={<UpdatePassword />} />
+                    <Route path="/member" element={
+                      <AuthGuard>
                         <MemberArea />
-                      </Suspense>
-                    </AuthGuard>
-                  } />
-                  <Route path="/admin" element={
-                    <AuthGuard adminOnly>
-                      <Suspense fallback={<PageLoader />}>
+                      </AuthGuard>
+                    } />
+                    <Route path="/admin" element={
+                      <AuthGuard adminOnly>
                         <AdminDashboard />
-                      </Suspense>
-                    </AuthGuard>
-                  } />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
+                      </AuthGuard>
+                    } />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </Suspense>
               </BrowserRouter>
               <Toaster />
               <Sonner />

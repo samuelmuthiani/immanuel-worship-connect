@@ -3,12 +3,13 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Mail, Check, Send, AlertCircle } from 'lucide-react';
+import { Mail, Check, Send, AlertCircle, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { SecurityService } from '@/utils/security';
 
 const NewsletterSignup = () => {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [consent, setConsent] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -20,6 +21,11 @@ const NewsletterSignup = () => {
     e.preventDefault();
     setError(null);
     
+    if (!name.trim()) {
+      setError('Please enter your name.');
+      return;
+    }
+
     if (!email.trim()) {
       setError('Please enter a valid email address.');
       return;
@@ -45,33 +51,37 @@ const NewsletterSignup = () => {
     setIsSubmitting(true);
 
     try {
-      const signupTimestamp = new Date().toISOString();
       const sanitizedEmail = SecurityService.sanitizeEmail(email);
-      const { error: supabaseError } = await supabase
-        .from('newsletter_subscribers')
-        .insert([{
-          email: sanitizedEmail,
-          subscribed_at: signupTimestamp,
-          consent_status: 'granted'
-        }]);
+      const sanitizedName = SecurityService.sanitizeInput(name);
 
-      if (supabaseError) {
-        if (supabaseError.code === '23505') {
-          throw new Error('This email is already subscribed to our newsletter.');
+      const { data, error: functionError } = await supabase.functions.invoke('newsletter-subscribe', {
+        body: {
+          email: sanitizedEmail,
+          name: sanitizedName,
+          source_page: window.location.pathname
         }
-        throw new Error(supabaseError.message || 'Failed to subscribe to newsletter');
+      });
+
+      if (functionError) {
+        throw new Error(functionError.message || 'Failed to subscribe to newsletter');
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
       }
 
       setIsSubscribed(true);
       setEmail('');
+      setName('');
       toast({
         title: 'Successfully Subscribed!',
-        description: "Thank you for joining our newsletter. You'll receive updates and inspiration from our community.",
+        description: data?.emailSent
+          ? 'Subscription successful. Check your email for confirmation.'
+          : "Subscription successful. You'll receive updates and inspiration from our community.",
       });
-      
+
       setTimeout(() => setIsSubscribed(false), 5000);
     } catch (error: unknown) {
-      // Newsletter subscription error handled via UI
       const errorMessage = (error instanceof Error ? error.message : String(error)) || 'There was an error subscribing. Please try again.';
       setError(errorMessage);
       toast({
@@ -95,7 +105,7 @@ const NewsletterSignup = () => {
             Welcome to Our Newsletter!
           </h3>
           <p className="text-muted-foreground text-center text-sm mb-4">
-            You're now subscribed and will receive our latest updates, event announcements, and weekly inspiration.
+            You're now subscribed. Check your email for confirmation and upcoming updates.
           </p>
           <Button 
             onClick={() => setIsSubscribed(false)}
@@ -121,6 +131,18 @@ const NewsletterSignup = () => {
         )}
         
         <div className="space-y-3">
+          <div className="relative">
+            <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              type="text"
+              placeholder="Enter your name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              disabled={isSubmitting}
+              className="pl-10 bg-card border-border text-foreground placeholder:text-muted-foreground rounded-xl"
+            />
+          </div>
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="flex-1 relative">
               <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />

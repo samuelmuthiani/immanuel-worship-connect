@@ -35,9 +35,9 @@ function buildMonthlyData(
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
     months.push({
       month: MONTH_LABELS[d.getMonth()],
-      members: profiles.filter(p => p.created_at.startsWith(key)).length,
-      events: events.filter(e => e.created_at.startsWith(key)).length,
-      submissions: submissions.filter(s => s.submitted_at.startsWith(key)).length,
+      members: profiles.filter(p => (p.created_at || '').startsWith(key)).length,
+      events: events.filter(e => (e.created_at || '').startsWith(key)).length,
+      submissions: submissions.filter(s => (s.submitted_at || '').startsWith(key)).length,
     });
   }
   return months;
@@ -56,6 +56,7 @@ const AdminAnalytics = () => {
 
   useEffect(() => {
     const fetchAll = async () => {
+      setLoading(true);
       const data = await getDashboardAnalytics();
       setAnalytics(data);
 
@@ -89,7 +90,23 @@ const AdminAnalytics = () => {
 
       setLoading(false);
     };
+    
     fetchAll();
+
+    // Real-time updates for analytics
+    const channels = [
+      supabase.channel('analytics-profiles').on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, fetchAll),
+      supabase.channel('analytics-events').on('postgres_changes', { event: '*', schema: 'public', table: 'events' }, fetchAll),
+      supabase.channel('analytics-contacts').on('postgres_changes', { event: '*', schema: 'public', table: 'contact_submissions' }, fetchAll),
+      supabase.channel('analytics-newsletter').on('postgres_changes', { event: '*', schema: 'public', table: 'newsletter_subscribers' }, fetchAll),
+      supabase.channel('analytics-registrations').on('postgres_changes', { event: '*', schema: 'public', table: 'event_registrations' }, fetchAll),
+    ];
+
+    channels.forEach(channel => channel.subscribe());
+
+    return () => {
+      channels.forEach(channel => supabase.removeChannel(channel));
+    };
   }, []);
 
   const analyticsCards = [
