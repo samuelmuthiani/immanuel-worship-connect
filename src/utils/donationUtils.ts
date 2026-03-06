@@ -1,6 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
+import { logger } from '@/lib/logger';
 
 export type Donation = Database['public']['Tables']['donations']['Row'];
 type DonationInsert = Database['public']['Tables']['donations']['Insert'];
@@ -29,13 +30,13 @@ export const donationService = {
         .single();
 
       if (error) {
-        console.error('Error creating donation:', error);
+        logger.error('Error creating donation:', error);
         throw error;
       }
 
       return data;
     } catch (error) {
-      console.error('Failed to create donation:', error);
+      logger.error('Failed to create donation:', error);
       return null;
     }
   },
@@ -49,13 +50,13 @@ export const donationService = {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching user donations:', error);
+        logger.error('Error fetching user donations:', error);
         throw error;
       }
 
       return data || [];
     } catch (error) {
-      console.error('Failed to fetch user donations:', error);
+      logger.error('Failed to fetch user donations:', error);
       return [];
     }
   },
@@ -68,7 +69,7 @@ export const donationService = {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching all donations:', error);
+        logger.error('Error fetching all donations:', error);
         throw error;
       }
 
@@ -89,7 +90,7 @@ export const donationService = {
 
       return donationsWithEmails;
     } catch (error) {
-      console.error('Failed to fetch all donations:', error);
+      logger.error('Failed to fetch all donations:', error);
       return [];
     }
   },
@@ -102,13 +103,13 @@ export const donationService = {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching all donations:', error);
+        logger.error('Error fetching all donations:', error);
         throw error;
       }
 
       return data || [];
     } catch (error) {
-      console.error('Failed to fetch all donations:', error);
+      logger.error('Failed to fetch all donations:', error);
       return [];
     }
   },
@@ -122,13 +123,13 @@ export const donationService = {
         .single();
 
       if (error) {
-        console.error('Error sending appreciation:', error);
+        logger.error('Error sending appreciation:', error);
         throw error;
       }
 
       return data;
     } catch (error) {
-      console.error('Failed to send appreciation:', error);
+      logger.error('Failed to send appreciation:', error);
       return null;
     }
   },
@@ -149,13 +150,13 @@ export const donationService = {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching user appreciations:', error);
+        logger.error('Error fetching user appreciations:', error);
         throw error;
       }
 
       return data || [];
     } catch (error) {
-      console.error('Failed to fetch user appreciations:', error);
+      logger.error('Failed to fetch user appreciations:', error);
       return [];
     }
   },
@@ -168,13 +169,13 @@ export const donationService = {
         .eq('id', appreciationId);
 
       if (error) {
-        console.error('Error marking appreciation as read:', error);
+        logger.error('Error marking appreciation as read:', error);
         throw error;
       }
 
       return true;
     } catch (error) {
-      console.error('Failed to mark appreciation as read:', error);
+      logger.error('Failed to mark appreciation as read:', error);
       return false;
     }
   },
@@ -190,7 +191,7 @@ export const donationService = {
         .select('amount, created_at');
 
       if (error) {
-        console.error('Error fetching donation stats:', error);
+        logger.error('Error fetching donation stats:', error);
         throw error;
       }
 
@@ -216,7 +217,7 @@ export const donationService = {
         monthlyTotal,
       };
     } catch (error) {
-      console.error('Failed to fetch donation stats:', error);
+      logger.error('Failed to fetch donation stats:', error);
       return { totalAmount: 0, totalDonations: 0, monthlyTotal: 0 };
     }
   },
@@ -254,7 +255,7 @@ export const sendAppreciation = async (donationId: string, message: string): Pro
 
     return { success: !!appreciation };
   } catch (error) {
-    console.error('Error sending appreciation:', error);
+    logger.error('Error sending appreciation:', error);
     return { success: false };
   }
 };
@@ -290,7 +291,7 @@ export const saveDonation = async (donationData: {
 
     return { success: !!donation };
   } catch (error) {
-    console.error('Error saving donation:', error);
+    logger.error('Error saving donation:', error);
     return { success: false };
   }
 };

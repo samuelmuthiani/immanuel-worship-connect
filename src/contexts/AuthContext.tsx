@@ -4,6 +4,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { SecurityService } from '@/utils/security';
+import { logger } from '@/lib/logger';
 
 interface UserRole {
   role: string;
@@ -33,8 +34,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-
-
   const fetchUserRoles = async (userId: string) => {
     try {
       const { data: roles, error } = await supabase
@@ -43,13 +42,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .eq('user_id', userId);
 
       if (error) {
-        console.error('Error fetching user roles:', error);
+        logger.error('Error fetching user roles:', error);
         return [];
       }
 
       return roles?.map((r: UserRole) => r.role) || [];
     } catch (error) {
-      console.error('Error in fetchUserRoles:', error);
+      logger.error('Error in fetchUserRoles:', error);
       return [];
     }
   };
@@ -61,7 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       async (event, currentSession) => {
         if (!mounted) return;
 
-        console.log('Auth state change:', event, !!currentSession);
+        logger.info('Auth state change:', event, !!currentSession);
 
         if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
           if (!currentSession) {
@@ -83,7 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 const roles = await fetchUserRoles(currentSession.user.id);
                 setUserRoles(roles);
               } catch (error) {
-                console.error('Failed to fetch user roles:', error);
+                logger.error('Failed to fetch user roles:', error);
                 setUserRoles([]);
               }
             }
@@ -100,7 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!mounted) return;
 
       if (error) {
-        console.error('Error getting session:', error);
+        logger.error('Error getting session:', error);
         setIsLoading(false);
         return;
       }
@@ -135,7 +134,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { success: false, error: 'Password is required' };
       }
 
-      // Rate limiting check
       const clientIP = 'browser-session';
       if (SecurityService.isRateLimited(`signin-${clientIP}`, 5, 15 * 60 * 1000)) {
         return { success: false, error: 'Too many login attempts. Please wait before trying again.' };
@@ -171,7 +169,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       return { success: false, error: 'Authentication failed' };
     } catch (error: unknown) {
-      console.error('Login error:', error);
+      logger.error('Login error:', error);
       const errorMessage = 'An unexpected error occurred. Please try again.';
       toast({
         title: 'Sign in failed',
@@ -195,7 +193,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { success: false, error: passwordValidation.errors[0] };
       }
 
-      // Rate limiting check
       const clientIP = 'browser-session';
       if (SecurityService.isRateLimited(`signup-${clientIP}`, 3, 15 * 60 * 1000)) {
         return { success: false, error: 'Too many signup attempts. Please wait before trying again.' };
@@ -233,7 +230,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       return { success: true, user: data.user ?? undefined };
     } catch (error: unknown) {
-      console.error('Signup error:', error);
+      logger.error('Signup error:', error);
       const errorMessage = 'An unexpected error occurred. Please try again.';
       toast({
         title: 'Sign up failed',
@@ -258,7 +255,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         description: 'You have been successfully signed out.',
       });
     } catch (error) {
-      console.error('Sign out error:', error);
+      logger.error('Sign out error:', error);
       toast({
         title: 'Sign out failed',
         description: 'There was an error signing out.',
@@ -279,7 +276,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUserRoles(roles);
       }
     } catch (error) {
-      console.error('Session refresh error:', error);
+      logger.error('Session refresh error:', error);
       await signOut();
     }
   };
@@ -297,12 +294,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (error) {
-        console.error('Password reset error:', error);
+        logger.error('Password reset error:', error);
       }
 
       return { success: true };
     } catch (error) {
-      console.error('Password reset error:', error);
+      logger.error('Password reset error:', error);
       return { success: true };
     }
   };
@@ -321,7 +318,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       return { success: true };
     } catch (error: unknown) {
-      console.error('Password update error:', error);
+      logger.error('Password update error:', error);
       return { success: false, error: (error instanceof Error ? error.message : String(error)) || 'Failed to update password' };
     }
   };

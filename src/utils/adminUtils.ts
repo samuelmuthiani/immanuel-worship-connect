@@ -1,6 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
+import { logger } from '@/lib/logger';
 
 type TableName = keyof Database['public']['Tables'];
 
@@ -52,7 +53,7 @@ export const getDashboardAnalytics = async () => {
       totalSubscribers: totalSubscribers || 0
     };
   } catch (error) {
-    console.error('Error fetching analytics:', error);
+    logger.error('Error fetching analytics:', error);
     return {
       totalMembers: 0,
       totalEvents: 0,
@@ -73,7 +74,7 @@ export const bulkDeleteItems = async (table: string, ids: string[]) => {
     if (error) throw error;
     return { success: true };
   } catch (error) {
-    console.error(`Error bulk deleting from ${table}:`, error);
+    logger.error(`Error bulk deleting from ${table}:`, error);
     return { success: false, error };
   }
 };
@@ -88,7 +89,7 @@ export const updateUserRole = async (userId: string, role: string) => {
     if (error) throw error;
     return { success: true };
   } catch (error) {
-    console.error('Error updating user role:', error);
+    logger.error('Error updating user role:', error);
     return { success: false, error };
   }
 };
@@ -109,6 +110,6 @@ export const logAuditAction = async (action: string, target?: string, details?: 
 
     if (error) throw error;
   } catch (error) {
-    console.error('Error logging audit action:', error);
+    logger.error('Error logging audit action:', error);
   }
 };
