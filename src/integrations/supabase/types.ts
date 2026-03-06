@@ -296,19 +296,16 @@ export type Database = {
       }
       newsletter_subscribers: {
         Row: {
-          consent_status: string
           email: string
           id: string
           subscribed_at: string
         }
         Insert: {
-          consent_status?: string
           email: string
           id?: string
           subscribed_at?: string
         }
         Update: {
-          consent_status?: string
           email?: string
           id?: string
           subscribed_at?: string
