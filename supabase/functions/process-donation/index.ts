@@ -1,16 +1,13 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { corsHeaders } from '../_shared/cors.ts'
-
-// import Stripe from 'https://esm.sh/stripe@12.0.0'
-// const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
-//   apiVersion: '2022-11-15',
-// })
+import { getCorsHeaders } from '../_shared/cors.ts'
 
 serve(async (req) => {
+    const cors = getCorsHeaders(req);
+
     if (req.method === 'OPTIONS') {
-        return new Response('ok', { headers: corsHeaders })
+        return new Response(null, { headers: cors })
     }
 
     try {
@@ -20,39 +17,39 @@ serve(async (req) => {
             { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
         )
 
-        const {
-            data: { user },
-        } = await supabaseClient.auth.getUser()
-
+        const { data: { user } } = await supabaseClient.auth.getUser()
         if (!user) {
-            throw new Error('Unauthorized')
+            return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+                status: 401, headers: { ...cors, "Content-Type": "application/json" }
+            })
         }
 
-        const { amount, currency = 'usd', paymentMethodId } = await req.json()
+        const body = await req.json()
+        const { amount, currency = 'usd', paymentMethodId } = body
 
-        // 1. Create Payment Intent (Mock logic if key missing)
+        // Input validation
+        if (!amount || typeof amount !== 'number' || amount <= 0 || amount > 100000000) {
+            return new Response(JSON.stringify({ error: 'Invalid donation amount' }), {
+                status: 400, headers: { ...cors, "Content-Type": "application/json" }
+            })
+        }
+
+        if (typeof currency !== 'string' || !/^[a-z]{3}$/i.test(currency)) {
+            return new Response(JSON.stringify({ error: 'Invalid currency code' }), {
+                status: 400, headers: { ...cors, "Content-Type": "application/json" }
+            })
+        }
+
+        // Mock payment processing (Stripe integration placeholder)
         const clientSecret = 'mock_secret_' + Math.random().toString(36).substring(7);
 
-        // if (Deno.env.get('STRIPE_SECRET_KEY')) {
-        //   const paymentIntent = await stripe.paymentIntents.create({
-        //     amount: amount, // amount in cents
-        //     currency: currency,
-        //     payment_method: paymentMethodId,
-        //     confirm: true,
-        //     metadata: { userId: user.id }
-        //   })
-        //   clientSecret = paymentIntent.client_secret
-        // }
-
-        // 2. Log Donation in Database
+        // Log Donation in Database
         const { data, error } = await supabaseClient
             .from('donations')
             .insert({
                 user_id: user.id,
-                amount: amount / 100, // convert back to standard unit for DB
-                currency: currency,
-                status: 'pending', // or 'succeeded' if using immediate capture
-                payment_intent: clientSecret
+                amount: amount / 100,
+                status: 'pending',
             })
             .select()
             .single()
@@ -61,14 +58,14 @@ serve(async (req) => {
 
         return new Response(
             JSON.stringify({ clientSecret, donationId: data.id }),
-            { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+            { headers: { ...cors, "Content-Type": "application/json" } },
         )
     } catch (error: unknown) {
         return new Response(
             JSON.stringify({ error: (error instanceof Error ? error.message : String(error)) }),
             {
                 status: 400,
-                headers: { ...corsHeaders, "Content-Type": "application/json" }
+                headers: { ...getCorsHeaders(req), "Content-Type": "application/json" }
             },
         )
     }
