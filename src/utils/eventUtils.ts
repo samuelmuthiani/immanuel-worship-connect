@@ -116,12 +116,15 @@ export const registerForEvent = async (eventId: string, registrationData: {
       .insert([insertPayload]);
 
     if (error) {
+      if (error.code === '23505') {
+        return { success: false, error: 'You are already registered for this event.' };
+      }
       logger.error('Error registering for event:', error);
       throw error;
     }
 
     logger.log('Event registration successful');
-    return { success: true, data };
+    return { success: true };
   } catch (error) {
     logger.error('Error registering for event:', error);
     return { success: false, error };
