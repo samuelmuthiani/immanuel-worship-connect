@@ -11,7 +11,7 @@ const VisitorTracker = () => {
     const trackPageView = async () => {
       try {
         // Record path change in page_views table
-        const { error } = await (supabase as any).from('page_views').insert([{
+        const { error } = await supabase.from('page_views').insert([{
           path: location.pathname + location.search,
           referrer: document.referrer || null,
           user_id: user?.id || null,
