@@ -2,9 +2,9 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { SecurityService } from '@/utils/security';
 import { logger } from '@/lib/logger';
-import GlobalLoadingScreen from './GlobalLoadingScreen';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -27,7 +27,14 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }, [session]);
 
   if (isLoading) {
-    return <GlobalLoadingScreen />;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <LoadingSpinner size="lg" />
+          <p className="mt-4 text-muted-foreground">Securing your session...</p>
+        </div>
+      </div>
+    );
   }
 
   if (!user) {

@@ -105,8 +105,7 @@ export class SecurityService {
   }
 
   // Validate session token format
-  static validateSessionToken(token: any): boolean {
-    if (typeof token !== 'string') return false;
+  static validateSessionToken(token: string): boolean {
     // Basic JWT format validation
     const parts = token.split('.');
     return parts.length === 3 && parts.every(part => part.length > 0);

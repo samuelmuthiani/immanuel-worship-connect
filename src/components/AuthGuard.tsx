@@ -2,9 +2,9 @@
 import React, { useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { SecurityService } from '@/utils/security';
 import { logger } from '@/lib/logger';
-import GlobalLoadingScreen from './GlobalLoadingScreen';
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -27,7 +27,12 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children, requiredRole, adminOnly
   }, [isLoading, user, location.pathname, session]);
 
   if (isLoading) {
-    return <GlobalLoadingScreen />;
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] p-8">
+        <LoadingSpinner size="lg" />
+        <p className="text-lg font-medium text-muted-foreground mt-4">Verifying your access...</p>
+      </div>
+    );
   }
 
   if (!user) {
