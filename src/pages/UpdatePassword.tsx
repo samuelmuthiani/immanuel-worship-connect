@@ -14,7 +14,10 @@ interface FormErrors {
   general?: string;
 }
 
+import { useAuth } from '@/contexts/AuthContext';
+
 const UpdatePassword = () => {
+  const { updatePassword } = useAuth();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errors, setErrors] = useState<FormErrors>({});
@@ -67,8 +70,8 @@ const UpdatePassword = () => {
 
     setLoading(true);
     try {
-      const { error } = await supabase.auth.updateUser({ password });
-      if (error) throw error;
+      const result = await updatePassword(password);
+      if (!result.success) throw new Error(result.error);
       setSuccess(true);
     } catch (err: unknown) {
       setErrors({ general: (err instanceof Error ? err.message : String(err)) || 'Failed to update password.' });

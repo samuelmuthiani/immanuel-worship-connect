@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import Layout from '@/components/Layout';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import AdminAnalytics from '@/components/admin/AdminAnalytics';
@@ -41,17 +41,20 @@ interface ContactSubmission {
 
 interface NewsletterSubscriber {
   id: string;
+  name?: string;
   email: string;
-  subscribed_at: string;
-  consent_status?: string;
+  created_at: string;
+  consent: boolean;
+  source_page?: string;
 }
 
-interface PolicyAcceptance {
+interface ConsentRecord {
   id: string;
-  user_id: string;
-  policy_type: string;
+  user_id?: string;
+  email: string;
+  consent_type: string;
+  status: string;
   accepted_at: string;
-  user_email?: string;
 }
 
 interface EventRegistration {
@@ -61,6 +64,7 @@ interface EventRegistration {
   phone?: string;
   event_id: string;
   registered_at: string;
+  is_guest: boolean;
   events?: { title: string };
   event_title?: string;
 }
@@ -76,15 +80,16 @@ const AdminDashboard = () => {
   const [contactSubmissions, setContactSubmissions] = useState<ContactSubmission[]>([]);
   const [newsletterSubscribers, setNewsletterSubscribers] = useState<NewsletterSubscriber[]>([]);
   const [eventRegistrations, setEventRegistrations] = useState<EventRegistration[]>([]);
-  const [policyAcceptances, setPolicyAcceptances] = useState<PolicyAcceptance[]>([]);
+  const [consentRecords, setConsentRecords] = useState<ConsentRecord[]>([]);
 
   const profileColumns = [
     { key: 'first_name', label: 'First Name' },
     { key: 'last_name', label: 'Last Name' },
     { key: 'email', label: 'Email' },
     { key: 'phone', label: 'Phone' },
-    { key: 'ministry', label: 'Ministry' },
-    { key: 'gender', label: 'Gender' },
+    { key: 'terms_accepted', label: 'Terms' },
+    { key: 'privacy_accepted', label: 'Privacy' },
+    { key: 'accepted_at', label: 'Accepted At' },
     { key: 'profile_completion', label: 'Completion' },
     { key: 'created_at', label: 'Member Since' }
   ];
@@ -99,9 +104,11 @@ const AdminDashboard = () => {
   ];
 
   const newsletterColumns = [
+    { key: 'name', label: 'Subscriber Name' },
     { key: 'email', label: 'Subscriber Email' },
-    { key: 'subscribed_at', label: 'Subscription Timestamp' },
-    { key: 'consent_status', label: 'Consent Status' }
+    { key: 'created_at', label: 'Subscription Timestamp' },
+    { key: 'consent', label: 'Consent' },
+    { key: 'source_page', label: 'Source' }
   ];
 
   const eventRegColumns = [
@@ -109,12 +116,14 @@ const AdminDashboard = () => {
     { key: 'email', label: 'Email' },
     { key: 'phone', label: 'Phone' },
     { key: 'event_title', label: 'Event' },
+    { key: 'is_guest', label: 'Guest' },
     { key: 'registered_at', label: 'Registered' }
   ];
 
-  const policyColumns = [
-    { key: 'user_email', label: 'User Email' },
-    { key: 'policy_type', label: 'Policy' },
+  const consentColumns = [
+    { key: 'email', label: 'User Email' },
+    { key: 'consent_type', label: 'Consent Type' },
+    { key: 'status', label: 'Status' },
     { key: 'accepted_at', label: 'Accepted At' }
   ];
 
@@ -167,25 +176,16 @@ const AdminDashboard = () => {
     }
   }, []);
 
-  const fetchPolicyAcceptances = useCallback(async () => {
+  const fetchConsentRecords = useCallback(async () => {
     try {
       const { data, error } = await supabase
-        .from('policy_acceptances')
+        .from('consent_records')
         .select('*')
         .order('accepted_at', { ascending: false });
       if (error) throw error;
-      
-      const enriched = await Promise.all((data || []).map(async (acceptance: any) => {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('email')
-          .eq('user_id', acceptance.user_id)
-          .maybeSingle();
-        return { ...acceptance, user_email: profile?.email || acceptance.user_id };
-      }));
-      setPolicyAcceptances(enriched);
+      setConsentRecords(data || []);
     } catch (err) {
-      logger.error('Error fetching policy acceptances:', err);
+      logger.error('Error fetching consent records:', err);
     }
   }, []);
 
@@ -198,20 +198,53 @@ const AdminDashboard = () => {
         fetchContactSubmissions(),
         fetchNewsletterSubscribers(),
         fetchEventRegistrations(),
-        fetchPolicyAcceptances()
+        fetchConsentRecords()
       ]);
     } catch (err) {
-      setError('Failed to load dashboard data');
+      setError('Failed to load dashboard data. Please try again.');
+      logger.error('Error fetching dashboard data:', err);
     } finally {
       setLoading(false);
     }
-  }, [fetchUserProfiles, fetchContactSubmissions, fetchNewsletterSubscribers, fetchEventRegistrations, fetchPolicyAcceptances]);
+  }, [fetchUserProfiles, fetchContactSubmissions, fetchNewsletterSubscribers, fetchEventRegistrations, fetchConsentRecords]);
 
   useEffect(() => {
-    if (user && isAdmin) {
+    if (isAdmin) {
       fetchAllData();
+
+      // Set up real-time subscriptions
+      const newsletterSubscription = supabase
+        .channel('newsletter-changes')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'newsletter_subscribers' }, 
+          () => fetchNewsletterSubscribers())
+        .subscribe();
+
+      const eventSubscription = supabase
+        .channel('event-reg-changes')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'event_registrations' }, 
+          () => fetchEventRegistrations())
+        .subscribe();
+
+      const contactSubscription = supabase
+        .channel('contact-changes')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'contact_submissions' }, 
+          () => fetchContactSubmissions())
+        .subscribe();
+
+      const userSubscription = supabase
+        .channel('user-changes')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'profiles' }, 
+          () => fetchUserProfiles())
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(newsletterSubscription);
+        supabase.removeChannel(eventSubscription);
+        supabase.removeChannel(contactSubscription);
+        supabase.removeChannel(userSubscription);
+      };
     }
-  }, [user, isAdmin, fetchAllData]);
+  }, [isAdmin, fetchAllData, fetchNewsletterSubscribers, fetchEventRegistrations, fetchContactSubmissions, fetchUserProfiles]);
 
   if (loading) {
     return (
@@ -293,6 +326,10 @@ const AdminDashboard = () => {
                   <MessageSquare className="h-4 w-4" />
                   <span className="hidden sm:inline">Comms</span>
                 </TabsTrigger>
+                <TabsTrigger value="consent" className="flex items-center gap-2 text-xs sm:text-sm rounded-lg px-3 py-2">
+                  <Shield className="h-4 w-4" />
+                  <span className="hidden sm:inline">Consent</span>
+                </TabsTrigger>
                 <TabsTrigger value="admin-mgmt" className="flex items-center gap-2 text-xs sm:text-sm rounded-lg px-3 py-2">
                   <ShieldPlus className="h-4 w-4" />
                   <span className="hidden sm:inline">Admin</span>
@@ -351,7 +388,7 @@ const AdminDashboard = () => {
                     <p className="text-sm text-muted-foreground">Recent (last 7 days)</p>
                     <p className="text-2xl font-bold text-foreground mt-1">
                       {newsletterSubscribers.filter(s => {
-                        const t = new Date(s.subscribed_at).getTime();
+                        const t = new Date(s.created_at).getTime();
                         return t >= Date.now() - 7 * 24 * 60 * 60 * 1000;
                       }).length}
                     </p>
@@ -359,7 +396,7 @@ const AdminDashboard = () => {
                   <div className="rounded-xl border border-border bg-card p-4">
                     <p className="text-sm text-muted-foreground">Consent: Granted</p>
                     <p className="text-2xl font-bold text-foreground mt-1">
-                      {newsletterSubscribers.filter(s => (s.consent_status || 'granted') === 'granted').length}
+                      {newsletterSubscribers.filter(s => s.consent).length}
                     </p>
                   </div>
                 </div>
@@ -370,12 +407,15 @@ const AdminDashboard = () => {
                   tableName="newsletter_subscribers"
                   onRefresh={fetchNewsletterSubscribers}
                 />
+              </TabsContent>
+
+              <TabsContent value="consent" className="space-y-6">
                 <EnhancedDataTable
-                  title="Terms and Policy Acceptances"
-                  data={policyAcceptances}
-                  columns={policyColumns}
-                  tableName="policy_acceptances"
-                  onRefresh={fetchPolicyAcceptances}
+                  title="Consent Records"
+                  data={consentRecords}
+                  columns={consentColumns}
+                  tableName="consent_records"
+                  onRefresh={fetchConsentRecords}
                 />
               </TabsContent>
 

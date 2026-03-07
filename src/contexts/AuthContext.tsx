@@ -18,7 +18,7 @@ interface AuthContextType {
   isAdmin: boolean;
   hasRole: (role: string) => boolean;
   signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  signUp: (email: string, password: string) => Promise<{ success: boolean; user?: User; error?: string }>;
+  signUp: (email: string, password: string, metadata?: Record<string, any>) => Promise<{ success: boolean; user?: User; error?: string }>;
   signOut: () => Promise<void>;
   refreshSession: () => Promise<void>;
   requestPasswordReset: (email: string) => Promise<{ success: boolean; error?: string }>;
@@ -56,13 +56,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
+    // Safety timeout to ensure loading state is cleared within 5 seconds
+    const safetyTimeout = setTimeout(() => {
+      if (mounted && isLoading) {
+        logger.warn('Auth check safety timeout reached. Forcing loading state to false.');
+        setIsLoading(false);
+      }
+    }, 5000);
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, currentSession) => {
         if (!mounted) return;
 
         logger.info('Auth state change:', event, !!currentSession);
 
-        if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
+        if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') {
           if (!currentSession) {
             setSession(null);
             setUser(null);
@@ -76,49 +84,68 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(currentSession?.user ?? null);
 
         if (currentSession?.user) {
-          setTimeout(async () => {
+          try {
+            const roles = await fetchUserRoles(currentSession.user.id);
             if (mounted) {
-              try {
-                const roles = await fetchUserRoles(currentSession.user.id);
-                setUserRoles(roles);
-              } catch (error) {
-                logger.error('Failed to fetch user roles:', error);
-                setUserRoles([]);
-              }
+              setUserRoles(roles);
+              setIsLoading(false);
             }
-          }, 100);
-        } else {
+          } catch (error) {
+            logger.error('Failed to fetch user roles during auth change:', error);
+            if (mounted) {
+              setUserRoles([]);
+              setIsLoading(false);
+            }
+          }
+        } else if (mounted) {
           setUserRoles([]);
+          setIsLoading(false);
         }
-
-        setIsLoading(false);
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session: currentSession }, error }) => {
-      if (!mounted) return;
+    const checkInitialSession = async () => {
+      try {
+        const { data: { session: currentSession }, error } = await supabase.auth.getSession();
+        
+        if (!mounted) return;
 
-      if (error) {
-        logger.error('Error getting session:', error);
-        setIsLoading(false);
-        return;
+        if (error) {
+          logger.error('Error getting initial session:', error);
+          setIsLoading(false);
+          return;
+        }
+
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
+
+        if (currentSession?.user) {
+          try {
+            const roles = await fetchUserRoles(currentSession.user.id);
+            if (mounted) setUserRoles(roles);
+          } catch (error) {
+            logger.error('Failed to fetch user roles during initial session check:', error);
+            if (mounted) setUserRoles([]);
+          }
+        } else if (mounted) {
+          setUserRoles([]);
+        }
+      } catch (err) {
+        logger.error('Critical auth error during session check:', err);
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+          clearTimeout(safetyTimeout);
+        }
       }
+    };
 
-      setSession(currentSession);
-      setUser(currentSession?.user ?? null);
-
-      if (currentSession?.user) {
-        fetchUserRoles(currentSession.user.id).then(roles => {
-          if (mounted) setUserRoles(roles);
-        });
-      }
-
-      setIsLoading(false);
-    });
+    checkInitialSession();
 
     return () => {
       mounted = false;
       subscription.unsubscribe();
+      clearTimeout(safetyTimeout);
     };
   }, []);
 
@@ -180,7 +207,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = async (email: string, password: string, metadata?: Record<string, any>) => {
     try {
       const sanitizedEmail = SecurityService.sanitizeEmail(email);
 
@@ -204,7 +231,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email: sanitizedEmail,
         password,
         options: {
-          emailRedirectTo: redirectUrl
+          emailRedirectTo: redirectUrl,
+          data: metadata
         }
       });
 
@@ -324,11 +352,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const hasRole = (role: string) => {
+    // If we're still loading, we can't accurately check roles
+    if (isLoading) return false;
     if (!user) return false;
-    return userRoles.includes(role) || userRoles.includes('admin');
+    
+    // Explicit check for admin role
+    const isUserAdmin = userRoles.some(r => r === 'admin');
+    if (isUserAdmin) return true;
+    
+    return userRoles.includes(role);
   };
 
-  const isAdmin = hasRole('admin');
+  const isAdmin = !isLoading && userRoles.some(r => r === 'admin');
 
   const value = {
     user,

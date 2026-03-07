@@ -162,6 +162,7 @@ export type Database = {
           email: string
           event_id: string
           id: string
+          is_guest: boolean
           name: string
           phone: string | null
           registered_at: string
@@ -171,6 +172,7 @@ export type Database = {
           email: string
           event_id: string
           id?: string
+          is_guest?: boolean
           name: string
           phone?: string | null
           registered_at?: string
@@ -180,6 +182,7 @@ export type Database = {
           email?: string
           event_id?: string
           id?: string
+          is_guest?: boolean
           name?: string
           phone?: string | null
           registered_at?: string
@@ -296,21 +299,33 @@ export type Database = {
       }
       newsletter_subscribers: {
         Row: {
+          consent: boolean
           consent_status: string | null
+          created_at: string
           email: string
           id: string
+          name: string | null
+          source_page: string | null
           subscribed_at: string
         }
         Insert: {
+          consent?: boolean
           consent_status?: string | null
+          created_at?: string
           email: string
           id?: string
+          name?: string | null
+          source_page?: string | null
           subscribed_at?: string
         }
         Update: {
+          consent?: boolean
           consent_status?: string | null
+          created_at?: string
           email?: string
           id?: string
+          name?: string | null
+          source_page?: string | null
           subscribed_at?: string
         }
         Relationships: []

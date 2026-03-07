@@ -2,7 +2,6 @@
 import React, { useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { SecurityService } from '@/utils/security';
 import { logger } from '@/lib/logger';
 
@@ -29,7 +28,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children, requiredRole, adminOnly
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] p-8">
-        <LoadingSpinner size="lg" />
+        <div className="animate-spin rounded-full h-12 w-12 border-2 border-gray-300 border-t-iwc-blue" />
         <p className="text-lg font-medium text-muted-foreground mt-4">Verifying your access...</p>
       </div>
     );

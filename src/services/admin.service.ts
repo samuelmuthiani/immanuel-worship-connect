@@ -38,8 +38,8 @@ export class AdminService extends BaseService {
         await this.ensureAdmin();
         const { data, error } = await this.supabase
             .from('newsletter_subscribers')
-            .select('*')
-            .order('subscribed_at', { ascending: false });
+            .select('id, name, email, consent, created_at, source_page')
+            .order('created_at', { ascending: false });
 
         if (error) throw new APIError(error.message);
         return data || [];

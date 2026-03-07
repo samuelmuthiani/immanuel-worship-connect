@@ -31,26 +31,54 @@ export const exportToCSV = <T extends Record<string, unknown>>(data: T[], filena
   window.URL.revokeObjectURL(url);
 };
 
-// Get dashboard analytics
+// Get dashboard analytics using RPC for better performance
 export const getDashboardAnalytics = async () => {
   try {
-    const [
-      { count: totalMembers },
-      { count: totalEvents },
-      { count: totalSubmissions },
-      { count: totalSubscribers }
-    ] = await Promise.all([
-      supabase.from('user_roles').select('*', { count: 'exact', head: true }),
-      supabase.from('events').select('*', { count: 'exact', head: true }),
-      supabase.from('contact_submissions').select('*', { count: 'exact', head: true }),
-      supabase.from('newsletter_subscribers').select('*', { count: 'exact', head: true })
-    ]);
+    const { data, error } = await (supabase.rpc as any)('get_admin_stats');
+    
+    if (error) {
+      // Fallback to manual fetching if RPC fails or is not yet migrated
+      const [
+        { count: totalMembers },
+        { count: totalEvents },
+        { count: totalSubmissions },
+        { count: totalSubscribers },
+        { count: totalRegistrations },
+        { count: totalGuests },
+        { count: totalPageViews }
+      ] = await Promise.all([
+        supabase.from('profiles').select('*', { count: 'exact', head: true }),
+        supabase.from('events').select('*', { count: 'exact', head: true }),
+        supabase.from('contact_submissions').select('*', { count: 'exact', head: true }),
+        supabase.from('newsletter_subscribers').select('*', { count: 'exact', head: true }),
+        supabase.from('event_registrations').select('*', { count: 'exact', head: true }),
+        supabase.from('event_registrations').select('*', { count: 'exact', head: true }).eq('is_guest', true),
+        (supabase as any).from('page_views').select('*', { count: 'exact', head: true })
+      ]);
 
+      return {
+        totalMembers: totalMembers || 0,
+        totalEvents: totalEvents || 0,
+        totalSubmissions: totalSubmissions || 0,
+        totalSubscribers: totalSubscribers || 0,
+        totalRegistrations: totalRegistrations || 0,
+        totalGuests: totalGuests || 0,
+        totalPageViews: totalPageViews || 0
+      };
+    }
+
+    // Map RPC data to expected format
+    const stats = data as any;
     return {
-      totalMembers: totalMembers || 0,
-      totalEvents: totalEvents || 0,
-      totalSubmissions: totalSubmissions || 0,
-      totalSubscribers: totalSubscribers || 0
+      totalMembers: stats.total_members || 0,
+      totalEvents: stats.total_events || 0,
+      totalSubmissions: stats.total_submissions || 0,
+      totalSubscribers: stats.total_subscribers || 0,
+      totalRegistrations: stats.total_registrations || 0,
+      totalGuests: stats.total_guests || 0,
+      totalPageViews: stats.total_page_views || 0,
+      totalDonations: stats.total_donations || 0,
+      storageUsage: stats.storage_usage || { photos: 0, videos: 0 }
     };
   } catch (error) {
     logger.error('Error fetching analytics:', error);
@@ -58,7 +86,10 @@ export const getDashboardAnalytics = async () => {
       totalMembers: 0,
       totalEvents: 0,
       totalSubmissions: 0,
-      totalSubscribers: 0
+      totalSubscribers: 0,
+      totalRegistrations: 0,
+      totalGuests: 0,
+      totalPageViews: 0
     };
   }
 };
@@ -79,14 +110,53 @@ export const bulkDeleteItems = async (table: string, ids: string[]) => {
   }
 };
 
-// User management
-export const updateUserRole = async (userId: string, role: string) => {
+// Storage management helpers
+export const getDeletedMediaAssets = async () => {
   try {
-    const { error } = await supabase
-      .from('user_roles')
-      .upsert([{ user_id: userId, role: role as any }]);
+    const { data, error } = await (supabase as any)
+      .from('deleted_media_assets')
+      .select('*')
+      .eq('processed', false);
 
     if (error) throw error;
+    return data || [];
+  } catch (error) {
+    logger.error('Error fetching deleted media assets:', error);
+    return [];
+  }
+};
+
+export const markMediaAssetAsProcessed = async (id: string) => {
+  try {
+    const { error } = await (supabase as any)
+      .from('deleted_media_assets')
+      .update({ processed: true })
+      .eq('id', id);
+
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    logger.error('Error marking media asset as processed:', error);
+    return { success: false, error };
+  }
+};
+
+// User management using RPC
+export const updateUserRole = async (userId: string, role: string) => {
+  try {
+    const { error } = await (supabase.rpc as any)('set_user_role', { 
+      _user_id: userId, 
+      _role: role as any 
+    });
+
+    if (error) {
+      // Fallback to manual update if RPC fails
+      const { error: fallbackError } = await supabase
+        .from('user_roles')
+        .upsert([{ user_id: userId, role: role as any }]);
+      if (fallbackError) throw fallbackError;
+    }
+    
     return { success: true };
   } catch (error) {
     logger.error('Error updating user role:', error);

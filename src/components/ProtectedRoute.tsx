@@ -2,7 +2,6 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { SecurityService } from '@/utils/security';
 import { logger } from '@/lib/logger';
 
@@ -30,7 +29,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
-          <LoadingSpinner size="lg" />
+          <div className="animate-spin rounded-full h-12 w-12 border-2 border-gray-300 border-t-iwc-blue mx-auto" />
           <p className="mt-4 text-muted-foreground">Securing your session...</p>
         </div>
       </div>

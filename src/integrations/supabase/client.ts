@@ -6,13 +6,11 @@ const SUPABASE_ANON_KEY =
   import.meta.env.VITE_SUPABASE_ANON_KEY ||
   import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  throw new Error(
-    'Missing Supabase env: set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY (or VITE_SUPABASE_PUBLISHABLE_KEY) in .env'
-  );
-}
+export const supabaseEnvMissing = !SUPABASE_URL || !SUPABASE_ANON_KEY;
+const resolvedUrl = SUPABASE_URL || 'http://localhost:54321';
+const resolvedKey = SUPABASE_ANON_KEY || 'public-anon-key';
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
+export const supabase = createClient<Database>(resolvedUrl, resolvedKey, {
   auth: {
     storage: localStorage,
     persistSession: true,
