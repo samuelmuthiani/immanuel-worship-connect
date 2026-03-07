@@ -25,7 +25,7 @@ const Privacy = () => {
     // Persist to database if user is logged in
     if (user?.email) {
       try {
-        await supabase.from('consent_records').insert([{
+        await (supabase as any).from('consent_records').insert([{
           user_id: user.id,
           email: user.email,
           consent_type: 'privacy_policy',
