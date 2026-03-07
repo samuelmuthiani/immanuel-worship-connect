@@ -70,14 +70,17 @@ const BlogManager = () => {
     }
   };
 
-  const { data: posts, isLoading } = useQuery({
+  const { data: posts, isLoading, isError, error } = useQuery({
     queryKey: ['admin-posts'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('posts')
         .select('*')
         .order('created_at', { ascending: false });
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching blog posts:', error);
+        throw error;
+      }
       return (data as Post[]) || [];
     }
   });
@@ -127,6 +130,20 @@ const BlogManager = () => {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     }
   });
+
+  if (isError) {
+    return (
+      <Card className="border-destructive bg-destructive/5">
+        <CardContent className="p-6 text-center">
+          <p className="text-destructive font-medium mb-4">Failed to load blog posts</p>
+          <p className="text-sm text-muted-foreground mb-4">{(error as any).message}</p>
+          <Button variant="outline" size="sm" onClick={() => queryClient.invalidateQueries({ queryKey: ['admin-posts'] })}>
+            Retry
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-4">

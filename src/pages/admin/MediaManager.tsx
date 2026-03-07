@@ -40,20 +40,26 @@ const MediaManager = () => {
   const [currentVideo, setCurrentVideo] = useState<Partial<MediaVideo>>({});
   const [uploading, setUploading] = useState(false);
 
-  const { data: photos, isLoading: loadingPhotos } = useQuery({
+  const { data: photos, isLoading: loadingPhotos, isError: isErrorPhotos, error: errorPhotos } = useQuery({
     queryKey: ['admin-photos'],
     queryFn: async () => {
       const { data, error } = await supabase.from('media_photos').select('*').order('created_at', { ascending: false });
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching photos:', error);
+        throw error;
+      }
       return (data as MediaPhoto[]) || [];
     }
   });
 
-  const { data: videos, isLoading: loadingVideos } = useQuery({
+  const { data: videos, isLoading: loadingVideos, isError: isErrorVideos, error: errorVideos } = useQuery({
     queryKey: ['admin-videos'],
     queryFn: async () => {
       const { data, error } = await supabase.from('media_videos').select('*').order('created_at', { ascending: false });
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching videos:', error);
+        throw error;
+      }
       return (data as MediaVideo[]) || [];
     }
   });
@@ -162,6 +168,23 @@ const MediaManager = () => {
     },
     onError: (error: Error) => { toast({ title: 'Error', description: error.message, variant: 'destructive' }); }
   });
+
+  if (isErrorPhotos || isErrorVideos) {
+    return (
+      <Card className="border-destructive bg-destructive/5">
+        <CardContent className="p-6 text-center">
+          <p className="text-destructive font-medium mb-4">Failed to load media assets</p>
+          <p className="text-sm text-muted-foreground mb-4">{(errorPhotos || errorVideos as any)?.message}</p>
+          <Button variant="outline" size="sm" onClick={() => {
+            queryClient.invalidateQueries({ queryKey: ['admin-photos'] });
+            queryClient.invalidateQueries({ queryKey: ['admin-videos'] });
+          }}>
+            Retry
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (loadingPhotos || loadingVideos) return <div className="flex justify-center p-8"><Loader2 className="animate-spin text-muted-foreground" /></div>;
 

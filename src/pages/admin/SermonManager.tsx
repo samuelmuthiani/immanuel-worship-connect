@@ -51,14 +51,17 @@ const SermonManager = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [currentSermon, setCurrentSermon] = useState<Partial<Sermon>>({});
 
-  const { data: sermons, isLoading } = useQuery({
+  const { data: sermons, isLoading, isError, error } = useQuery({
     queryKey: ['admin-sermons'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('sermons')
         .select('*')
         .order('sermon_date', { ascending: false });
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching sermons:', error);
+        throw error;
+      }
       return (data as Sermon[]) || [];
     }
   });
@@ -110,6 +113,20 @@ const SermonManager = () => {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     }
   });
+
+  if (isError) {
+    return (
+      <Card className="border-destructive bg-destructive/5">
+        <CardContent className="p-6 text-center">
+          <p className="text-destructive font-medium mb-4">Failed to load sermons</p>
+          <p className="text-sm text-muted-foreground mb-4">{(error as any).message}</p>
+          <Button variant="outline" size="sm" onClick={() => queryClient.invalidateQueries({ queryKey: ['admin-sermons'] })}>
+            Retry
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-4">
