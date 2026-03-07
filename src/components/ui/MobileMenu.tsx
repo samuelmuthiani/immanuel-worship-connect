@@ -24,6 +24,7 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
     { path: '/sermons', label: 'Sermons', icon: Mic },
     { path: '/contact', label: 'Contact', icon: Mail },
     { path: '/donate', label: 'Donate', icon: Heart, highlight: true },
+    ...(isAdmin ? [{ path: '/admin', label: 'Admin Dashboard', icon: Shield }] : []),
   ];
 
   if (!isOpen) return null;

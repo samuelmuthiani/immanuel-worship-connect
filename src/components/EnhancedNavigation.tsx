@@ -64,6 +64,7 @@ const EnhancedNavigation = () => {
     { name: 'Sermons', path: '/sermons' },
     { name: 'Give', path: '/donate' },
     { name: 'Contact', path: '/contact' },
+    ...(isAdmin ? [{ name: 'Admin', path: '/admin' }] : []),
   ];
 
   return (
