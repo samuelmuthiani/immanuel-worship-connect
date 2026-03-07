@@ -352,18 +352,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const hasRole = (role: string) => {
-    // If we're still loading, we can't accurately check roles
-    if (isLoading) return false;
     if (!user) return false;
-    
-    // Explicit check for admin role
-    const isUserAdmin = userRoles.some(r => r === 'admin');
-    if (isUserAdmin) return true;
-    
-    return userRoles.includes(role);
+    return userRoles.includes(role) || userRoles.includes('admin');
   };
 
-  const isAdmin = !isLoading && userRoles.some(r => r === 'admin');
+  const isAdmin = hasRole('admin');
 
   const value = {
     user,
