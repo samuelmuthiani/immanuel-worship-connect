@@ -59,10 +59,12 @@ const EnhancedNavigation = () => {
   const navigationItems = [
     { name: 'Home', path: '/' },
     { name: 'About', path: '/about' },
-    { name: 'Ministries', path: '/services' },
+    { name: 'Services', path: '/services' },
     { name: 'Events', path: '/events' },
+    { name: 'Media', path: '/media' },
+    { name: 'Blog', path: '/blog' },
     { name: 'Sermons', path: '/sermons' },
-    { name: 'Give', path: '/donate' },
+    { name: 'Donate', path: '/donate' },
     { name: 'Contact', path: '/contact' },
   ];
 
@@ -145,18 +147,24 @@ const EnhancedNavigation = () => {
                         <span>Admin Dashboard</span>
                       </DropdownMenuItem>
                     )}
-                    <DropdownMenuItem onClick={() => navigate('/member')}>
-                      <Settings className="mr-2 h-4 w-4" />
-                      <span>Member Dashboard</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate('/member')}>
-                      <User className="mr-2 h-4 w-4" />
-                      <span>Profile</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate('/member')}>
-                      <Calendar className="mr-2 h-4 w-4" />
-                      <span>My Events</span>
-                    </DropdownMenuItem>
+                    {(hasRole('member') || isAdmin) && !isCurrentlyOnMember && (
+                      <DropdownMenuItem onClick={() => navigate('/member')}>
+                        <Settings className="mr-2 h-4 w-4" />
+                        <span>Member Area</span>
+                      </DropdownMenuItem>
+                    )}
+                    {isAdmin && isCurrentlyOnAdmin && (
+                      <DropdownMenuItem onClick={() => navigate('/member')}>
+                        <Settings className="mr-2 h-4 w-4" />
+                        <span>Member Area</span>
+                      </DropdownMenuItem>
+                    )}
+                    {isAdmin && isCurrentlyOnMember && (
+                      <DropdownMenuItem onClick={() => navigate('/admin')}>
+                        <Shield className="mr-2 h-4 w-4" />
+                        <span>Admin Dashboard</span>
+                      </DropdownMenuItem>
+                    )}
                   </DropdownMenuGroup>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">

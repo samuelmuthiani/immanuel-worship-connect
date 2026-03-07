@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Layout from '@/components/Layout';
-import SEO from '@/components/SEO';
 import { Play, Download, Share2, Calendar, Clock, User, Search, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -113,10 +112,6 @@ const Sermons = () => {
 
   return (
     <Layout>
-      <SEO 
-        title="Sermons | Spiritual Wisdom & Teaching"
-        description="Listen to and watch the latest sermons and teachings from Immanuel Worship Centre."
-      />
       <div className="min-h-screen bg-background transition-colors">
         <div className="bg-gradient-to-r from-iwc-blue to-iwc-orange text-white py-16">
           <div className="container mx-auto px-4 text-center">

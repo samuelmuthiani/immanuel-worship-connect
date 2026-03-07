@@ -5,8 +5,6 @@ import { Button } from '@/components/ui/button';
 import { getAllEvents, Event } from '@/utils/eventUtils';
 import { useNavigate } from 'react-router-dom';
 
-import { Skeleton } from '@/components/ui/skeleton';
-
 const EventsPreviewSection = () => {
   const navigate = useNavigate();
   const [events, setEvents] = useState<Event[]>([]);
@@ -17,10 +15,7 @@ const EventsPreviewSection = () => {
       try {
         const eventsData = await getAllEvents();
         const upcomingEvents = eventsData
-          .filter(event => {
-            const ts = Date.parse(event.event_date);
-            return !Number.isNaN(ts) && ts >= Date.now();
-          })
+          .filter(event => new Date(event.event_date) >= new Date())
           .slice(0, 3);
         setEvents(upcomingEvents);
       } catch (error) {
@@ -60,25 +55,13 @@ const EventsPreviewSection = () => {
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="bg-card border border-border rounded-2xl p-6 space-y-4">
-                <div className="flex justify-between items-start">
-                  <Skeleton className="h-16 w-16 rounded-xl" />
-                  <Skeleton className="h-6 w-20 rounded-full" />
-                </div>
-                <Skeleton className="h-8 w-3/4 rounded-lg" />
-                <Skeleton className="h-16 w-full rounded-lg" />
-                <div className="pt-4 border-t border-border space-y-2">
-                  <Skeleton className="h-4 w-1/2 rounded" />
-                  <Skeleton className="h-4 w-1/2 rounded" />
-                </div>
-              </div>
+              <div key={i} className="bg-card border border-border rounded-2xl h-64 animate-pulse" />
             ))}
           </div>
         ) : events.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {events.map((event) => {
               const eventDate = new Date(event.event_date);
-              const validDate = !Number.isNaN(eventDate.getTime());
               return (
                 <div
                   key={event.id}
@@ -89,10 +72,10 @@ const EventsPreviewSection = () => {
                     <div className="flex items-start justify-between mb-5">
                       <div className="bg-primary/10 text-primary rounded-xl px-4 py-2.5 text-center min-w-[60px]">
                         <div className="text-2xl font-bold leading-none" style={{ fontFamily: 'DM Serif Display, serif' }}>
-                          {validDate ? eventDate.getDate() : '--'}
+                          {eventDate.getDate()}
                         </div>
                         <div className="text-xs uppercase tracking-wider mt-1 font-medium">
-                          {validDate ? eventDate.toLocaleString('en', { month: 'short' }) : 'TBD'}
+                          {eventDate.toLocaleString('en', { month: 'short' })}
                         </div>
                       </div>
                       {event.category && (
@@ -113,7 +96,7 @@ const EventsPreviewSection = () => {
                     <div className="space-y-2 text-sm text-muted-foreground border-t border-border pt-4">
                       <div className="flex items-center gap-2">
                         <Clock className="h-3.5 w-3.5 text-secondary" />
-                        {validDate ? eventDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : 'Time TBD'}
+                        {eventDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                       </div>
                       {event.location && (
                         <div className="flex items-center gap-2">

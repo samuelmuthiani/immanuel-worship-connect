@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Calendar, MapPin, Users, Clock, Check } from 'lucide-react';
+import { Calendar, MapPin, Users, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -9,18 +9,6 @@ import { useNavigate } from 'react-router-dom';
 import { GlobalErrorBoundary } from '@/components/ui/GlobalErrorBoundary';
 import { DataValidation, eventRegistrationSchema } from '@/utils/dataValidation';
 import { logger } from '@/lib/logger';
-
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
 interface EventCardProps {
   event: Event;
@@ -40,18 +28,8 @@ export const EventCard: React.FC<EventCardProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [checkingRegistration, setCheckingRegistration] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [guestData, setGuestData] = useState({ name: '', email: '', phone: '' });
 
   const checkRegistrationStatus = useCallback(async () => {
-    // Check local storage for guest registration first
-    const guestRegKey = `event-reg-${event.id}`;
-    const localReg = localStorage.getItem(guestRegKey);
-    if (localReg) {
-      setIsRegistered(true);
-      return;
-    }
-
     if (!user?.email || !showRegistration || !event.registration_required) return;
     
     setCheckingRegistration(true);
@@ -72,7 +50,7 @@ export const EventCard: React.FC<EventCardProps> = ({
     checkRegistrationStatus();
   }, [checkRegistrationStatus]);
 
-  const handleRegister = async (data?: { name: string; email: string; phone?: string }) => {
+  const handleRegister = async () => {
     if (!event.registration_required) {
       toast({
         title: 'No Registration Required',
@@ -89,22 +67,28 @@ export const EventCard: React.FC<EventCardProps> = ({
       return;
     }
 
-    const registrationData = data || (user ? {
-      name: `${user.user_metadata?.first_name || ''} ${user.user_metadata?.last_name || ''}`.trim() || user.email?.split('@')[0] || 'User',
-      email: user.email || '',
-      phone: user.user_metadata?.phone || ''
-    } : null);
-
-    if (!registrationData) {
-      setIsDialogOpen(true);
+    if (!user) {
+      toast({
+        title: 'Login Required',
+        description: 'Please log in to register for events.',
+        variant: 'destructive'
+      });
+      navigate('/login');
       return;
     }
 
-    // Validate registration data
-    if (!registrationData.name || !registrationData.email) {
+    const registrationData = {
+      name: `${user.user_metadata?.first_name || ''} ${user.user_metadata?.last_name || ''}`.trim() || user.email?.split('@')[0] || 'User',
+      email: user.email || '',
+      phone: user.user_metadata?.phone || ''
+    };
+
+    // Validate registration data with proper type guard
+    const validation = await DataValidation.validateAndSanitize(registrationData, eventRegistrationSchema);
+    if (!validation.success) {
       toast({
         title: 'Validation Error',
-        description: 'Name and email are required for registration.',
+        description: (validation as { success: false; errors: string[] }).errors.join(', '),
         variant: 'destructive'
       });
       return;
@@ -114,20 +98,27 @@ export const EventCard: React.FC<EventCardProps> = ({
     setError(null);
 
     try {
-      const result = await registerForEvent(event.id, registrationData);
+      // Type guard ensures we have validated data
+      const validatedData = (validation as { success: true; data: { name?: string; email?: string; phone?: string } }).data;
+      if (!validatedData.name || !validatedData.email) {
+        throw new Error('Name and email are required');
+      }
+
+      const result = await registerForEvent(event.id, {
+        name: validatedData.name,
+        email: validatedData.email,
+        phone: validatedData.phone
+      });
 
       if (result.success) {
         setIsRegistered(true);
-        // Store in local storage for guest tracking
-        if (!user) {
-          localStorage.setItem(`event-reg-${event.id}`, 'true');
-        }
-        
         toast({
           title: 'Registration Successful!',
           description: `You have been registered for ${event.title}.`,
         });
-        setIsDialogOpen(false);
+        
+        // Refresh registration status
+        await checkRegistrationStatus();
       } else {
         throw new Error(typeof result.error === 'string' ? result.error : result.error?.message || 'Registration failed');
       }
@@ -220,83 +211,41 @@ export const EventCard: React.FC<EventCardProps> = ({
           )}
 
           {showRegistration && (
-            <div className="flex flex-col gap-2">
-              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button
-                    onClick={() => !user && !isRegistered && setIsDialogOpen(true)}
-                    disabled={isRegistered || isLoading || checkingRegistration}
-                    className={`w-full ${isRegistered ? 'bg-green-500 hover:bg-green-600' : 'bg-iwc-blue hover:bg-iwc-blue/90'} text-white rounded-full py-6 text-lg font-medium shadow-md transition-all active:scale-95`}
-                  >
-                    {isRegistered ? (
-                      <span className="flex items-center">
-                        <Check className="h-5 w-5 mr-2" /> Registered
-                      </span>
-                    ) : isLoading ? (
-                      <span className="flex items-center">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                        Processing...
-                      </span>
-                    ) : (
-                      'Register Now'
-                    )}
-                  </Button>
-                </DialogTrigger>
-                {!user && (
-                  <DialogContent className="sm:max-w-[425px]">
-                    <DialogHeader>
-                      <DialogTitle>Event Registration</DialogTitle>
-                      <DialogDescription>
-                        Please provide your details to register for {event.title}.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                      <div className="grid gap-2">
-                        <Label htmlFor="name">Full Name</Label>
-                        <Input
-                          id="name"
-                          value={guestData.name}
-                          onChange={(e) => setGuestData({ ...guestData, name: e.target.value })}
-                          placeholder="John Doe"
-                        />
-                      </div>
-                      <div className="grid gap-2">
-                        <Label htmlFor="email">Email Address</Label>
-                        <Input
-                          id="email"
-                          type="email"
-                          value={guestData.email}
-                          onChange={(e) => setGuestData({ ...guestData, email: e.target.value })}
-                          placeholder="john@example.com"
-                        />
-                      </div>
-                      <div className="grid gap-2">
-                        <Label htmlFor="phone">Phone Number (Optional)</Label>
-                        <Input
-                          id="phone"
-                          value={guestData.phone}
-                          onChange={(e) => setGuestData({ ...guestData, phone: e.target.value })}
-                          placeholder="+1 (555) 000-0000"
-                        />
-                      </div>
-                    </div>
-                    <DialogFooter>
-                      <Button 
-                        onClick={() => handleRegister(guestData)} 
-                        disabled={isLoading}
-                        className="bg-iwc-blue hover:bg-iwc-blue/90"
-                      >
-                        Complete Registration
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                )}
-              </Dialog>
-              
-              {isRegistered && (
-                <p className="text-xs text-center text-green-600 font-medium">
-                  You're all set! See you there.
-                </p>
+            <div className="flex items-center justify-between">
+              {user ? (
+                <Button
+                  onClick={handleRegister}
+                  disabled={isLoading || checkingRegistration || (event.registration_required && isRegistered)}
+                  className={`
+                    ${isRegistered && event.registration_required
+                      ? 'bg-green-600 hover:bg-green-700' 
+                      : 'bg-iwc-blue hover:bg-iwc-orange'
+                    } 
+                    text-white transition-colors duration-200
+                  `}
+                >
+                  {isLoading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Registering...
+                    </>
+                  ) : checkingRegistration ? (
+                    'Checking...'
+                  ) : isRegistered && event.registration_required ? (
+                    '✓ Registered'
+                  ) : event.registration_required ? (
+                    'Register Now'
+                  ) : (
+                    'Learn More'
+                  )}
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => navigate('/login')}
+                  className="bg-iwc-blue hover:bg-iwc-orange text-white"
+                >
+                  Login to Register
+                </Button>
               )}
             </div>
           )}

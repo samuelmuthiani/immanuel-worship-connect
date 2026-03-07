@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,7 +11,6 @@ import { Loader2, Plus, Pencil, Trash2, Save, X, Video, Mic } from 'lucide-react
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
 
 interface Sermon {
   id: string;
@@ -25,25 +25,6 @@ interface Sermon {
   published: boolean;
   created_at: string;
 }
-
-const SermonSkeleton = () => (
-  <Card>
-    <CardContent className="p-4 flex justify-between items-center">
-      <div className="space-y-2 flex-1">
-        <Skeleton className="h-5 w-1/3" />
-        <div className="flex gap-2">
-          <Skeleton className="h-4 w-24" />
-          <Skeleton className="h-4 w-20" />
-          <Skeleton className="h-4 w-16" />
-        </div>
-      </div>
-      <div className="flex gap-2">
-        <Skeleton className="h-8 w-8 rounded-md" />
-        <Skeleton className="h-8 w-8 rounded-md" />
-      </div>
-    </CardContent>
-  </Card>
-);
 
 const SermonManager = () => {
   const { toast } = useToast();
@@ -90,7 +71,7 @@ const SermonManager = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-sermons'] });
       setIsEditing(false);
       setCurrentSermon({});
-      toast({ title: 'Success', description: 'Sermon saved successfully' });
+      toast({ title: 'Success', description: 'Sermon saved' });
     },
     onError: (error: Error) => {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
@@ -111,6 +92,8 @@ const SermonManager = () => {
     }
   });
 
+  if (isLoading) return <div className="flex justify-center p-8"><Loader2 className="animate-spin text-muted-foreground" /></div>;
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -126,7 +109,7 @@ const SermonManager = () => {
       </div>
 
       {isEditing ? (
-        <Card className="animate-in fade-in slide-in-from-top-4 duration-300">
+        <Card>
           <CardHeader>
             <CardTitle className="text-lg">{currentSermon.id ? 'Edit Sermon' : 'New Sermon'}</CardTitle>
           </CardHeader>
@@ -181,43 +164,38 @@ const SermonManager = () => {
         </Card>
       ) : (
         <div className="grid gap-3">
-          {isLoading ? (
-            [1, 2, 3].map(n => <SermonSkeleton key={n} />)
-          ) : sermons?.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">No sermons yet.</p>
-          ) : (
-            sermons?.map(sermon => (
-              <Card key={sermon.id} className="transition-all hover:shadow-md">
-                <CardContent className="p-4 flex justify-between items-center">
-                  <div className="min-w-0">
-                    <h3 className="font-semibold text-foreground truncate">{sermon.title}</h3>
-                    <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground flex-wrap">
-                      {sermon.speaker && <span>{sermon.speaker}</span>}
-                      {sermon.sermon_date && <span>• {new Date(sermon.sermon_date).toLocaleDateString()}</span>}
-                      {sermon.series && <Badge variant="outline" className="text-xs">{sermon.series}</Badge>}
-                      <Badge variant={sermon.published ? 'default' : 'outline'} className="text-xs">
-                        {sermon.published ? 'Published' : 'Draft'}
-                      </Badge>
-                      <div className="flex gap-1">
-                        {sermon.video_url && <Video className="h-3.5 w-3.5 text-primary" />}
-                        {sermon.audio_url && <Mic className="h-3.5 w-3.5 text-emerald-500" />}
-                      </div>
+          {sermons?.map(sermon => (
+            <Card key={sermon.id}>
+              <CardContent className="p-4 flex justify-between items-center">
+                <div className="min-w-0">
+                  <h3 className="font-semibold text-foreground truncate">{sermon.title}</h3>
+                  <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground flex-wrap">
+                    {sermon.speaker && <span>{sermon.speaker}</span>}
+                    {sermon.sermon_date && <span>• {new Date(sermon.sermon_date).toLocaleDateString()}</span>}
+                    {sermon.series && <Badge variant="outline" className="text-xs">{sermon.series}</Badge>}
+                    <Badge variant={sermon.published ? 'default' : 'outline'} className="text-xs">
+                      {sermon.published ? 'Published' : 'Draft'}
+                    </Badge>
+                    <div className="flex gap-1">
+                      {sermon.video_url && <Video className="h-3.5 w-3.5 text-primary" />}
+                      {sermon.audio_url && <Mic className="h-3.5 w-3.5 text-emerald-500" />}
                     </div>
                   </div>
-                  <div className="flex gap-1 ml-2">
-                    <Button variant="ghost" size="icon" onClick={() => { setCurrentSermon(sermon); setIsEditing(true); }}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => {
-                      if (confirm('Delete this sermon?')) deleteSermonMutation.mutate(sermon.id);
-                    }}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
+                </div>
+                <div className="flex gap-1 ml-2">
+                  <Button variant="ghost" size="icon" onClick={() => { setCurrentSermon(sermon); setIsEditing(true); }}>
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => {
+                    if (confirm('Delete this sermon?')) deleteSermonMutation.mutate(sermon.id);
+                  }}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+          {sermons?.length === 0 && <p className="text-center text-muted-foreground py-8">No sermons yet.</p>}
         </div>
       )}
     </div>

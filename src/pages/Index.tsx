@@ -8,15 +8,10 @@ import TestimonialsSection from '@/components/TestimonialsSection';
 import EventsPreviewSection from '@/components/EventsPreviewSection';
 import ContactSection from '@/components/ContactSection';
 import ChurchLocationMap from '@/components/ChurchLocationMap';
-import SEO from '@/components/SEO';
 
 const Index = () => {
   return (
     <Layout>
-      <SEO 
-        title="Immanuel Worship Centre | Spiritual Home in Kilifi"
-        description="Immanuel Worship Centre is a vibrant spiritual community in Kilifi, Kenya. Join us for worship, ministry, and spiritual growth."
-      />
       <HeroSection />
       <AboutSection />
       <ServicesSection />

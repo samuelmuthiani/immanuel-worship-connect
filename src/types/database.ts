@@ -5,11 +5,9 @@
 
 export interface NewsletterSubscriber {
   id: string;
-  name?: string;
   email: string;
-  consent: boolean;
-  created_at: string;
-  source_page?: string;
+  subscribed_at: string;
+  consent_status: string;
 }
 
 export interface PolicyAcceptance {
@@ -27,7 +25,6 @@ export interface EventRegistrationRow {
   email: string;
   phone: string | null;
   registered_at: string;
-  is_guest: boolean;
 }
 
 export interface ContactSubmission {

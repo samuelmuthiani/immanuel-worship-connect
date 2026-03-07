@@ -1,13 +1,11 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Layout from '@/components/Layout';
-import SEO from '@/components/SEO';
 import { Calendar, MapPin, Clock, Users, Filter, Search, X, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { EnhancedCard, CardContent, CardHeader, CardTitle } from '@/components/ui/enhanced-card';
-import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { SecurityService } from '@/utils/security';
@@ -18,29 +16,6 @@ interface RegistrationForm {
   email: string;
   phone: string;
 }
-
-const EventSkeleton = () => (
-  <EnhancedCard variant="modern" className="overflow-hidden border-border/50 bg-card/30 backdrop-blur-sm h-full">
-    <div className="h-48 w-full bg-muted animate-pulse" />
-    <CardHeader>
-      <Skeleton className="h-6 w-3/4 mb-2" />
-      <div className="flex gap-2">
-        <Skeleton className="h-4 w-20" />
-        <Skeleton className="h-4 w-24" />
-      </div>
-    </CardHeader>
-    <CardContent className="space-y-4">
-      <Skeleton className="h-4 w-full" />
-      <Skeleton className="h-4 w-full" />
-      <Skeleton className="h-4 w-2/3" />
-      <div className="pt-4 space-y-2">
-        <Skeleton className="h-4 w-1/2" />
-        <Skeleton className="h-4 w-1/2" />
-      </div>
-      <Skeleton className="h-10 w-full mt-4 rounded-xl" />
-    </CardContent>
-  </EnhancedCard>
-);
 
 const Events = () => {
   const [events, setEvents] = useState<Event[]>([]);
@@ -245,10 +220,6 @@ const Events = () => {
 
   return (
     <Layout>
-      <SEO 
-        title="Upcoming Events | Immanuel Worship Centre"
-        description="Join our upcoming events and gatherings at Immanuel Worship Centre in Kilifi."
-      />
       <div className="min-h-screen bg-background transition-colors">
         <div className="container mx-auto px-4 py-8">
           {/* Header */}
@@ -289,15 +260,24 @@ const Events = () => {
           </div>
 
           {/* Events Grid */}
-          {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {[1, 2, 3, 4, 5, 6].map((n) => (
-                <EventSkeleton key={n} />
-              ))}
-            </div>
-          ) : filteredEvents.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {filteredEvents.map((event, index) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {loading ? (
+              <>
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="bg-card border border-border rounded-lg p-6 animate-pulse">
+                    <div className="h-5 bg-muted rounded w-1/3 mb-3" />
+                    <div className="h-4 bg-muted rounded w-full mb-2" />
+                    <div className="h-4 bg-muted rounded w-2/3 mb-4" />
+                    <div className="h-10 bg-muted rounded w-full" />
+                  </div>
+                ))}
+              </>
+            ) : filteredEvents.length === 0 ? (
+              <div className="col-span-full text-center py-12 text-muted-foreground">
+                No upcoming events at the moment. Check back soon!
+              </div>
+            ) : (
+              filteredEvents.map((event, index) => (
                 <EnhancedCard
                   key={event.id}
                   className="bg-card group"
@@ -392,24 +372,8 @@ const Events = () => {
                   </CardContent>
                 </EnhancedCard>
               ))
-            }
-            </div>
-          ) : (
-            <div className="text-center py-20 bg-card/30 backdrop-blur-sm rounded-3xl border border-border/50">
-              <Calendar className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-20" />
-              <h3 className="text-xl font-semibold mb-2">No events found</h3>
-              <p className="text-muted-foreground max-w-md mx-auto px-4">
-                We couldn't find any events matching your current search or filter criteria. Try adjusting your filters.
-              </p>
-              <Button 
-                variant="outline" 
-                className="mt-6 rounded-full px-8"
-                onClick={() => { setSearchTerm(''); setSelectedCategory('all'); }}
-              >
-                Clear All Filters
-              </Button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         {/* Registration Modal */}

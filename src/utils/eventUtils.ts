@@ -100,18 +100,12 @@ export const registerForEvent = async (eventId: string, registrationData: {
     const { data: { user } } = await supabase.auth.getUser();
 
     const email = SecurityService.sanitizeInput(registrationData.email);
-    const rateLimitKey = `event-reg-${eventId}-${email.toLowerCase()}`;
-    if (SecurityService.isRateLimited(rateLimitKey, 3, 30 * 60 * 1000)) {
-      return { success: false, error: 'Too many attempts. Please try again later.' };
-    }
-
     const insertPayload = {
       event_id: eventId,
       name: SecurityService.sanitizeInput(registrationData.name),
       email,
       phone: registrationData.phone ? SecurityService.sanitizeInput(registrationData.phone) : null as string | null,
-      ...(user?.id && { user_id: user.id }),
-      is_guest: !user?.id
+      ...(user?.id && { user_id: user.id })
     };
 
     logger.log('Registering for event:', eventId);

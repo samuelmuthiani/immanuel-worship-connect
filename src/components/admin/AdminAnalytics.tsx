@@ -11,9 +11,6 @@ interface AnalyticsData {
   totalEvents: number;
   totalSubmissions: number;
   totalSubscribers: number;
-  totalRegistrations: number;
-  totalGuests: number;
-  totalPageViews: number;
 }
 
 interface MonthlyRow {
@@ -21,7 +18,6 @@ interface MonthlyRow {
   members: number;
   events: number;
   submissions: number;
-  subscribers: number;
 }
 
 const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -29,8 +25,7 @@ const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'S
 function buildMonthlyData(
   profiles: { created_at: string }[],
   events: { created_at: string }[],
-  submissions: { submitted_at: string }[],
-  subscribers: { created_at: string }[]
+  submissions: { submitted_at: string }[]
 ): MonthlyRow[] {
   const now = new Date();
   const months: MonthlyRow[] = [];
@@ -40,10 +35,9 @@ function buildMonthlyData(
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
     months.push({
       month: MONTH_LABELS[d.getMonth()],
-      members: profiles.filter(p => (p.created_at || '').startsWith(key)).length,
-      events: events.filter(e => (e.created_at || '').startsWith(key)).length,
-      submissions: submissions.filter(s => (s.submitted_at || '').startsWith(key)).length,
-      subscribers: subscribers.filter(sub => (sub.created_at || '').startsWith(key)).length,
+      members: profiles.filter(p => p.created_at.startsWith(key)).length,
+      events: events.filter(e => e.created_at.startsWith(key)).length,
+      submissions: submissions.filter(s => s.submitted_at.startsWith(key)).length,
     });
   }
   return months;
@@ -54,10 +48,7 @@ const AdminAnalytics = () => {
     totalMembers: 0,
     totalEvents: 0,
     totalSubmissions: 0,
-    totalSubscribers: 0,
-    totalRegistrations: 0,
-    totalGuests: 0,
-    totalPageViews: 0
+    totalSubscribers: 0
   });
   const [monthlyData, setMonthlyData] = useState<MonthlyRow[]>([]);
   const [engagementData, setEngagementData] = useState<{ name: string; value: number; color: string }[]>([]);
@@ -65,7 +56,6 @@ const AdminAnalytics = () => {
 
   useEffect(() => {
     const fetchAll = async () => {
-      setLoading(true);
       const data = await getDashboardAnalytics();
       setAnalytics(data);
 
@@ -74,51 +64,40 @@ const AdminAnalytics = () => {
       sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
       const since = sixMonthsAgo.toISOString();
 
-      const [profilesRes, eventsRes, subsRes, newsletterRes] = await Promise.all([
+      const [profilesRes, eventsRes, subsRes, regRes] = await Promise.all([
         supabase.from('profiles').select('created_at').gte('created_at', since),
         supabase.from('events').select('created_at').gte('created_at', since),
         supabase.from('contact_submissions').select('submitted_at').gte('submitted_at', since),
-        supabase.from('newsletter_subscribers').select('created_at').gte('created_at', since),
+        supabase.from('event_registrations').select('id', { count: 'exact', head: true }),
       ]);
 
       setMonthlyData(
         buildMonthlyData(
           profilesRes.data || [],
           eventsRes.data || [],
-          subsRes.data || [],
-          newsletterRes.data || []
+          subsRes.data || []
         )
       );
 
+      const regCount = regRes.count || 0;
       setEngagementData([
         { name: 'Members', value: data.totalMembers, color: 'hsl(220, 70%, 45%)' },
-        { name: 'Event Regs', value: data.totalRegistrations, color: 'hsl(30, 80%, 55%)' },
-        { name: 'Newsletter', value: data.totalSubscribers, color: 'hsl(40, 90%, 50%)' },
-        { name: 'Guests', value: data.totalGuests, color: 'hsl(142, 70%, 45%)' },
+        { name: 'Event Registrations', value: regCount, color: 'hsl(30, 80%, 55%)' },
+        { name: 'Newsletter Subs', value: data.totalSubscribers, color: 'hsl(40, 90%, 50%)' },
+        { name: 'Contact Forms', value: data.totalSubmissions, color: 'hsl(142, 70%, 45%)' },
       ]);
 
       setLoading(false);
     };
-    
     fetchAll();
-
-    // Real-time updates for analytics
-    const channels = [
-      supabase.channel('analytics-profiles').on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, fetchAll),
-      supabase.channel('analytics-events').on('postgres_changes', { event: '*', schema: 'public', table: 'events' }, fetchAll),
-      supabase.channel('analytics-contacts').on('postgres_changes', { event: '*', schema: 'public', table: 'contact_submissions' }, fetchAll),
-      supabase.channel('analytics-newsletter').on('postgres_changes', { event: '*', schema: 'public', table: 'newsletter_subscribers' }, fetchAll),
-      supabase.channel('analytics-registrations').on('postgres_changes', { event: '*', schema: 'public', table: 'event_registrations' }, fetchAll),
-    ];
-
-    channels.forEach(channel => channel.subscribe());
-
-    return () => {
-      channels.forEach(channel => supabase.removeChannel(channel));
-    };
   }, []);
 
-
+  const analyticsCards = [
+    { title: 'Total Members', value: analytics.totalMembers, icon: Users, accent: 'text-primary bg-primary/10' },
+    { title: 'Active Events', value: analytics.totalEvents, icon: Calendar, accent: 'text-secondary bg-secondary/10' },
+    { title: 'Contact Forms', value: analytics.totalSubmissions, icon: MessageSquare, accent: 'text-amber-600 bg-amber-100 dark:bg-amber-900/20' },
+    { title: 'Subscribers', value: analytics.totalSubscribers, icon: Mail, accent: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/20' }
+  ];
 
   if (loading) {
     return (
@@ -137,62 +116,22 @@ const AdminAnalytics = () => {
   return (
     <div className="space-y-6">
       {/* Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <Card className="border-l-4 border-l-iwc-blue">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Members</p>
-                <h3 className="text-2xl font-bold">{analytics.totalMembers}</h3>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {analyticsCards.map((card, index) => (
+          <Card key={index} className="border-border">
+            <CardContent className="p-5">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{card.title}</p>
+                  <p className="text-2xl font-bold text-foreground">{card.value.toLocaleString()}</p>
+                </div>
+                <div className={`p-2 rounded-lg ${card.accent}`}>
+                  <card.icon className="h-4 w-4" />
+                </div>
               </div>
-              <div className="h-10 w-10 bg-iwc-blue/10 rounded-full flex items-center justify-center">
-                <Users className="h-5 w-5 text-iwc-blue" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-iwc-orange">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Event Registrations</p>
-                <h3 className="text-2xl font-bold">{analytics.totalRegistrations}</h3>
-              </div>
-              <div className="h-10 w-10 bg-iwc-orange/10 rounded-full flex items-center justify-center">
-                <Calendar className="h-5 w-5 text-iwc-orange" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-green-500">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Subscribers</p>
-                <h3 className="text-2xl font-bold">{analytics.totalSubscribers}</h3>
-              </div>
-              <div className="h-10 w-10 bg-green-500/10 rounded-full flex items-center justify-center">
-                <TrendingUp className="h-5 w-5 text-green-500" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-purple-500">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Page Views</p>
-                <h3 className="text-2xl font-bold">{analytics.totalPageViews}</h3>
-              </div>
-              <div className="h-10 w-10 bg-purple-500/10 rounded-full flex items-center justify-center">
-                <Activity className="h-5 w-5 text-purple-500" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {/* Charts */}
@@ -284,7 +223,6 @@ const AdminAnalytics = () => {
                 }}
               />
               <Bar dataKey="submissions" name="Contact Forms" fill="hsl(40, 90%, 50%)" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="subscribers" name="Subscribers" fill="hsl(142, 70%, 45%)" radius={[4, 4, 0, 0]} />
               <Bar dataKey="events" name="Events" fill="hsl(30, 80%, 55%)" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>

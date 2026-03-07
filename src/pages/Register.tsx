@@ -7,13 +7,12 @@ import { FloatingInput } from '@/components/ui/FloatingInput';
 import { PasswordStrength } from '@/components/ui/PasswordStrength';
 import { UserPlus, AlertCircle, CheckCircle } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
+import { supabase } from '@/integrations/supabase/client';
 import iwcLogo from '/iwc-logo.png';
 
 interface FormErrors { email?: string; password?: string; confirmPassword?: string; general?: string; terms?: string; }
 
 const Register = () => {
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -29,8 +28,6 @@ const Register = () => {
 
   const validateForm = () => {
     const newErrors: FormErrors = {};
-    if (!firstName.trim()) newErrors.general = 'First name is required';
-    if (!lastName.trim()) newErrors.general = 'Last name is required';
     if (!email.trim()) newErrors.email = 'Email is required';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) newErrors.email = 'Invalid email';
     if (!password) newErrors.password = 'Password is required';
@@ -42,20 +39,28 @@ const Register = () => {
     return Object.keys(newErrors).length === 0;
   };
 
+  const recordPolicyAcceptance = async (userId: string) => {
+    try {
+      await supabase.from('policy_acceptances').insert([
+        { user_id: userId, policy_type: 'terms' },
+        { user_id: userId, policy_type: 'privacy' }
+      ]);
+    } catch (err) {
+      // Policy acceptance error silently handled
+    }
+  };
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
     if (!validateForm()) return;
     setLoading(true);
     try {
-      const trimmedEmail = email.trim();
-      const result = await signUp(trimmedEmail, password, { 
-        first_name: firstName.trim(), 
-        last_name: lastName.trim(),
-        accepted_terms: acceptedTerms,
-        accepted_privacy: acceptedPrivacy
-      });
+      const result = await signUp(email.trim(), password);
       if (result.success) {
+        if (result.user?.id) {
+          await recordPolicyAcceptance(result.user.id);
+        }
         setSuccess(true);
       } else {
         setErrors({ general: result.error || 'Registration failed' });
@@ -104,22 +109,6 @@ const Register = () => {
           )}
 
           <form onSubmit={handleRegister} className="space-y-5">
-            <div className="grid grid-cols-2 gap-4">
-              <FloatingInput
-                label="First Name"
-                value={firstName}
-                onChange={(e) => { setFirstName(e.target.value); clearFieldError('general'); }}
-                required
-                disabled={loading}
-              />
-              <FloatingInput
-                label="Last Name"
-                value={lastName}
-                onChange={(e) => { setLastName(e.target.value); clearFieldError('general'); }}
-                required
-                disabled={loading}
-              />
-            </div>
             <FloatingInput id="register-email" type="email" label="Email Address" value={email} onChange={(e) => { setEmail(e.target.value); clearFieldError('email'); }} error={errors.email} disabled={loading} autoComplete="email" autoFocus />
             <div className="space-y-2">
               <FloatingInput id="register-password" type="password" label="Password" value={password} onChange={(e) => { setPassword(e.target.value); clearFieldError('password'); }} error={errors.password} showPasswordToggle disabled={loading} autoComplete="new-password" />

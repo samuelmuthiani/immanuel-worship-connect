@@ -1,7 +1,6 @@
 
 import React from 'react';
 import Layout from '@/components/Layout';
-import SEO from '@/components/SEO';
 import { Heart, Users, BookOpen, Globe, Award, Calendar, MapPin, Clock, Target, Zap, Shield, Crown, TrendingUp } from 'lucide-react';
 
 const About = () => {
@@ -38,10 +37,6 @@ const About = () => {
 
   return (
     <Layout>
-      <SEO 
-        title="About Us | Our History & Mission"
-        description="Learn about the history, mission, and leadership of Immanuel Worship Centre in Kilifi."
-      />
       {/* Hero */}
       <section className="relative py-24 bg-gradient-to-b from-primary/5 to-background">
         <div className="container mx-auto px-4 text-center">

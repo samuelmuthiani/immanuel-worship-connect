@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,7 +11,6 @@ import { Loader2, Plus, Pencil, Trash2, Save, X, Upload } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
 
 interface Post {
   id: string;
@@ -23,24 +23,6 @@ interface Post {
   category: string | null;
   created_at: string;
 }
-
-const PostSkeleton = () => (
-  <Card>
-    <CardContent className="p-4 flex justify-between items-center">
-      <div className="space-y-2 flex-1">
-        <Skeleton className="h-5 w-1/3" />
-        <div className="flex gap-2">
-          <Skeleton className="h-4 w-20" />
-          <Skeleton className="h-4 w-16" />
-        </div>
-      </div>
-      <div className="flex gap-2">
-        <Skeleton className="h-8 w-8 rounded-md" />
-        <Skeleton className="h-8 w-8 rounded-md" />
-      </div>
-    </CardContent>
-  </Card>
-);
 
 const BlogManager = () => {
   const { toast } = useToast();
@@ -107,7 +89,7 @@ const BlogManager = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-posts'] });
       setIsEditing(false);
       setCurrentPost({});
-      toast({ title: 'Success', description: 'Post saved successfully' });
+      toast({ title: 'Success', description: 'Post saved' });
     },
     onError: (error: Error) => {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
@@ -128,6 +110,8 @@ const BlogManager = () => {
     }
   });
 
+  if (isLoading) return <div className="flex justify-center p-8"><Loader2 className="animate-spin text-muted-foreground" /></div>;
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -143,7 +127,7 @@ const BlogManager = () => {
       </div>
 
       {isEditing ? (
-        <Card className="animate-in fade-in slide-in-from-top-4 duration-300">
+        <Card>
           <CardHeader>
             <CardTitle className="text-lg">{currentPost.id ? 'Edit Post' : 'New Post'}</CardTitle>
           </CardHeader>
@@ -192,38 +176,33 @@ const BlogManager = () => {
         </Card>
       ) : (
         <div className="grid gap-3">
-          {isLoading ? (
-            [1, 2, 3].map(n => <PostSkeleton key={n} />)
-          ) : posts?.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">No posts yet.</p>
-          ) : (
-            posts?.map(post => (
-              <Card key={post.id} className="transition-all hover:shadow-md">
-                <CardContent className="p-4 flex justify-between items-center">
-                  <div className="min-w-0">
-                    <h3 className="font-semibold text-foreground truncate">{post.title}</h3>
-                    <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                      {post.author && <span>{post.author}</span>}
-                      <Badge variant={post.published ? 'default' : 'outline'} className="text-xs">
-                        {post.published ? 'Published' : 'Draft'}
-                      </Badge>
-                      {post.category && <Badge variant="outline" className="text-xs">{post.category}</Badge>}
-                    </div>
+          {posts?.map(post => (
+            <Card key={post.id}>
+              <CardContent className="p-4 flex justify-between items-center">
+                <div className="min-w-0">
+                  <h3 className="font-semibold text-foreground truncate">{post.title}</h3>
+                  <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                    {post.author && <span>{post.author}</span>}
+                    <Badge variant={post.published ? 'default' : 'outline'} className="text-xs">
+                      {post.published ? 'Published' : 'Draft'}
+                    </Badge>
+                    {post.category && <Badge variant="outline" className="text-xs">{post.category}</Badge>}
                   </div>
-                  <div className="flex gap-1 ml-2">
-                    <Button variant="ghost" size="icon" onClick={() => { setCurrentPost(post); setIsEditing(true); }}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => {
-                      if (confirm('Delete this post?')) deletePostMutation.mutate(post.id);
-                    }}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
+                </div>
+                <div className="flex gap-1 ml-2">
+                  <Button variant="ghost" size="icon" onClick={() => { setCurrentPost(post); setIsEditing(true); }}>
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => {
+                    if (confirm('Delete this post?')) deletePostMutation.mutate(post.id);
+                  }}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+          {posts?.length === 0 && <p className="text-center text-muted-foreground py-8">No posts yet.</p>}
         </div>
       )}
     </div>

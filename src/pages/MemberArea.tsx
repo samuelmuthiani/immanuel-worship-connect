@@ -6,14 +6,14 @@ import { MemberProfile } from '@/components/member/MemberProfile';
 import { ProfileCompletion } from '@/components/member/ProfileCompletion';
 import { AppreciationNotifications } from '@/components/member/AppreciationNotifications';
 import { MemberDonationHistory } from '@/components/member/MemberDonationHistory';
-import { MemberDonationHistory } from '@/components/member/MemberDonationHistory';
-import { MemberEvents } from '@/components/member/MemberEvents';
 import { DeleteAccountDialog } from '@/components/member/DeleteAccountDialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ResponsiveContainer } from '@/components/ui/ResponsiveContainer';
 import { useQuery } from '@tanstack/react-query';
 import { getUserProfile } from '@/utils/profileUtils';
-import { User, Heart, Settings, Activity, CheckCircle, Menu, Calendar } from 'lucide-react';
+import { User, Heart, Settings, Activity, CheckCircle, Menu } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 
 const MemberArea = () => {
   const { user } = useAuth();
@@ -28,7 +28,6 @@ const MemberArea = () => {
 
   const tabs = [
     { value: 'profile', label: 'Profile', icon: Settings },
-    { value: 'events', label: 'My Events', icon: Calendar },
     { value: 'completion', label: 'Progress', icon: CheckCircle },
     { value: 'appreciations', label: 'Messages', icon: Heart },
     { value: 'activity', label: 'Activity', icon: Activity },
@@ -111,10 +110,6 @@ const MemberArea = () => {
           {/* Tab Content */}
           <TabsContent value="profile" className="space-y-6 focus-visible:outline-none">
             <MemberProfile />
-          </TabsContent>
-
-          <TabsContent value="events" className="space-y-6 focus-visible:outline-none">
-            <MemberEvents />
           </TabsContent>
 
           <TabsContent value="completion" className="space-y-6 focus-visible:outline-none">
