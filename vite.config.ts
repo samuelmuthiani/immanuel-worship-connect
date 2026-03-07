@@ -20,6 +20,11 @@ export default defineConfig(({ mode }) => ({
     },
   },
   build: {
-    chunkSizeWarningLimit: 1000
+    chunkSizeWarningLimit: 1500,
+    rollupOptions: {
+      output: {
+        manualChunks: undefined // Let Vite handle it automatically
+      }
+    }
   }
 }));

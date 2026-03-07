@@ -9,6 +9,7 @@ import { EnhancedProfileForm } from './EnhancedProfileForm';
 import { SkeletonLoader } from '@/components/ui/SkeletonLoader';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { ResponsiveContainer } from '@/components/ui/ResponsiveContainer';
+import { ProfileCompletion } from './ProfileCompletion';
 
 export function MemberProfile() {
   const { user } = useAuth();
@@ -112,7 +113,8 @@ export function MemberProfile() {
   }
 
   return (
-    <ResponsiveContainer className="space-y-6">
+    <div className="space-y-6">
+      <ProfileCompletion profileData={profileData} />
       {isEditing ? (
         <EnhancedProfileForm
           profileData={profileData}
@@ -129,6 +131,6 @@ export function MemberProfile() {
           onEdit={() => setIsEditing(true)}
         />
       )}
-    </ResponsiveContainer>
+    </div>
   );
 }

@@ -88,7 +88,7 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                     <Shield className="h-4 w-4" /> Admin Dashboard
                   </Link>
                 )}
-                <Link to="/member" onClick={onClose} className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent">
+                <Link to="/member?tab=profile" onClick={onClose} className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent">
                   <Settings className="h-4 w-4" /> Member Area
                 </Link>
               </>

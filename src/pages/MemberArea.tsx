@@ -1,9 +1,8 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { useAuth } from '@/hooks/useAuth';
 import { MemberProfile } from '@/components/member/MemberProfile';
-import { ProfileCompletion } from '@/components/member/ProfileCompletion';
 import { AppreciationNotifications } from '@/components/member/AppreciationNotifications';
 import { MemberDonationHistory } from '@/components/member/MemberDonationHistory';
 import { MemberEvents } from '@/components/member/MemberEvents';
@@ -14,11 +13,13 @@ import { Button } from '@/components/ui/button';
 import { ResponsiveContainer } from '@/components/ui/ResponsiveContainer';
 import { useQuery } from '@tanstack/react-query';
 import { getUserProfile } from '@/utils/profileUtils';
-import { User, Heart, Settings, Activity, CheckCircle, Menu, Calendar } from 'lucide-react';
+import { User, Heart, Settings, Activity, Menu, Calendar } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 
 const MemberArea = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState('profile');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') || 'profile';
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const { data: profileData } = useQuery({
@@ -27,10 +28,13 @@ const MemberArea = () => {
     enabled: !!user,
   });
 
+  const setActiveTab = (tab: string) => {
+    setSearchParams({ tab });
+  };
+
   const tabs = [
     { value: 'profile', label: 'Profile', icon: Settings },
     { value: 'events', label: 'My Events', icon: Calendar },
-    { value: 'completion', label: 'Progress', icon: CheckCircle },
     { value: 'appreciations', label: 'Messages', icon: Heart },
     { value: 'activity', label: 'Activity', icon: Activity },
     { value: 'settings', label: 'Account', icon: User },
@@ -116,18 +120,6 @@ const MemberArea = () => {
 
           <TabsContent value="events" className="space-y-6 focus-visible:outline-none">
             <MemberEvents />
-          </TabsContent>
-
-          <TabsContent value="completion" className="space-y-6 focus-visible:outline-none">
-            {profileData ? (
-              <ProfileCompletion profileData={profileData} />
-            ) : (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground">
-                  Complete your profile to unlock all features and connect better with the community.
-                </p>
-              </div>
-            )}
           </TabsContent>
 
           <TabsContent value="appreciations" className="space-y-6 focus-visible:outline-none">

@@ -145,15 +145,15 @@ const EnhancedNavigation = () => {
                         <span>Admin Dashboard</span>
                       </DropdownMenuItem>
                     )}
-                    <DropdownMenuItem onClick={() => navigate('/member')}>
+                    <DropdownMenuItem onClick={() => navigate('/member?tab=profile')}>
                       <Settings className="mr-2 h-4 w-4" />
                       <span>Member Dashboard</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate('/member')}>
+                    <DropdownMenuItem onClick={() => navigate('/member?tab=profile')}>
                       <User className="mr-2 h-4 w-4" />
                       <span>Profile</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate('/member')}>
+                    <DropdownMenuItem onClick={() => navigate('/member?tab=events')}>
                       <Calendar className="mr-2 h-4 w-4" />
                       <span>My Events</span>
                     </DropdownMenuItem>
