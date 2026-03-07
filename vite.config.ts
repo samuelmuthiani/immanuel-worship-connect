@@ -19,4 +19,15 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom', '@supabase/supabase-js', '@tanstack/react-query', 'lucide-react'],
+          ui: ['@/components/ui/button', '@/components/ui/card', '@/components/ui/input', '@/components/ui/tabs']
+        }
+      }
+    }
+  }
 }));

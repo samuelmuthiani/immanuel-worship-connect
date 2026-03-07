@@ -56,13 +56,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
+    // Safety timeout to ensure loading state is cleared within 5 seconds
+    const safetyTimeout = setTimeout(() => {
+      if (mounted && isLoading) {
+        logger.warn('Auth check safety timeout reached. Forcing loading state to false.');
+        setIsLoading(false);
+      }
+    }, 5000);
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, currentSession) => {
         if (!mounted) return;
 
         logger.info('Auth state change:', event, !!currentSession);
 
-        if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
+        if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') {
           if (!currentSession) {
             setSession(null);
             setUser(null);
@@ -80,7 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const roles = await fetchUserRoles(currentSession.user.id);
             if (mounted) setUserRoles(roles);
           } catch (error) {
-            logger.error('Failed to fetch user roles:', error);
+            logger.error('Failed to fetch user roles during auth change:', error);
             if (mounted) setUserRoles([]);
           }
         } else if (mounted) {
@@ -91,36 +99,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    supabase.auth.getSession().then(async ({ data: { session: currentSession }, error }) => {
-      if (!mounted) return;
+    const checkInitialSession = async () => {
+      try {
+        const { data: { session: currentSession }, error } = await supabase.auth.getSession();
+        
+        if (!mounted) return;
 
-      if (error) {
-        logger.error('Error getting session:', error);
-        setIsLoading(false);
-        return;
-      }
-
-      setSession(currentSession);
-      setUser(currentSession?.user ?? null);
-
-      if (currentSession?.user) {
-        try {
-          const roles = await fetchUserRoles(currentSession.user.id);
-          if (mounted) setUserRoles(roles);
-        } catch (error) {
-          logger.error('Failed to fetch user roles:', error);
-          if (mounted) setUserRoles([]);
+        if (error) {
+          logger.error('Error getting initial session:', error);
+          setIsLoading(false);
+          return;
         }
-      } else if (mounted) {
-        setUserRoles([]);
-      }
 
-      if (mounted) setIsLoading(false);
-    });
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
+
+        if (currentSession?.user) {
+          try {
+            const roles = await fetchUserRoles(currentSession.user.id);
+            if (mounted) setUserRoles(roles);
+          } catch (error) {
+            logger.error('Failed to fetch user roles during initial session check:', error);
+            if (mounted) setUserRoles([]);
+          }
+        } else if (mounted) {
+          setUserRoles([]);
+        }
+      } catch (err) {
+        logger.error('Critical auth error during session check:', err);
+      } finally {
+        if (mounted) setIsLoading(false);
+        clearTimeout(safetyTimeout);
+      }
+    };
+
+    checkInitialSession();
 
     return () => {
       mounted = false;
       subscription.unsubscribe();
+      clearTimeout(safetyTimeout);
     };
   }, []);
 
