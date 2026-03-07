@@ -34,7 +34,7 @@ export const exportToCSV = <T extends Record<string, unknown>>(data: T[], filena
 // Get dashboard analytics using RPC for better performance
 export const getDashboardAnalytics = async () => {
   try {
-    const { data, error } = await supabase.rpc('get_admin_stats');
+    const { data, error } = await (supabase.rpc as any)('get_admin_stats');
     
     if (error) {
       // Fallback to manual fetching if RPC fails or is not yet migrated
@@ -53,7 +53,7 @@ export const getDashboardAnalytics = async () => {
         supabase.from('newsletter_subscribers').select('*', { count: 'exact', head: true }),
         supabase.from('event_registrations').select('*', { count: 'exact', head: true }),
         supabase.from('event_registrations').select('*', { count: 'exact', head: true }).eq('is_guest', true),
-        supabase.from('page_views').select('*', { count: 'exact', head: true })
+        (supabase as any).from('page_views').select('*', { count: 'exact', head: true })
       ]);
 
       return {
@@ -68,16 +68,17 @@ export const getDashboardAnalytics = async () => {
     }
 
     // Map RPC data to expected format
+    const stats = data as any;
     return {
-      totalMembers: data.total_members || 0,
-      totalEvents: data.total_events || 0,
-      totalSubmissions: data.total_submissions || 0,
-      totalSubscribers: data.total_subscribers || 0,
-      totalRegistrations: data.total_registrations || 0,
-      totalGuests: data.total_guests || 0,
-      totalPageViews: data.total_page_views || 0,
-      totalDonations: data.total_donations || 0,
-      storageUsage: data.storage_usage || { photos: 0, videos: 0 }
+      totalMembers: stats.total_members || 0,
+      totalEvents: stats.total_events || 0,
+      totalSubmissions: stats.total_submissions || 0,
+      totalSubscribers: stats.total_subscribers || 0,
+      totalRegistrations: stats.total_registrations || 0,
+      totalGuests: stats.total_guests || 0,
+      totalPageViews: stats.total_page_views || 0,
+      totalDonations: stats.total_donations || 0,
+      storageUsage: stats.storage_usage || { photos: 0, videos: 0 }
     };
   } catch (error) {
     logger.error('Error fetching analytics:', error);
@@ -87,7 +88,8 @@ export const getDashboardAnalytics = async () => {
       totalSubmissions: 0,
       totalSubscribers: 0,
       totalRegistrations: 0,
-      totalGuests: 0
+      totalGuests: 0,
+      totalPageViews: 0
     };
   }
 };
@@ -111,7 +113,7 @@ export const bulkDeleteItems = async (table: string, ids: string[]) => {
 // Storage management helpers
 export const getDeletedMediaAssets = async () => {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('deleted_media_assets')
       .select('*')
       .eq('processed', false);
@@ -126,7 +128,7 @@ export const getDeletedMediaAssets = async () => {
 
 export const markMediaAssetAsProcessed = async (id: string) => {
   try {
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('deleted_media_assets')
       .update({ processed: true })
       .eq('id', id);
@@ -142,7 +144,7 @@ export const markMediaAssetAsProcessed = async (id: string) => {
 // User management using RPC
 export const updateUserRole = async (userId: string, role: string) => {
   try {
-    const { error } = await supabase.rpc('set_user_role', { 
+    const { error } = await (supabase.rpc as any)('set_user_role', { 
       _user_id: userId, 
       _role: role as any 
     });
@@ -155,12 +157,6 @@ export const updateUserRole = async (userId: string, role: string) => {
       if (fallbackError) throw fallbackError;
     }
     
-    return { success: true };
-  } catch (error) {
-    logger.error('Error updating user role:', error);
-    return { success: false, error };
-  }
-};
     return { success: true };
   } catch (error) {
     logger.error('Error updating user role:', error);
