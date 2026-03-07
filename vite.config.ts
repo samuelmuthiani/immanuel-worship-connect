@@ -23,9 +23,13 @@ export default defineConfig(({ mode }) => ({
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom', '@supabase/supabase-js', '@tanstack/react-query', 'lucide-react'],
-          ui: ['@/components/ui/button', '@/components/ui/card', '@/components/ui/input', '@/components/ui/tabs']
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('lucide-react')) return 'lucide';
+            if (id.includes('@supabase')) return 'supabase';
+            if (id.includes('react')) return 'vendor';
+            return 'deps';
+          }
         }
       }
     }

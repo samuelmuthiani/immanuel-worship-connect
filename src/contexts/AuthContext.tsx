@@ -86,16 +86,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (currentSession?.user) {
           try {
             const roles = await fetchUserRoles(currentSession.user.id);
-            if (mounted) setUserRoles(roles);
+            if (mounted) {
+              setUserRoles(roles);
+              setIsLoading(false);
+            }
           } catch (error) {
             logger.error('Failed to fetch user roles during auth change:', error);
-            if (mounted) setUserRoles([]);
+            if (mounted) {
+              setUserRoles([]);
+              setIsLoading(false);
+            }
           }
         } else if (mounted) {
           setUserRoles([]);
+          setIsLoading(false);
         }
-
-        if (mounted) setIsLoading(false);
       }
     );
 
@@ -128,8 +133,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch (err) {
         logger.error('Critical auth error during session check:', err);
       } finally {
-        if (mounted) setIsLoading(false);
-        clearTimeout(safetyTimeout);
+        if (mounted) {
+          setIsLoading(false);
+          clearTimeout(safetyTimeout);
+        }
       }
     };
 
