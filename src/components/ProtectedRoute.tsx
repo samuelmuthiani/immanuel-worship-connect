@@ -4,6 +4,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { SecurityService } from '@/utils/security';
 import { logger } from '@/lib/logger';
+import GlobalLoadingScreen from './GlobalLoadingScreen';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -26,14 +27,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }, [session]);
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-2 border-gray-300 border-t-iwc-blue mx-auto" />
-          <p className="mt-4 text-muted-foreground">Securing your session...</p>
-        </div>
-      </div>
-    );
+    return <GlobalLoadingScreen />;
   }
 
   if (!user) {
